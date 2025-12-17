@@ -1,0 +1,11 @@
+# Ignore everything
+*
+
+# Except these directories
+!agents/
+!agents/**
+!commands/
+!commands/**
+
+# And these files
+!.gitignore
