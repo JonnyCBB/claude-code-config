@@ -9,3 +9,4 @@
 
 # And these files
 !.gitignore
+!README.md
