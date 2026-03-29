@@ -56,12 +56,14 @@ Then wait for user input.
    - **web-search-researcher**: external documentation and resources (if applicable)
    - **test-pattern-researcher** (TDD-specific): search for existing test patterns, frameworks, fixtures, helpers, CI test commands, and test infrastructure (conftest.py, test utilities, shared fixtures, test base classes)
 
-2b. **Check for operational context**:
-
-- If an operational context document is provided (as a file path argument), read it fully
-- If no operational context is provided AND the task references specific service/component names:
-  - Note to user: "This task involves [service]. Consider gathering operational context for production data."
-- If the task does not involve specific services (e.g., pure refactoring, documentation), skip
+2b. **Check for domain skills and MCP tools**: Review the list of available skills (both
+project-level and user-level) for any that describe APIs, services, or domain concepts
+referenced in the task. If a skill's description matches the systems or technologies
+involved, read its full content to understand domain constraints, endpoint schemas,
+authentication patterns, or known gotchas before designing the plan. Also check available
+MCP servers -- if the task involves databases, orchestration systems, deployment targets,
+or CI/CD pipelines, MCP tools may provide live schema information, current state, or
+configuration that should inform the plan.
 
 3. **Read all files identified by research agents** FULLY into main context.
 
@@ -104,6 +106,7 @@ After initial research completes, analyze findings for domain and language patte
      - Identify CI test commands and test configuration
    - **Mandatory pattern search**: find existing abstractions (abstract classes, interfaces, base classes) for reuse
    - **Mandatory guideline discovery**: search for coding standards/guidelines files (CONTRIBUTING.md, .editorconfig, style guides, CLAUDE.md rules, lint configs) in the target repo. Summarize findings for inclusion in the plan's "Coding Guidelines" section.
+   - **MCP-informed research**: If MCP servers are available for systems referenced in the task (databases, orchestration platforms, cloud services, CI/CD), consider spawning a research agent that uses those MCP tools to gather current schema, configuration, or state information that could inform planning decisions.
 
 3. **Wait for ALL agents to complete**.
 
@@ -165,38 +168,10 @@ Use the template from `references/plan-template.md`. The plan includes:
 
 - Wave analysis and dependency graph
 - Wave 0 (test infrastructure setup)
-- Operational Context section (populated from ops context document, or "N/A — not service-specific")
 - Per-task RED/GREEN/REFACTOR cycles with specific test cases, implementation approach, and refactoring targets
 - Parallelization plan showing which tasks can run concurrently
 - Existing patterns analysis (required)
 - Success criteria split into automated and manual verification
-
-The plan template must include:
-
-## Operational Context
-
-{{Populated from the operational context document. If no operational context was gathered, state:
-"No operational context gathered — task does not involve a specific service."}}
-
-### Service Health Baseline
-
-[from ops context document]
-
-### Dependency Constraints
-
-[from ops context document — dependency table with headroom analysis]
-
-### Capacity Assessment
-
-[from ops context document — resource utilization]
-
-### Risk Factors
-
-[from ops context document — risk assessment]
-
-### How Operational Context Informs This Plan
-
-[How operational constraints affect specific waves and tasks in the TDD plan]
 
 Create `~/.claude/thoughts/shared/plans/` if it does not exist.
 
@@ -247,7 +222,6 @@ _Interactive: present synthesized feedback to user, iterate collaboratively on r
 - **Tests before code**: every task starts with RED (failing test), not implementation
 - **Vertical slices**: each task delivers a complete test+implementation unit
 - **Wave 0 first**: always establish shared test infrastructure before feature waves
-- **Use operational context**: When available, verify latency budget (current P99 + new call P99 < upstream timeout), check error budget headroom before choosing deployment strategy, adjust resource requests if utilization is high
 
 ## Reference Files
 

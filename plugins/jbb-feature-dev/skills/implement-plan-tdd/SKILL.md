@@ -28,8 +28,14 @@ Parse `$ARGUMENTS` for `--non-interactive` flag and plan path.
 1. Read the plan file completely (no limit/offset parameters)
 2. Validate plan has required TDD sections: Wave Analysis, Wave 0, at least one Phase with RED/GREEN/REFACTOR tasks. If missing sections, STOP and report.
 3. Read the original ticket and all files mentioned in the plan -- read fully, no limit/offset
-4. Check for existing checkmarks (`- [x]`) to support resume -- trust completed work, pick up from first unchecked item
-5. Create a todo list to track progress through waves and tasks
+4. **Discover domain skills**: Check available skills (both project-level and user-level)
+   for any that describe APIs, services, or domain concepts referenced in the plan. If a
+   skill's description matches the systems or technologies being implemented, read its full
+   content. Pass relevant domain knowledge (API schemas, known gotchas, naming conventions,
+   architectural patterns) to RED/GREEN agents so they can write accurate tests and correct
+   implementations. Also note available MCP servers for use in Step 7 verification.
+5. Check for existing checkmarks (`- [x]`) to support resume -- trust completed work, pick up from first unchecked item
+6. Create a todo list to track progress through waves and tasks
 
 ## Step 2: Language Detection
 
@@ -122,8 +128,12 @@ For each wave (1, 2, 3, ...) repeat the following:
 
 1. Run the full test suite one final time
 2. Run all automated success criteria from the plan's "Desired End State" > "Verification Criteria" > "Automated" section
-3. Optionally invoke the `verify-implementation` skill for comprehensive evidence generation if available
-4. Present summary:
+3. If MCP servers are available for systems affected by the implementation (databases,
+   orchestration platforms, deployment targets), use them to verify the implementation
+   against live state where appropriate (e.g., confirm schema compatibility, check service
+   health, validate deployment configuration)
+4. Optionally invoke the `verify-implementation` skill for comprehensive evidence generation if available
+5. Present summary:
    ```
    ## Implementation Summary
    - Tasks completed: [N/N]

@@ -57,6 +57,11 @@ Parse `$ARGUMENTS` for flags and input:
   UNLESS the user has given explicit instructions not to read a file in its entirety
 - Read these files yourself in the main context before spawning any sub-tasks
 - This ensures you have full context before decomposing the research
+- **Check available skills for domain knowledge**: Review the list of available skills
+  (both project-level and user-level) for any that describe APIs, services, or domain
+  concepts relevant to the research question. If a skill's description matches the systems
+  or technologies involved, read its full content to inform your understanding before
+  decomposing the research into sub-questions
 
 ### Step 2: Analyze and Decompose the Research Question
 
@@ -99,6 +104,11 @@ Key points:
 - You MAY combine closely related questions into a single agent if efficient -- tell the
   user which questions you combined and why
 - Remind all agents they are documentarians, not evaluators
+- **Leverage MCP servers for live data**: When crafting sub-agent prompts, check if any
+  MCP servers are available that could provide live data relevant to the research (e.g.,
+  database queries, pipeline run history, deployment status, CI/CD logs, service health).
+  If so, instruct the appropriate sub-agents to use those MCP tools to gather real-time
+  evidence rather than relying solely on code analysis
 
 ### Steps 4-6: Validate, Synthesize, and Iterate
 
