@@ -24,6 +24,13 @@ Conduct a comprehensive code review using specialized agents and a post-review c
 1. **Determine what to review**: If user provided PR number or branch, use that. Otherwise check current branch and ask.
 2. **Get the diff**: `gh pr diff {{PR_NUMBER}}` for PRs, or `git diff origin/master...HEAD` for branches
 3. **Identify languages**: Analyze diff for file extensions. Look up in `${CLAUDE_PLUGIN_ROOT}/commands/shared/language-agent-registry.md`
+   3b. **Check domain context**: Review the list of available skills (both project-level and
+   user-level) for any that describe APIs or services touched by the diff. If a skill's
+   description matches the systems or technologies in the changed code, read its full
+   content and include relevant domain knowledge (endpoint schemas, known gotchas,
+   authentication patterns, naming conventions) in the context passed to Phase 2 review
+   agents. This helps reviewers catch domain-specific issues like incorrect field names,
+   missing auth scopes, or undocumented API behaviors.
 4. **Spawn context agents in parallel**:
    - `codebase-explorer` (subagent_type: Explore): Find patterns, conventions, CLAUDE.md in the target repo. **Critically**: identify sibling implementations — other classes/methods in the same package or system that implement the same interface, extend the same base class, or follow the same architectural pattern as the code under review (e.g., other handlers in the same service, other endpoints in the same API). Read their key methods to understand what patterns they follow (error handling, graceful degradation, field usage, logging practices).
 5. **Read shared reference files**: Load these into context for injection into Phase 2 prompts:
@@ -41,7 +48,7 @@ Conduct a comprehensive code review using specialized agents and a post-review c
 Construct prompts for each agent, injecting:
 
 - The diff
-- Context findings from Phase 1 (patterns, conventions, ops context)
+- Context findings from Phase 1 (patterns, conventions, domain skill knowledge)
 - Sibling implementation context from Phase 1 (if found) — include file paths and key patterns (error handling, field usage, graceful degradation) so agents can flag inconsistencies between the new code and established sibling patterns
 - Shared reference content (false-positive guidance, position anchoring, severity rubric, comment format, finding schema)
 
@@ -51,7 +58,7 @@ Spawn review agents in parallel:
 - **security-reviewer** (always) -- OWASP security analysis
 - **Language-specific code simplification reviewer** (from language-agent-registry)
 - **Language-specific test reviewer** (from language-agent-registry)
-- **general-code-reviewer** (always) -- Holistic review with ops context. Additionally check: (1) Did any existing file grow by more than 200 new lines? (2) Are any new files already over 500 lines? (3) Does each changed file maintain a single clear responsibility? If a plan was provided in the PR description, verify the changes follow the planned file structure.
+- **general-code-reviewer** (always) -- Holistic review. Additionally check: (1) Did any existing file grow by more than 200 new lines? (2) Are any new files already over 500 lines? (3) Does each changed file maintain a single clear responsibility? If a plan was provided in the PR description, verify the changes follow the planned file structure.
 
 All agents MUST emit findings using the schema defined in `finding-schema.md`:
 

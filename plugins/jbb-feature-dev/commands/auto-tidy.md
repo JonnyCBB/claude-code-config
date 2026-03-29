@@ -301,6 +301,9 @@ No test verification needed — annotation changes don't affect runtime behavior
 1. **Use Explore agent** (subagent_type: `Explore`) to find coding guidelines/standards:
    - Search for: CONTRIBUTING.md, .editorconfig, style guides, CLAUDE.md rules
    - Only search within the project scope
+   - Also check available skills (both project-level and user-level) for domain-specific
+     conventions or patterns. These may specify API client architecture patterns, naming
+     conventions, or data processing idioms that should be respected during simplification.
 
 2. **If guidelines found**:
    - Review changed files against guidelines

@@ -236,6 +236,9 @@ Reference: See `commands/shared/agent-verification-pattern.md` for the full patt
 1. **Use the built-in Explore agent** (subagent_type: `Explore`) to find coding guidelines:
    - Search for: "coding guidelines", "style guide", "contributing guide", "CONTRIBUTING.md", ".editorconfig", etc.
    - Only search within the project scope
+   - Also check available skills (both project-level and user-level) for domain-specific
+     conventions or patterns. These may specify API client architecture patterns, naming
+     conventions, or data processing idioms that should be respected during simplification.
 2. **If guidelines found**:
    - Show guidelines summary to user
    - Review changed files against guidelines

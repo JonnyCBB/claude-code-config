@@ -1,7 +1,7 @@
 {
   "name": "jbb-feature-dev",
   "description": "Complete feature development workflow: /interview for requirements gathering, /research-problem for codebase research, /map-feature-to-plans and /break-down-initiative for feature splitting, /create-plan-tdd and /implement-plan-tdd for test-driven planning and execution, /code-review for multi-agent review, /verify-implementation for evidence generation, /commit and /pr-description for git workflows.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": {
     "name": "jbrooksbartlett",
     "email": "jonnybrooks04@gmail.com"
