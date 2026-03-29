@@ -6,9 +6,110 @@ Follow the README for instructions on how to use these for your own use cases an
 
 **Important Note:** The agents and commands are constantly evolving. I'll try to keep this README up-to-date but hopefully the content can be useful in inspiring others to leverage some more advanced features of Claude Code.
 
+## Plugins
+
+This repo also serves as a **Claude Code plugin marketplace**. You can install plugins directly from this repo.
+
+### Which plugin should I install?
+
+| If you want to...                              | Install                                      |
+| ---------------------------------------------- | -------------------------------------------- |
+| Build features with AI-guided TDD workflow     | feature-dev                                  |
+| Investigate incidents or document architecture | eng-utils                                    |
+| Create interactive explainers or presentations | jiffy-toolkit                                |
+| All of the above                               | Install all three -- they work independently |
+
+### Plugin details
+
+| Plugin                                  | When to use it                                                               | Description                                                                                                                                                                                                                                           | Examples                                                                      |
+| --------------------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| [feature-dev](plugins/feature-dev/)     | You're **building a feature** from scratch                                   | End-to-end development workflow: from requirements gathering and codebase research through TDD planning, parallel implementation, code review, and delivery. Includes 33 domain-expert agents covering backend, data, ML, and infrastructure domains. | `/interview` -> `/create-plan-tdd` -> `/implement-plan-tdd` -> `/code-review` |
+| [eng-utils](plugins/eng-utils/)         | Something is **broken in production** or you need to **understand a system** | Incident triage and root cause investigation, architecture documentation with C4 diagrams, and service diagnostics (pods, logs, alerts, callgraphs, edge config).                                                                                     | `/incident-investigation`, `/system-architecture-doc`                         |
+| [jiffy-toolkit](plugins/jiffy-toolkit/) | You need to **explain or present** something                                 | Turn concepts into polished interactive pages, slide decks, and standards-compliant documentation.                                                                                                                                                    | `/teach-me`, `/frontend-slides`                                               |
+
+### How the plugins relate
+
+- **feature-dev** -- the _build_ phase: idea -> shipped code
+- **eng-utils** -- the _operate_ phase: incidents, diagnostics, system understanding
+- **jiffy-toolkit** -- the _communicate_ phase: explanations, presentations, documentation standards
+
+### Plugin scale
+
+| Plugin        | Skills | Agents | Commands | Size          |
+| ------------- | ------ | ------ | -------- | ------------- |
+| feature-dev   | 17     | 13     | 2        | Comprehensive |
+| eng-utils     | 3      | 1      | 0        | Focused       |
+| jiffy-toolkit | 5      | 5      | 0        | Lightweight   |
+
+### Installation
+
+#### Step 1: Add the marketplace (one-time)
+
+From within Claude Code:
+
+```
+/plugin marketplace add https://github.com/JonnyCBB/claude-code-config.git
+```
+
+Or from the terminal:
+
+```bash
+claude plugin marketplace add https://github.com/JonnyCBB/claude-code-config.git
+```
+
+#### Step 2: Install individual plugins
+
+```
+/plugin install feature-dev@jbb-claude-code-plugins
+/plugin install eng-utils@jbb-claude-code-plugins
+/plugin install jiffy-toolkit@jbb-claude-code-plugins
+```
+
+#### Alternative: Auto-discovery via settings.json
+
+Add to any project's `.claude/settings.json` to prompt users to install automatically:
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "jbb-claude-code-plugins": {
+      "source": {
+        "source": "git",
+        "url": "https://github.com/JonnyCBB/claude-code-config.git"
+      }
+    }
+  }
+}
+```
+
+### Prerequisites
+
+**Required for all plugins:**
+
+- Claude Code installed and configured
+- `gh` CLI tool for GitHub workflows
+
+**Additional per plugin:**
+
+- **feature-dev**: No additional requirements
+- **eng-utils**: CLI tools for some diagnostics (`grpcurl`, `gcloud`)
+- **jiffy-toolkit**: Optionally Python 3 + Playwright (for visual QA) and Manim (for math content)
+
+See each plugin's README for full details.
+
 ## Table of Contents
 
 - [claude-code-setup](#claude-code-setup)
+  - [Plugins](#plugins)
+    - [Which plugin should I install?](#which-plugin-should-i-install)
+    - [Plugin details](#plugin-details)
+    - [How the plugins relate](#how-the-plugins-relate)
+    - [Plugin scale](#plugin-scale)
+    - [Installation](#installation)
+      - [Step 1: Add the marketplace (one-time)](#step-1-add-the-marketplace-one-time)
+      - [Step 2: Install individual plugins](#step-2-install-individual-plugins)
+      - [Alternative: Auto-discovery via settings.json](#alternative-auto-discovery-via-settingsjson)
+    - [Prerequisites](#prerequisites)
   - [Table of Contents](#table-of-contents)
   - [1. Inspiration](#1-inspiration)
   - [2. Getting Started](#2-getting-started)
@@ -248,6 +349,7 @@ This will give Claude Code enough information to create a suitable PR Descriptio
 ### 5.2. Tweaking agents, commands and/or skills
 
 Once you create/use the agent (or command or skill) you might find that it doesn't always work as expected or the way that you want it. Rather than accept these issues the best thing to do is to let Claude Code know and then try to fix it. I find these steps work well:
+
 1. Tell Claude Code what the issue is
 2. Tell it to "reflect" on what went wrong
 3. Ask it to then suggest how it can amend the agent/command/skill to fix the problem
@@ -279,7 +381,7 @@ This can be one of the hardest decisions to make and to a certain extent the dec
 Therefore, I typically write agents whenever the task will produce LOTS of redundant tokens in a context. For example, if I want to find examples of how particular libraries/packages have been integrated within a codebase I will likely search through many files. The response from extensive code searching can typically consume ~10,000s tokens. Claude models typically have a context window of 128k tokens meaning a significant amount of the available context is taken up by this response and most of it may not be relevant. Claude may only need a handful of examples to understand how to use the library. For this reason many of my workflows that involve extensive searching are subagents.
 Another example is web searching. It's likely that most of the information on webpages is not relevant to answering a given question. Perhaps only a few sentences in an article are relevant. Therefore, web researching is a good candidate for a subagent.
 
-I like having a level of control over what changes an agent is allowed to make. Therefore, all of my (sub)agents are typically documentors or reviewers. **They are not explicitly allowed to make edits** (even if I've been too lazy to force this using agent permission settings). The outputs of the subagents are usually recommendations or documentation which I can then choose to act on as part of a custom command workflow. I know that there are many people that may disagree with this approach because the promise of intelligent machines is that they *SHOULD* be able to do these sorts of things for us. Call me old fashioned but my experience is that it's not uncommon for AI to get things wrong enough as for me to warrant some level of caution about what I allow it to edit.
+I like having a level of control over what changes an agent is allowed to make. Therefore, all of my (sub)agents are typically documentors or reviewers. **They are not explicitly allowed to make edits** (even if I've been too lazy to force this using agent permission settings). The outputs of the subagents are usually recommendations or documentation which I can then choose to act on as part of a custom command workflow. I know that there are many people that may disagree with this approach because the promise of intelligent machines is that they _SHOULD_ be able to do these sorts of things for us. Call me old fashioned but my experience is that it's not uncommon for AI to get things wrong enough as for me to warrant some level of caution about what I allow it to edit.
 
 ##### Summary
 
@@ -311,6 +413,7 @@ Furthermore, the tokens produced by a custom command stay within the main agent 
 ##### Summary
 
 Create a custom slash command if:
+
 - You need to orchestrate agents and skills to carry out a workflow
 - You desire high levels of interactivity/user input as part of a particular workflow.
 

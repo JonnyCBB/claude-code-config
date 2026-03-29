@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<!-- PRESET: Set data-theme to preset's default-theme value (e.g., data-theme="light" or data-theme="dark") -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- VARIABLE: Update title per concept -->
+  <title>Teach Me: [CONCEPT_NAME]</title>
+
+  <!-- PRESET: Replace with font preconnect and loading <link> tags from selected preset -->
+
+  <!-- FIXED: Core dependencies (always include) -->
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12/dist/ScrollTrigger.min.js"></script>
+  <script src="https://unpkg.com/scrollama"></script>
+  <script src="https://cdn.jsdelivr.net/gh/ncase/nutshell/nutshell.min.js"></script>
+
+  <!-- VARIABLE: Include only libraries needed for this concept -->
+  <!-- <script src="https://cdn.jsdelivr.net/npm/d3@7"></script> -->
+  <!-- <script src="https://cdn.jsdelivr.net/npm/p5@1.11/lib/p5.min.js"></script> -->
+  <!-- <script src="https://cdn.jsdelivr.net/npm/roughjs@4.6.6/bundled/rough.cjs.min.js"></script> -->
+
+  <!-- PRESET + FIXED: Design system CSS (preset colors/fonts + shared structural) -->
+  <style>
+    /* === CSS Custom Properties === */
+    :root {
+      /* PRESET: Insert color and typography variables from selected preset's primary mode */
+      /* Expected: --color-bg, --color-surface, --color-text, --color-text-secondary, */
+      /* --color-primary, --color-primary-light, --color-accent, --color-accent-light, */
+      /* --color-border, --color-success, --color-error */
+      /* --font-heading, --font-body, --font-mono */
+
+      /* Spacing (shared across all presets) */
+      --space-xs: 0.25rem;
+      --space-sm: 0.5rem;
+      --space-md: 1rem;
+      --space-lg: 2rem;
+      --space-xl: 4rem;
+
+      /* Shadows (shared — presets may override in alternate theme) */
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.06);
+      --shadow-md: 0 4px 6px rgba(0,0,0,0.08);
+      --shadow-lg: 0 10px 25px rgba(0,0,0,0.12);
+
+      /* Transitions (shared across all presets) */
+      --transition-fast: 150ms ease;
+      --transition-normal: 300ms ease;
+    }
+
+    /* PRESET: Insert alternate theme block from selected preset */
+    /* For light-default presets: override vars under data-theme="dark" */
+    /* For dark-default presets: override vars under data-theme="light" */
+
+    /* === Base === */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font: 400 1.125rem/1.7 var(--font-body);
+      color: var(--color-text);
+      background: var(--color-bg);
+      text-wrap: pretty;
+      transition: background var(--transition-normal), color var(--transition-normal);
+    }
+
+    /* Grain texture overlay */
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0.08;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      background-repeat: repeat;
+      background-size: 256px 256px;
+    }
+
+    h1 {
+      font-family: var(--font-heading);
+      font-weight: 400;
+      font-size: clamp(2rem, 4vw + 1rem, 3.5rem);
+      line-height: 1.2;
+      text-wrap: balance;
+    }
+    h2 {
+      font-family: var(--font-heading);
+      font-weight: 400;
+      font-size: clamp(1.5rem, 3vw + 0.75rem, 2.5rem);
+      line-height: 1.3;
+      text-wrap: balance;
+    }
+    h3 {
+      font-family: var(--font-heading);
+      font-weight: 400;
+      font-size: clamp(1.25rem, 2vw + 0.5rem, 1.75rem);
+      line-height: 1.4;
+      text-wrap: balance;
+    }
+
+    /* === Buttons === */
+    button, .btn {
+      border-radius: 3rem;
+      padding: 0.5rem 1.5rem;
+      font-family: var(--font-body);
+      font-weight: 500;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+    button:hover, .btn:hover {
+      filter: brightness(1.15);
+      transform: translateY(-1px);
+    }
+
+    /* === Progress Bar === */
+    .progress-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: var(--color-primary);
+      transform-origin: left;
+      transform: scaleX(0);
+      animation: progress-grow linear;
+      animation-timeline: scroll();
+      z-index: 1000;
+    }
+    @keyframes progress-grow { to { transform: scaleX(1); } }
+
+    /* === Theme Toggle === */
+    .theme-toggle {
+      position: fixed;
+      top: var(--space-md);
+      right: var(--space-md);
+      z-index: 1000;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      cursor: pointer;
+      font-size: 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--shadow-sm);
+      transition: all var(--transition-fast);
+    }
+    .theme-toggle:hover { box-shadow: var(--shadow-md); }
+
+    /* === Sidebar TOC === */
+    .sidebar-toc {
+      position: fixed;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 200px;
+      padding: var(--space-md);
+      z-index: 100;
+    }
+    .toc-item {
+      display: block;
+      padding: 4px var(--space-sm);
+      color: var(--color-text-secondary);
+      text-decoration: none;
+      font-size: 0.85rem;
+      border-left: 2px solid var(--color-border);
+      transition: all var(--transition-fast);
+    }
+    .toc-item:hover { color: var(--color-primary); border-left-color: var(--color-primary); }
+    .toc-item.is-active { color: var(--color-primary); border-left-color: var(--color-primary); font-weight: 600; }
+
+    /* === Header === */
+    .page-header {
+      text-align: center;
+      padding: var(--space-xl) var(--space-lg);
+      margin-left: 200px;
+    }
+    .page-header h1 { margin-bottom: var(--space-sm); }
+    .page-header .subtitle { color: var(--color-text-secondary); font-size: 1.2rem; }
+
+    /* === Scrollytelling Layout === */
+    #scrolly {
+      position: relative;
+      display: flex;
+      margin-left: 200px;
+      padding: 0 var(--space-lg);
+    }
+
+    .sticky-figure {
+      position: sticky;
+      top: 2rem;
+      width: 50%;
+      height: calc(100vh - 4rem);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      align-self: flex-start;
+    }
+
+    #graphic {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      /* No background, border-radius, box-shadow, or padding */
+    }
+
+    .steps {
+      width: 50%;
+      padding: 0 var(--space-lg);
+    }
+
+    .step {
+      min-height: 75vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      opacity: 0.3;
+      transition: opacity var(--transition-normal);
+      padding: var(--space-lg) 0;
+    }
+    .step.is-active { opacity: 1; }
+
+    /* === Step Counter === */
+    .step-counter {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--color-primary);
+      opacity: 0.6;
+      margin-bottom: var(--space-sm);
+    }
+
+    /* === Chapter Components === */
+    .analogy-callout {
+      background: var(--color-primary-light);
+      border-left: 4px solid var(--color-primary);
+      border-radius: 0 8px 8px 0;
+      padding: var(--space-md) var(--space-lg);
+      margin: var(--space-md) 0;
+      font-style: italic;
+    }
+
+    .bridge {
+      color: var(--color-text-secondary);
+      margin-top: var(--space-md);
+      padding-top: var(--space-md);
+      border-top: 1px solid var(--color-border);
+      font-size: 0.95rem;
+    }
+
+    /* === Responsive === */
+    @media (max-width: 768px) {
+      .sidebar-toc { display: none; }
+      .page-header, #scrolly { margin-left: 0; }
+      #scrolly { flex-direction: column; }
+      .sticky-figure { position: relative; width: 100%; height: 50vh; top: 0; }
+      .steps { width: 100%; padding: 0 var(--space-md); }
+    }
+
+    /* === Playback Controls === */
+    .playback-controls {
+      width: 100%;
+      max-width: 520px;
+      padding: var(--space-sm) var(--space-md);
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      margin-top: var(--space-sm);
+      box-shadow: var(--shadow-sm);
+      transition: background var(--transition-normal), border-color var(--transition-normal);
+    }
+
+    .playback-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      flex-wrap: wrap;
+    }
+
+    .playback-row + .playback-row { margin-top: var(--space-xs); }
+
+    .pb-btn {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      border: 1px solid var(--color-border);
+      background: var(--color-surface);
+      color: var(--color-text);
+      font-size: 0.85rem;
+      display: flex; align-items: center; justify-content: center;
+      padding: 0;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+    .pb-btn:hover:not(:disabled) {
+      border-color: var(--color-primary);
+      background: var(--color-primary-light);
+    }
+    .pb-btn:disabled { opacity: 0.3; cursor: default; }
+
+    .pb-speed { display: flex; gap: 2px; margin-left: auto; }
+    .pb-speed-btn {
+      padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;
+      border: 1px solid var(--color-border);
+      background: var(--color-surface);
+      color: var(--color-text);
+      font-family: var(--font-mono);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+    .pb-speed-btn:hover { border-color: var(--color-primary); }
+    .pb-speed-btn.is-active {
+      background: var(--color-primary);
+      color: white;
+      border-color: var(--color-primary);
+    }
+
+    .pb-scrubber {
+      flex: 1; height: 4px;
+      accent-color: var(--color-primary);
+      cursor: pointer;
+    }
+
+    .pb-status {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--color-text-secondary);
+      white-space: nowrap;
+      min-width: 80px;
+      text-align: right;
+    }
+
+    /* === Accessibility === */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+      .playback-controls { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <!-- FIXED: Progress bar -->
+  <div class="progress-bar"></div>
+
+  <!-- FIXED: Theme toggle -->
+  <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode">
+    <span class="theme-icon">&#127769;</span>
+  </button>
+
+  <!-- FIXED: Sidebar TOC -->
+  <nav class="sidebar-toc">
+    <!-- VARIABLE: Replace with TOC items for each concept -->
+    <!-- TOC_ITEMS -->
+  </nav>
+
+  <!-- VARIABLE: Update header per concept -->
+  <header class="page-header">
+    <h1>[CONCEPT_NAME]</h1>
+    <p class="subtitle">[AUDIENCE_DESCRIPTION]</p>
+  </header>
+
+  <!-- FIXED: Scrollytelling container -->
+  <section id="scrolly">
+    <figure class="sticky-figure">
+      <div id="graphic">
+        <!-- FIXED: Animation renders here, controlled by JS -->
+      </div>
+      <!-- FIXED: Playback controls — always include for GSAP animations -->
+      <div class="playback-controls" id="playback-controls">
+        <div class="playback-row">
+          <button class="pb-btn" id="pb-play" aria-label="Play">&#9654;</button>
+          <button class="pb-btn" id="pb-step-back" aria-label="Step back" disabled>&#9664;&#9664;</button>
+          <button class="pb-btn" id="pb-step-fwd" aria-label="Step forward" disabled>&#9654;&#9654;</button>
+          <button class="pb-btn" id="pb-replay" aria-label="Replay">&#8634;</button>
+          <div class="pb-speed">
+            <button class="pb-speed-btn" data-speed="0.5">0.5x</button>
+            <button class="pb-speed-btn is-active" data-speed="1">1x</button>
+            <button class="pb-speed-btn" data-speed="2">2x</button>
+          </div>
+        </div>
+        <div class="playback-row">
+          <input type="range" class="pb-scrubber" id="pb-scrubber" min="0" max="1" step="0.001" value="0">
+          <span class="pb-status" id="pb-status"></span>
+        </div>
+      </div>
+    </figure>
+
+    <article class="steps">
+      <!-- VARIABLE: Replace with chapter modules for each prerequisite concept -->
+      <!-- CHAPTERS -->
+    </article>
+  </section>
+
+  <!-- FIXED: Core JavaScript -->
+  <script>
+    // Register GSAP plugins
+    gsap.registerPlugin(ScrollTrigger);
+
+    // Theme toggle
+    function toggleTheme() {
+      const html = document.documentElement;
+      const current = html.getAttribute("data-theme");
+      const next = current === "dark" ? "light" : "dark";
+      html.setAttribute("data-theme", next);
+      document.querySelector(".theme-icon").innerHTML = next === "dark" ? "&#9728;&#65039;" : "&#127769;";
+      localStorage.setItem("theme", next);
+    }
+
+    // Apply saved preference or preset default
+    (function() {
+      const presetDefault = document.documentElement.getAttribute("data-theme") || "light";
+      const saved = localStorage.getItem("theme") ||
+        (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : presetDefault);
+      document.documentElement.setAttribute("data-theme", saved);
+      if (saved === "dark") {
+        document.querySelector(".theme-icon").innerHTML = "&#9728;&#65039;";
+      }
+    })();
+
+    // Progress bar fallback for browsers without scroll-driven animations
+    if (!CSS.supports("animation-timeline", "scroll()")) {
+      const bar = document.querySelector(".progress-bar");
+      bar.style.animation = "none";
+      window.addEventListener("scroll", () => {
+        const pct = window.scrollY / (document.body.scrollHeight - window.innerHeight);
+        bar.style.transform = `scaleX(${Math.min(pct, 1)})`;
+      });
+    }
+
+    // Scrollama setup
+    const scroller = scrollama();
+    scroller
+      .setup({ step: ".step", offset: 0.5, progress: true })
+      .onStepEnter(({ element, index }) => {
+        document.querySelectorAll(".step").forEach(s => s.classList.remove("is-active"));
+        element.classList.add("is-active");
+        updateAnimation(index);
+        updateTOC(index);
+      });
+
+    window.addEventListener("resize", scroller.resize);
+
+    // TOC active state
+    function updateTOC(activeIndex) {
+      document.querySelectorAll(".toc-item").forEach((item, i) => {
+        item.classList.toggle("is-active", i === activeIndex);
+      });
+    }
+
+    // PlaybackController — connects the playback UI to the active GSAP timeline
+    function PlaybackController() {
+      var currentTl = null;
+      var isPlaying = false;
+      var currentLabels = [];
+      var rafId = null;
+
+      var playBtn = document.getElementById("pb-play");
+      var stepBack = document.getElementById("pb-step-back");
+      var stepFwd = document.getElementById("pb-step-fwd");
+      var replayBtn = document.getElementById("pb-replay");
+      var scrubber = document.getElementById("pb-scrubber");
+      var statusEl = document.getElementById("pb-status");
+      var speedBtns = document.querySelectorAll(".pb-speed-btn");
+
+      var STEP_DELTA = 0.02;
+
+      function setTimeline(tl, labels) {
+        if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+        if (currentTl) { currentTl.pause(); }
+        currentTl = tl;
+        currentLabels = labels || [];
+        isPlaying = false;
+        scrubber.value = 0;
+        updateUI();
+      }
+
+      function play() {
+        if (!currentTl) return;
+        if (currentTl.progress() >= 1) { currentTl.restart(); }
+        else { currentTl.play(); }
+        isPlaying = true;
+        updateUI();
+        startSync();
+      }
+
+      function pause() {
+        if (!currentTl) return;
+        currentTl.pause();
+        isPlaying = false;
+        updateUI();
+        stopSync();
+      }
+
+      function togglePlay() { isPlaying ? pause() : play(); }
+
+      function step(delta) {
+        if (!currentTl) return;
+        currentTl.pause();
+        isPlaying = false;
+        var newProgress = Math.max(0, Math.min(1, currentTl.progress() + delta));
+        currentTl.progress(newProgress);
+        updateUI();
+        syncScrubber();
+      }
+
+      function setSpeed(speed) {
+        if (!currentTl) return;
+        currentTl.timeScale(speed);
+        speedBtns.forEach(function(btn) {
+          btn.classList.toggle("is-active", parseFloat(btn.dataset.speed) === speed);
+        });
+      }
+
+      function scrub(progress) {
+        if (!currentTl) return;
+        currentTl.pause();
+        isPlaying = false;
+        currentTl.progress(parseFloat(progress));
+        updateUI();
+      }
+
+      function replay() {
+        if (!currentTl) return;
+        currentTl.restart();
+        isPlaying = true;
+        updateUI();
+        startSync();
+      }
+
+      function updateUI() {
+        playBtn.innerHTML = isPlaying ? "&#9646;&#9646;" : "&#9654;";
+        playBtn.setAttribute("aria-label", isPlaying ? "Pause" : "Play");
+        stepBack.disabled = isPlaying;
+        stepFwd.disabled = isPlaying;
+        if (currentTl && currentLabels.length > 0) {
+          var progress = currentTl.progress();
+          var labelIndex = Math.min(
+            Math.floor(progress * currentLabels.length),
+            currentLabels.length - 1
+          );
+          statusEl.textContent = currentLabels[labelIndex] || "";
+        } else {
+          statusEl.textContent = "";
+        }
+      }
+
+      function syncScrubber() {
+        if (currentTl) { scrubber.value = currentTl.progress(); }
+      }
+
+      function startSync() {
+        stopSync();
+        function tick() {
+          syncScrubber();
+          updateUI();
+          if (currentTl && currentTl.progress() >= 1) {
+            isPlaying = false;
+            updateUI();
+            return;
+          }
+          if (isPlaying) { rafId = requestAnimationFrame(tick); }
+        }
+        rafId = requestAnimationFrame(tick);
+      }
+
+      function stopSync() {
+        if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+      }
+
+      playBtn.addEventListener("click", togglePlay);
+      stepBack.addEventListener("click", function() { step(-STEP_DELTA); });
+      stepFwd.addEventListener("click", function() { step(STEP_DELTA); });
+      replayBtn.addEventListener("click", replay);
+      scrubber.addEventListener("input", function() { scrub(this.value); });
+      speedBtns.forEach(function(btn) {
+        btn.addEventListener("click", function() {
+          setSpeed(parseFloat(this.dataset.speed));
+        });
+      });
+
+      return { setTimeline: setTimeline, play: play, pause: pause };
+    }
+
+    // Initialize playback controller
+    var playbackController = PlaybackController();
+
+    // VARIABLE: Animation controller — replace with generated animation logic
+    var timelines = [];
+    var timelineLabels = [];
+
+    function updateAnimation(stepIndex) {
+      // Hide all animation containers
+      document.querySelectorAll(".anim-container").forEach(function(c) { c.style.display = "none"; });
+      // Show the active one
+      var active = document.getElementById("anim-" + stepIndex);
+      if (active) active.style.display = "flex";
+      // Wire timeline to playback controller
+      if (timelines[stepIndex]) {
+        var labels = timelineLabels[stepIndex] || [];
+        playbackController.setTimeline(timelines[stepIndex], labels);
+        playbackController.play();
+      }
+    }
+
+    // VARIABLE: Replace with generated GSAP timelines and animation setup
+    // ANIMATIONS
+  </script>
+</body>
+</html>

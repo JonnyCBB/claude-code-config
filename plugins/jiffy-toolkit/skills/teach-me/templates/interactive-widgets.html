@@ -1,0 +1,226 @@
+<!-- ============================================ -->
+<!-- Interactive Widget Templates                 -->
+<!-- Reusable GSAP animation patterns             -->
+<!-- Each widget is a self-contained block         -->
+<!-- ============================================ -->
+
+
+<!-- =============================== -->
+<!-- WIDGET 1: Process Flow           -->
+<!-- Step-by-step reveal with arrows  -->
+<!-- =============================== -->
+
+<div class="anim-container" id="anim-process-flow" style="display:none; width:100%; height:100%; align-items:center; justify-content:center;">
+  <svg viewBox="0 0 500 200" style="width:100%; max-width:500px;">
+    <!-- Boxes -->
+    <rect class="pf-box" x="10" y="70" width="100" height="60" rx="8" fill="var(--color-primary)" opacity="0"/>
+    <rect class="pf-box" x="150" y="70" width="100" height="60" rx="8" fill="var(--color-primary)" opacity="0"/>
+    <rect class="pf-box" x="290" y="70" width="100" height="60" rx="8" fill="var(--color-primary)" opacity="0"/>
+    <!-- Labels -->
+    <text class="pf-label" x="60" y="105" text-anchor="middle" fill="white" font-size="14" opacity="0">Step 1</text>
+    <text class="pf-label" x="200" y="105" text-anchor="middle" fill="white" font-size="14" opacity="0">Step 2</text>
+    <text class="pf-label" x="340" y="105" text-anchor="middle" fill="white" font-size="14" opacity="0">Step 3</text>
+    <!-- Arrows -->
+    <line class="pf-arrow" x1="115" y1="100" x2="145" y2="100" stroke="var(--color-accent)" stroke-width="3" marker-end="url(#arrowhead)" opacity="0"/>
+    <line class="pf-arrow" x1="255" y1="100" x2="285" y2="100" stroke="var(--color-accent)" stroke-width="3" marker-end="url(#arrowhead)" opacity="0"/>
+    <defs>
+      <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="var(--color-accent)"/>
+      </marker>
+    </defs>
+  </svg>
+</div>
+
+<script>
+// Process Flow timeline
+function createProcessFlowTimeline() {
+  var tl = gsap.timeline({ paused: true });
+  tl.addLabel("boxes", 0);
+  tl.to(".pf-box", { opacity: 1, stagger: 0.4, duration: 0.5, ease: "power2.out" });
+  tl.addLabel("labels", ">");
+  tl.to(".pf-label", { opacity: 1, stagger: 0.4, duration: 0.3 }, "-=1.2");
+  tl.addLabel("arrows", ">");
+  tl.to(".pf-arrow", { opacity: 1, stagger: 0.4, duration: 0.3 }, "-=0.8");
+  return { timeline: tl, labels: ["Boxes", "Labels", "Arrows"] };
+}
+</script>
+
+
+<!-- =============================== -->
+<!-- WIDGET 2: Comparison             -->
+<!-- Side-by-side with highlights     -->
+<!-- =============================== -->
+
+<div class="anim-container" id="anim-comparison" style="display:none; width:100%; height:100%; align-items:center; justify-content:center;">
+  <svg viewBox="0 0 500 250" style="width:100%; max-width:500px;">
+    <!-- Left side -->
+    <rect class="cmp-left" x="20" y="40" width="200" height="170" rx="12" fill="var(--color-surface)" stroke="var(--color-border)" stroke-width="2" opacity="0"/>
+    <text class="cmp-left-title" x="120" y="75" text-anchor="middle" fill="var(--color-text)" font-size="16" font-weight="bold" opacity="0">Option A</text>
+    <text class="cmp-left-detail" x="120" y="110" text-anchor="middle" fill="var(--color-text-secondary)" font-size="13" opacity="0">Feature 1</text>
+    <text class="cmp-left-detail" x="120" y="135" text-anchor="middle" fill="var(--color-text-secondary)" font-size="13" opacity="0">Feature 2</text>
+    <text class="cmp-left-detail" x="120" y="160" text-anchor="middle" fill="var(--color-text-secondary)" font-size="13" opacity="0">Feature 3</text>
+    <!-- Right side -->
+    <rect class="cmp-right" x="280" y="40" width="200" height="170" rx="12" fill="var(--color-surface)" stroke="var(--color-border)" stroke-width="2" opacity="0"/>
+    <text class="cmp-right-title" x="380" y="75" text-anchor="middle" fill="var(--color-text)" font-size="16" font-weight="bold" opacity="0">Option B</text>
+    <text class="cmp-right-detail" x="380" y="110" text-anchor="middle" fill="var(--color-text-secondary)" font-size="13" opacity="0">Feature 1</text>
+    <text class="cmp-right-detail" x="380" y="135" text-anchor="middle" fill="var(--color-text-secondary)" font-size="13" opacity="0">Feature 2</text>
+    <text class="cmp-right-detail" x="380" y="160" text-anchor="middle" fill="var(--color-text-secondary)" font-size="13" opacity="0">Feature 3</text>
+    <!-- VS divider -->
+    <text class="cmp-vs" x="250" y="135" text-anchor="middle" fill="var(--color-accent)" font-size="24" font-weight="bold" opacity="0">vs</text>
+    <!-- Highlight rectangle -->
+    <rect class="cmp-highlight" x="275" y="32" width="210" height="186" rx="14" fill="none" stroke="var(--color-primary)" stroke-width="3" stroke-dasharray="8,4" opacity="0"/>
+  </svg>
+</div>
+
+<script>
+// Comparison timeline
+function createComparisonTimeline() {
+  var tl = gsap.timeline({ paused: true });
+  tl.addLabel("left-side", 0);
+  tl.to(".cmp-left, .cmp-left-title", { opacity: 1, duration: 0.5 })
+    .to(".cmp-left-detail", { opacity: 1, stagger: 0.2, duration: 0.3 });
+  tl.addLabel("versus", ">");
+  tl.to(".cmp-vs", { opacity: 1, duration: 0.3, scale: 1.3, ease: "back.out" });
+  tl.addLabel("right-side", ">");
+  tl.to(".cmp-right, .cmp-right-title", { opacity: 1, duration: 0.5 })
+    .to(".cmp-right-detail", { opacity: 1, stagger: 0.2, duration: 0.3 });
+  tl.addLabel("highlight", ">");
+  tl.to(".cmp-highlight", { opacity: 1, duration: 0.5 });
+  return { timeline: tl, labels: ["Left side", "Versus", "Right side", "Highlight"] };
+}
+</script>
+
+
+<!-- =============================== -->
+<!-- WIDGET 3: Build-Up               -->
+<!-- Layered diagram, each fades in   -->
+<!-- =============================== -->
+
+<div class="anim-container" id="anim-build-up" style="display:none; width:100%; height:100%; align-items:center; justify-content:center;">
+  <svg viewBox="0 0 400 300" style="width:100%; max-width:400px;">
+    <!-- Layer 1: Foundation -->
+    <rect class="bu-layer" x="50" y="220" width="300" height="50" rx="8" fill="var(--color-primary)" opacity="0"/>
+    <text class="bu-label" x="200" y="250" text-anchor="middle" fill="white" font-size="14" opacity="0">Foundation</text>
+    <!-- Layer 2: Middle -->
+    <rect class="bu-layer" x="80" y="155" width="240" height="50" rx="8" fill="var(--color-primary)" opacity="0" style="filter: brightness(1.15)"/>
+    <text class="bu-label" x="200" y="185" text-anchor="middle" fill="white" font-size="14" opacity="0">Layer 2</text>
+    <!-- Layer 3: Middle-upper -->
+    <rect class="bu-layer" x="110" y="90" width="180" height="50" rx="8" fill="var(--color-primary)" opacity="0" style="filter: brightness(1.3)"/>
+    <text class="bu-label" x="200" y="120" text-anchor="middle" fill="white" font-size="14" opacity="0">Layer 3</text>
+    <!-- Layer 4: Top -->
+    <rect class="bu-layer" x="140" y="25" width="120" height="50" rx="8" fill="var(--color-accent)" opacity="0"/>
+    <text class="bu-label" x="200" y="55" text-anchor="middle" fill="white" font-size="14" font-weight="bold" opacity="0">Result</text>
+  </svg>
+</div>
+
+<script>
+// Build-Up timeline
+function createBuildUpTimeline() {
+  var tl = gsap.timeline({ paused: true });
+  var layers = gsap.utils.toArray(".bu-layer");
+  var labelEls = gsap.utils.toArray(".bu-label");
+  var labelNames = ["Foundation", "Layer 2", "Layer 3", "Result"];
+
+  layers.forEach(function(layer, i) {
+    tl.addLabel("layer-" + (i + 1), ">");
+    tl.fromTo(layer, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" })
+      .to(labelEls[i], { opacity: 1, duration: 0.3 }, "-=0.3");
+  });
+  return { timeline: tl, labels: labelNames };
+}
+</script>
+
+
+<!-- =============================== -->
+<!-- WIDGET 4: Data Transformation    -->
+<!-- Input → Process → Output flow    -->
+<!-- =============================== -->
+
+<div class="anim-container" id="anim-data-transform" style="display:none; width:100%; height:100%; align-items:center; justify-content:center;">
+  <svg viewBox="0 0 500 200" style="width:100%; max-width:500px;">
+    <!-- Input -->
+    <rect class="dt-input" x="10" y="55" width="120" height="90" rx="10" fill="var(--color-surface)" stroke="var(--color-border)" stroke-width="2" opacity="0"/>
+    <text class="dt-input-label" x="70" y="95" text-anchor="middle" fill="var(--color-text)" font-size="13" opacity="0">Input Data</text>
+    <text class="dt-input-icon" x="70" y="125" text-anchor="middle" font-size="24" opacity="0">&#128196;</text>
+    <!-- Arrow 1 -->
+    <line class="dt-arrow1" x1="140" y1="100" x2="180" y2="100" stroke="var(--color-accent)" stroke-width="3" marker-end="url(#arrowhead)" opacity="0"/>
+    <!-- Process -->
+    <rect class="dt-process" x="190" y="45" width="120" height="110" rx="10" fill="var(--color-primary)" opacity="0"/>
+    <text class="dt-process-label" x="250" y="90" text-anchor="middle" fill="white" font-size="13" font-weight="bold" opacity="0">Process</text>
+    <text class="dt-process-icon" x="250" y="125" text-anchor="middle" fill="white" font-size="24" opacity="0">&#9881;&#65039;</text>
+    <!-- Arrow 2 -->
+    <line class="dt-arrow2" x1="320" y1="100" x2="360" y2="100" stroke="var(--color-accent)" stroke-width="3" marker-end="url(#arrowhead)" opacity="0"/>
+    <!-- Output -->
+    <rect class="dt-output" x="370" y="55" width="120" height="90" rx="10" fill="var(--color-surface)" stroke="var(--color-success, #788c5d)" stroke-width="3" opacity="0"/>
+    <text class="dt-output-label" x="430" y="95" text-anchor="middle" fill="var(--color-text)" font-size="13" font-weight="bold" opacity="0">Output</text>
+    <text class="dt-output-icon" x="430" y="125" text-anchor="middle" font-size="24" opacity="0">&#10004;&#65039;</text>
+  </svg>
+</div>
+
+<script>
+// Data Transformation timeline
+function createDataTransformTimeline() {
+  var tl = gsap.timeline({ paused: true });
+  tl.addLabel("input", 0);
+  tl.to(".dt-input, .dt-input-label, .dt-input-icon", { opacity: 1, duration: 0.5 });
+  tl.addLabel("flow-in", ">");
+  tl.to(".dt-arrow1", { opacity: 1, duration: 0.3 });
+  tl.addLabel("process", ">");
+  tl.to(".dt-process, .dt-process-label, .dt-process-icon", { opacity: 1, duration: 0.5, ease: "back.out" })
+    .to(".dt-process", { scale: 1.05, duration: 0.3, yoyo: true, repeat: 1 });
+  tl.addLabel("flow-out", ">");
+  tl.to(".dt-arrow2", { opacity: 1, duration: 0.3 });
+  tl.addLabel("output", ">");
+  tl.to(".dt-output, .dt-output-label, .dt-output-icon", { opacity: 1, duration: 0.5, ease: "back.out" });
+  return { timeline: tl, labels: ["Input", "Flow in", "Process", "Flow out", "Output"] };
+}
+</script>
+
+
+<!-- =============================== -->
+<!-- WIDGET 5: Mathematical Function  -->
+<!-- Graph with moving point          -->
+<!-- =============================== -->
+
+<div class="anim-container" id="anim-math-function" style="display:none; width:100%; height:100%; align-items:center; justify-content:center;">
+  <svg viewBox="0 0 400 300" style="width:100%; max-width:400px;">
+    <!-- Axes -->
+    <line class="mf-axis" x1="50" y1="250" x2="370" y2="250" stroke="var(--color-text-secondary)" stroke-width="2" opacity="0"/>
+    <line class="mf-axis" x1="50" y1="250" x2="50" y2="30" stroke="var(--color-text-secondary)" stroke-width="2" opacity="0"/>
+    <!-- Axis labels -->
+    <text class="mf-axis-label" x="370" y="270" text-anchor="end" fill="var(--color-text-secondary)" font-size="12" opacity="0">x</text>
+    <text class="mf-axis-label" x="35" y="35" text-anchor="end" fill="var(--color-text-secondary)" font-size="12" opacity="0">y</text>
+    <!-- Curve (quadratic) -->
+    <path class="mf-curve" d="M 60,240 Q 130,30 200,120 Q 270,210 340,80" fill="none" stroke="var(--color-primary)" stroke-width="3" opacity="0"/>
+    <!-- Moving dot -->
+    <circle class="mf-dot" cx="60" cy="240" r="8" fill="var(--color-accent)" opacity="0"/>
+    <!-- Tangent line -->
+    <line class="mf-tangent" x1="30" y1="250" x2="90" y2="230" stroke="var(--color-accent)" stroke-width="2" stroke-dasharray="6,3" opacity="0"/>
+  </svg>
+</div>
+
+<script>
+// Mathematical Function timeline
+function createMathFunctionTimeline() {
+  var tl = gsap.timeline({ paused: true });
+  tl.addLabel("axes", 0);
+  tl.to(".mf-axis", { opacity: 1, duration: 0.4, stagger: 0.2 })
+    .to(".mf-axis-label", { opacity: 1, duration: 0.3 });
+  tl.addLabel("curve", ">");
+  tl.to(".mf-curve", { opacity: 1, duration: 0.8, ease: "power2.inOut" });
+  tl.addLabel("dot", ">");
+  tl.to(".mf-dot", { opacity: 1, duration: 0.3 })
+    .to(".mf-tangent", { opacity: 1, duration: 0.3 });
+  tl.addLabel("trace", ">");
+  tl.to(".mf-dot", {
+    motionPath: {
+      path: ".mf-curve",
+      align: ".mf-curve",
+      alignOrigin: [0.5, 0.5]
+    },
+    duration: 3,
+    ease: "power1.inOut"
+  });
+  return { timeline: tl, labels: ["Axes", "Curve", "Dot", "Trace path"] };
+}
+</script>

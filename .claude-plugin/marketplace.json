@@ -1,0 +1,28 @@
+{
+  "name": "jbb-claude-code-plugins",
+  "owner": {
+    "name": "jonny-brooks-bartlett",
+    "email": "jonnybrooks04@gmail.com"
+  },
+  "metadata": {
+    "description": "Claude Code plugins for feature development workflows, creative tooling, and engineering utilities",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "jiffy-toolkit",
+      "source": "./plugins/jiffy-toolkit",
+      "description": "Creative tools: /teach-me for interactive scrollytelling explanations, /frontend-slides for HTML presentations, plus editorial, diagram, and skills-authoring standards with companion review agents."
+    },
+    {
+      "name": "feature-dev",
+      "source": "./plugins/feature-dev",
+      "description": "Complete feature development workflow: /interview for requirements gathering, /research-problem for codebase research, /create-plan-tdd and /implement-plan-tdd for test-driven planning and execution, /code-review for multi-agent review, /verify-implementation for evidence generation, /commit and /pr-description for git workflows."
+    },
+    {
+      "name": "eng-utils",
+      "source": "./plugins/eng-utils",
+      "description": "Engineering utilities: /assess-incident for severity classification, /incident-investigation for root cause analysis across backend/data/indexing domains, /refactor-architecture for codebase friction analysis and proposals, /system-architecture-doc for C4 architecture documentation, plus service diagnostics and operational skills."
+    }
+  ]
+}

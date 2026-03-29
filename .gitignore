@@ -1,12 +1,52 @@
-# Ignore everything
+# Ignore everything by default
 *
 
-# Except these directories
+# Allow the specific directories we want to track
+!skills/
 !agents/
-!agents/**
 !commands/
+
+# Allow all files within those directories
+!skills/**
+!agents/**
 !commands/**
 
-# And these files
+# Allow plugin marketplace manifest
+!.claude-plugin/
+!.claude-plugin/**
+
+# Allow plugin directories (only the 3 actual plugins, not Claude Code internals)
+!plugins/
+!plugins/feature-dev/
+!plugins/feature-dev/**
+!plugins/eng-utils/
+!plugins/eng-utils/**
+!plugins/jiffy-toolkit/
+!plugins/jiffy-toolkit/**
+
+# Allow scripts directory
+!scripts/
+!scripts/**
+
+# Allow script files
+!*.sh
+
+# Allow hooks directory
+!hooks/
+!hooks/**
+
+# Allow settings
+!settings.json
+
+# Allow .gitignore itself
 !.gitignore
+
+# Allow README
 !README.md
+
+# Allow CLAUDE.md
+!CLAUDE.md
+
+# Exclude Python cache directories
+__pycache__/
+*.pyc

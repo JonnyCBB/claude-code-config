@@ -1,6 +1,18 @@
+---
+argument-hint: [--non-interactive]
+---
+
 # Commit Changes
 
 You are tasked with creating git commits for the changes made during this session.
+
+## Mode Detection
+
+Parse `$ARGUMENTS` for flags:
+- If `$ARGUMENTS` contains `--non-interactive`: Set NON_INTERACTIVE mode
+  - Skip Step 3 confirmation — proceed directly to committing
+  - Use the same commit planning logic (grouping, messages) but execute without asking
+- If `$ARGUMENTS` does not contain `--non-interactive`: Behave exactly as before (interactive mode)
 
 ## Process:
 
@@ -15,9 +27,14 @@ You are tasked with creating git commits for the changes made during this sessio
    - Draft clear, descriptive commit messages
    - Use imperative mood in commit messages
    - Focus on why the changes were made, not just what
-   - Never commit the `thoughts/` directory or anything inside it!
 
-3. **Present your plan to the user:**
+3. **Present your plan and execute:**
+
+   **If in NON_INTERACTIVE mode:**
+   - Log the planned commits (files and messages) to stdout for traceability
+   - Proceed directly to Step 4 (execution) without asking for confirmation
+
+   **If in interactive mode (default):**
    - List the files you plan to add for each commit
    - Show the commit message(s) you'll use
    - Ask: "I plan to create [N] commit(s) with these changes. Shall I proceed?"
@@ -30,7 +47,6 @@ You are tasked with creating git commits for the changes made during this sessio
 ## Important:
 - **Ensure that we attribute AI (e.g. Claude) with the commit**
 - Write commit messages as if the user wrote them
-- Never commit the `thoughts/` directory or anything inside it!
 
 ## Remember:
 - You have the full context of what was done in this session

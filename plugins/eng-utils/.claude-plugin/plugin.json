@@ -1,0 +1,9 @@
+{
+  "name": "eng-utils",
+  "description": "Engineering utilities: /assess-incident for severity classification, /incident-investigation for root cause analysis across backend/data/indexing domains, /refactor-architecture for codebase friction analysis and proposals, /system-architecture-doc for C4 architecture documentation, plus service diagnostics and operational skills.",
+  "version": "0.1.0",
+  "author": {
+    "name": "jbrooksbartlett",
+    "email": "jonnybrooks04@gmail.com"
+  }
+}

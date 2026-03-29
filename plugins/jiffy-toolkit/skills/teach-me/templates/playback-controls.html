@@ -1,0 +1,278 @@
+<!-- ============================================ -->
+<!-- Playback Control Bar                        -->
+<!-- Reusable HTML + CSS + JS for GSAP timeline  -->
+<!-- playback controls. Always include for GSAP  -->
+<!-- animations in teach-me output.              -->
+<!-- ============================================ -->
+
+
+<!-- =============================== -->
+<!-- HTML: Place inside sticky-figure -->
+<!-- =============================== -->
+
+<div class="playback-controls" id="playback-controls">
+  <div class="playback-row">
+    <button class="pb-btn" id="pb-play" aria-label="Play">&#9654;</button>
+    <button class="pb-btn" id="pb-step-back" aria-label="Step back" disabled>&#9664;&#9664;</button>
+    <button class="pb-btn" id="pb-step-fwd" aria-label="Step forward" disabled>&#9654;&#9654;</button>
+    <button class="pb-btn" id="pb-replay" aria-label="Replay">&#8634;</button>
+    <div class="pb-speed">
+      <button class="pb-speed-btn" data-speed="0.5">0.5x</button>
+      <button class="pb-speed-btn is-active" data-speed="1">1x</button>
+      <button class="pb-speed-btn" data-speed="2">2x</button>
+    </div>
+  </div>
+  <div class="playback-row">
+    <input type="range" class="pb-scrubber" id="pb-scrubber" min="0" max="1" step="0.001" value="0">
+    <span class="pb-status" id="pb-status"></span>
+  </div>
+</div>
+
+
+<!-- =============================== -->
+<!-- CSS: Add to <style> block       -->
+<!-- =============================== -->
+
+<style>
+.playback-controls {
+  width: 100%;
+  max-width: 520px;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  margin-top: var(--space-sm);
+  box-shadow: var(--shadow-sm);
+  transition: background var(--transition-normal), border-color var(--transition-normal);
+}
+
+.playback-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.playback-row + .playback-row { margin-top: var(--space-xs); }
+
+.pb-btn {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.85rem;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.pb-btn:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+.pb-btn:disabled { opacity: 0.3; cursor: default; }
+
+.pb-speed { display: flex; gap: 2px; margin-left: auto; }
+.pb-speed-btn {
+  padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.pb-speed-btn:hover { border-color: var(--color-primary); }
+.pb-speed-btn.is-active {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+.pb-scrubber {
+  flex: 1; height: 4px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.pb-status {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  min-width: 80px;
+  text-align: right;
+}
+
+/* Hide playback controls when user prefers reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .playback-controls { display: none; }
+}
+</style>
+
+
+<!-- =============================== -->
+<!-- JS: PlaybackController          -->
+<!-- Add to <script> block           -->
+<!-- =============================== -->
+
+<script>
+// PlaybackController — connects the playback UI to the active GSAP timeline
+//
+// Usage:
+//   var playbackController = PlaybackController();
+//   playbackController.setTimeline(tl, ["Step 1", "Step 2", "Done"]);
+//   playbackController.play();
+//
+function PlaybackController() {
+  var currentTl = null;
+  var isPlaying = false;
+  var currentLabels = [];
+  var rafId = null;
+
+  var playBtn = document.getElementById("pb-play");
+  var stepBack = document.getElementById("pb-step-back");
+  var stepFwd = document.getElementById("pb-step-fwd");
+  var replayBtn = document.getElementById("pb-replay");
+  var scrubber = document.getElementById("pb-scrubber");
+  var statusEl = document.getElementById("pb-status");
+  var speedBtns = document.querySelectorAll(".pb-speed-btn");
+
+  var STEP_DELTA = 0.02; // 2% per step
+
+  function setTimeline(tl, labels) {
+    // Stop syncing previous timeline
+    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+    if (currentTl) { currentTl.pause(); }
+
+    currentTl = tl;
+    currentLabels = labels || [];
+    isPlaying = false;
+    scrubber.value = 0;
+    updateUI();
+  }
+
+  function play() {
+    if (!currentTl) return;
+    // If at the end, restart from beginning
+    if (currentTl.progress() >= 1) { currentTl.restart(); }
+    else { currentTl.play(); }
+    isPlaying = true;
+    updateUI();
+    startSync();
+  }
+
+  function pause() {
+    if (!currentTl) return;
+    currentTl.pause();
+    isPlaying = false;
+    updateUI();
+    stopSync();
+  }
+
+  function togglePlay() {
+    isPlaying ? pause() : play();
+  }
+
+  function step(delta) {
+    if (!currentTl) return;
+    currentTl.pause();
+    isPlaying = false;
+    var newProgress = Math.max(0, Math.min(1, currentTl.progress() + delta));
+    currentTl.progress(newProgress);
+    updateUI();
+    syncScrubber();
+  }
+
+  function setSpeed(speed) {
+    if (!currentTl) return;
+    currentTl.timeScale(speed);
+    speedBtns.forEach(function(btn) {
+      btn.classList.toggle("is-active", parseFloat(btn.dataset.speed) === speed);
+    });
+  }
+
+  function scrub(progress) {
+    if (!currentTl) return;
+    currentTl.pause();
+    isPlaying = false;
+    currentTl.progress(parseFloat(progress));
+    updateUI();
+  }
+
+  function replay() {
+    if (!currentTl) return;
+    currentTl.restart();
+    isPlaying = true;
+    updateUI();
+    startSync();
+  }
+
+  function updateUI() {
+    // Play/Pause button icon
+    playBtn.innerHTML = isPlaying ? "&#9646;&#9646;" : "&#9654;";
+    playBtn.setAttribute("aria-label", isPlaying ? "Pause" : "Play");
+
+    // Step buttons enabled only when paused
+    stepBack.disabled = isPlaying;
+    stepFwd.disabled = isPlaying;
+
+    // Status text — show current label based on progress
+    if (currentTl && currentLabels.length > 0) {
+      var progress = currentTl.progress();
+      var labelIndex = Math.min(
+        Math.floor(progress * currentLabels.length),
+        currentLabels.length - 1
+      );
+      statusEl.textContent = currentLabels[labelIndex] || "";
+    } else {
+      statusEl.textContent = "";
+    }
+  }
+
+  function syncScrubber() {
+    if (currentTl) {
+      scrubber.value = currentTl.progress();
+    }
+  }
+
+  function startSync() {
+    stopSync();
+    function tick() {
+      syncScrubber();
+      updateUI();
+      // Stop syncing if timeline completed
+      if (currentTl && currentTl.progress() >= 1) {
+        isPlaying = false;
+        updateUI();
+        return;
+      }
+      if (isPlaying) { rafId = requestAnimationFrame(tick); }
+    }
+    rafId = requestAnimationFrame(tick);
+  }
+
+  function stopSync() {
+    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+  }
+
+  // Event listeners
+  playBtn.addEventListener("click", togglePlay);
+  stepBack.addEventListener("click", function() { step(-STEP_DELTA); });
+  stepFwd.addEventListener("click", function() { step(STEP_DELTA); });
+  replayBtn.addEventListener("click", replay);
+
+  scrubber.addEventListener("input", function() {
+    scrub(this.value);
+  });
+
+  speedBtns.forEach(function(btn) {
+    btn.addEventListener("click", function() {
+      setSpeed(parseFloat(this.dataset.speed));
+    });
+  });
+
+  return { setTimeline: setTimeline, play: play, pause: pause };
+}
+</script>
