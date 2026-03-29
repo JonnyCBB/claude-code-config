@@ -140,7 +140,8 @@
     "feature-dev@claude-plugins-official": true,
     "eng-utils@jbb-claude-code-plugins": true,
     "jiffy-toolkit@jbb-claude-code-plugins": true,
-    "jbb-feature-dev@jbb-claude-code-plugins": true
+    "jbb-feature-dev@jbb-claude-code-plugins": true,
+    "weaviate@weaviate-plugins": true
   },
   "extraKnownMarketplaces": {
     "crit": {
@@ -155,6 +156,12 @@
         "url": "https://github.com/JonnyCBB/claude-code-config.git"
       },
       "autoUpdate": true
+    },
+    "weaviate-plugins": {
+      "source": {
+        "source": "github",
+        "repo": "weaviate/agent-skills"
+      }
     }
   },
   "alwaysThinkingEnabled": true,
