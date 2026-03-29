@@ -92,14 +92,6 @@ get_python_info() {
     fi
 }
 
-get_java_info() {
-    if [ -n "$JAVA_HOME" ] && [ -x "$JAVA_HOME/bin/java" ]; then
-        "$JAVA_HOME/bin/java" -version 2>&1 | head -1 | sed -E 's/.*version "([^"]+)".*/\1/' | cut -d'.' -f1-2
-    elif command -v java >/dev/null 2>&1; then
-        java -version 2>&1 | head -1 | sed -E 's/.*version "([^"]+)".*/\1/' | cut -d'.' -f1-2
-    fi
-}
-
 get_node_info() {
     if command -v node >/dev/null 2>&1; then
         node -v 2>/dev/null | tr -d 'v'
@@ -187,7 +179,6 @@ get_mcp_status() {
 
 # Gather language info
 PYTHON_VER=$(get_python_info)
-JAVA_VER=$(get_java_info)
 NODE_VER=$(get_node_info)
 
 # ============ LINE 1: Main status ============
@@ -221,7 +212,6 @@ fi
 # Language environments (only show if detected)
 LANG_INFO=""
 [ -n "$PYTHON_VER" ] && LANG_INFO="🐍${PYTHON_VER}"
-[ -n "$JAVA_VER" ] && LANG_INFO="${LANG_INFO:+$LANG_INFO }☕${JAVA_VER}"
 [ -n "$NODE_VER" ] && LANG_INFO="${LANG_INFO:+$LANG_INFO }⬢${NODE_VER}"
 
 if [ -n "$LANG_INFO" ]; then
