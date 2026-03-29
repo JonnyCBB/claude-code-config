@@ -17,8 +17,8 @@
 
 # Allow plugin directories (only the 3 actual plugins, not Claude Code internals)
 !plugins/
-!plugins/feature-dev/
-!plugins/feature-dev/**
+!plugins/jbb-feature-dev/
+!plugins/jbb-feature-dev/**
 !plugins/eng-utils/
 !plugins/eng-utils/**
 !plugins/jiffy-toolkit/

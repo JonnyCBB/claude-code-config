@@ -14,32 +14,32 @@ This repo also serves as a **Claude Code plugin marketplace**. You can install p
 
 | If you want to...                              | Install                                      |
 | ---------------------------------------------- | -------------------------------------------- |
-| Build features with AI-guided TDD workflow     | feature-dev                                  |
+| Build features with AI-guided TDD workflow     | jbb-feature-dev                              |
 | Investigate incidents or document architecture | eng-utils                                    |
 | Create interactive explainers or presentations | jiffy-toolkit                                |
 | All of the above                               | Install all three -- they work independently |
 
 ### Plugin details
 
-| Plugin                                  | When to use it                                                               | Description                                                                                                                                                                                                                                           | Examples                                                                      |
-| --------------------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| [feature-dev](plugins/feature-dev/)     | You're **building a feature** from scratch                                   | End-to-end development workflow: from requirements gathering and codebase research through TDD planning, parallel implementation, code review, and delivery. Includes 33 domain-expert agents covering backend, data, ML, and infrastructure domains. | `/interview` -> `/create-plan-tdd` -> `/implement-plan-tdd` -> `/code-review` |
-| [eng-utils](plugins/eng-utils/)         | Something is **broken in production** or you need to **understand a system** | Incident triage and root cause investigation, architecture documentation with C4 diagrams, and service diagnostics (pods, logs, alerts, callgraphs, edge config).                                                                                     | `/incident-investigation`, `/system-architecture-doc`                         |
-| [jiffy-toolkit](plugins/jiffy-toolkit/) | You need to **explain or present** something                                 | Turn concepts into polished interactive pages, slide decks, and standards-compliant documentation.                                                                                                                                                    | `/teach-me`, `/frontend-slides`                                               |
+| Plugin                                      | When to use it                                                               | Description                                                                                                                                                                                                                                           | Examples                                                                      |
+| ------------------------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| [jbb-feature-dev](plugins/jbb-feature-dev/) | You're **building a feature** from scratch                                   | End-to-end development workflow: from requirements gathering and codebase research through TDD planning, parallel implementation, code review, and delivery. Includes 33 domain-expert agents covering backend, data, ML, and infrastructure domains. | `/interview` -> `/create-plan-tdd` -> `/implement-plan-tdd` -> `/code-review` |
+| [eng-utils](plugins/eng-utils/)             | Something is **broken in production** or you need to **understand a system** | Incident triage and root cause investigation, architecture documentation with C4 diagrams, and service diagnostics (pods, logs, alerts, callgraphs, edge config).                                                                                     | `/incident-investigation`, `/system-architecture-doc`                         |
+| [jiffy-toolkit](plugins/jiffy-toolkit/)     | You need to **explain or present** something                                 | Turn concepts into polished interactive pages, slide decks, and standards-compliant documentation.                                                                                                                                                    | `/teach-me`, `/frontend-slides`                                               |
 
 ### How the plugins relate
 
-- **feature-dev** -- the _build_ phase: idea -> shipped code
+- **jbb-feature-dev** -- the _build_ phase: idea -> shipped code
 - **eng-utils** -- the _operate_ phase: incidents, diagnostics, system understanding
 - **jiffy-toolkit** -- the _communicate_ phase: explanations, presentations, documentation standards
 
 ### Plugin scale
 
-| Plugin        | Skills | Agents | Commands | Size          |
-| ------------- | ------ | ------ | -------- | ------------- |
-| feature-dev   | 17     | 13     | 2        | Comprehensive |
-| eng-utils     | 3      | 1      | 0        | Focused       |
-| jiffy-toolkit | 5      | 5      | 0        | Lightweight   |
+| Plugin          | Skills | Agents | Commands | Size          |
+| --------------- | ------ | ------ | -------- | ------------- |
+| jbb-feature-dev | 17     | 13     | 2        | Comprehensive |
+| eng-utils       | 3      | 1      | 0        | Focused       |
+| jiffy-toolkit   | 5      | 5      | 0        | Lightweight   |
 
 ### Installation
 
@@ -60,7 +60,7 @@ claude plugin marketplace add https://github.com/JonnyCBB/claude-code-config.git
 #### Step 2: Install individual plugins
 
 ```
-/plugin install feature-dev@jbb-claude-code-plugins
+/plugin install jbb-feature-dev@jbb-claude-code-plugins
 /plugin install eng-utils@jbb-claude-code-plugins
 /plugin install jiffy-toolkit@jbb-claude-code-plugins
 ```
@@ -91,7 +91,7 @@ Add to any project's `.claude/settings.json` to prompt users to install automati
 
 **Additional per plugin:**
 
-- **feature-dev**: No additional requirements
+- **jbb-feature-dev**: No additional requirements
 - **eng-utils**: CLI tools for some diagnostics (`grpcurl`, `gcloud`)
 - **jiffy-toolkit**: Optionally Python 3 + Playwright (for visual QA) and Manim (for math content)
 
