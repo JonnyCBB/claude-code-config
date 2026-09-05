@@ -8,7 +8,7 @@
 # ### THIS DELIBERATELY DOES NOT TOUCH heartbeat.sh. MEASURED 2026-08-29.
 #
 # `agent-deck conductor status --json` REGENERATES
-# ~/.local/share/agent-deck/conductor/hq/heartbeat.sh from a template, within a
+# ~/.local/share/agent-deck/conductor/conductor-hq/heartbeat.sh from a template, within a
 # second, silently. It reads like a status query and is not one.
 #
 # Installing an instrumented script over heartbeat.sh is therefore self-defeating:
@@ -29,7 +29,7 @@
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-HQ_DIR="${CONDUCTOR_HQ_DIR:-$HOME/.local/share/agent-deck/conductor/hq}"
+HQ_DIR="${CONDUCTOR_HQ_DIR:-$HOME/.local/share/agent-deck/conductor/conductor-hq}"
 
 SRC_RULES="$REPO_ROOT/docs/conductor-heartbeat-rules.md"
 DST_RULES="$HQ_DIR/HEARTBEAT_RULES.md"
@@ -57,7 +57,7 @@ cp "$SRC_RULES" "$DST_RULES" && ok "installed HEARTBEAT_RULES.md" \
 # Report the real interval. meta.json records heartbeat_interval: 0, which does
 # NOT match the plist and must not be trusted; if agent-deck ever regenerates the
 # plist from meta.json the cadence could silently change, so surface it here.
-PLIST="$HOME/Library/LaunchAgents/com.agentdeck.conductor-heartbeat.hq.plist"
+PLIST="$HOME/Library/LaunchAgents/com.agentdeck.conductor-heartbeat.conductor-hq.plist"
 if [ -f "$PLIST" ]; then
     INTERVAL=$(awk '/StartInterval/{getline; gsub(/[^0-9]/,""); print; exit}' "$PLIST")
     if [ -n "$INTERVAL" ]; then
