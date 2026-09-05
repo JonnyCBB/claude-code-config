@@ -1,7 +1,7 @@
 # [Feature Name] Implementation Plan
 
 **Date**: YYYY-MM-DD
-**Ticket**: [TICKET-NNN](link) *(optional)*
+**Ticket**: [TICKET-NNN](link) _(optional)_
 **Author**: Agent-generated via create-plan-tdd skill
 **Location**: `~/.claude/thoughts/shared/plans/YYYY-MM-DD-description.md`
 
@@ -17,13 +17,14 @@
 
 {{Describe the existing code landscape relevant to this feature. Include file:line references for every claim.}}
 
-| Artifact | Path | Relevance |
-|----------|------|-----------|
-| [Existing module] | `path/to/file.ext:L##` | [Why it matters] |
+| Artifact              | Path                      | Relevance            |
+| --------------------- | ------------------------- | -------------------- |
+| [Existing module]     | `path/to/file.ext:L##`    | [Why it matters]     |
 | [Test infrastructure] | `path/to/test_config.ext` | [Current test setup] |
-| [Related feature] | `path/to/related.ext:L##` | [How it connects] |
+| [Related feature]     | `path/to/related.ext:L##` | [How it connects]    |
 
 **Key Discoveries**:
+
 - {{Discovery 1 with `file:line` reference}}
 - {{Discovery 2 with `file:line` reference}}
 - {{Discovery 3 with `file:line` reference}}
@@ -35,18 +36,21 @@
 {{Describe what the system looks like when this plan is fully implemented.}}
 
 **Specification**:
+
 - {{Behavior 1}}
 - {{Behavior 2}}
 - {{Behavior 3}}
 
 **Verification Criteria**:
 
-*Automated*:
+_Automated_:
+
 - [ ] {{Automated check 1 — e.g., all new unit tests pass}}
 - [ ] {{Automated check 2 — e.g., integration test suite green}}
 - [ ] {{Automated check 3 — e.g., lint/type-check passes}}
 
-*Manual*:
+_Manual_:
+
 - [ ] {{Manual check 1 — e.g., feature works end-to-end in staging}}
 - [ ] {{Manual check 2 — e.g., error case handled gracefully}}
 
@@ -65,6 +69,7 @@
 {{High-level description of the TDD + wave strategy. Explain why tasks are grouped into waves, how RED/GREEN/REFACTOR cycles work within each task, and how Wave 0 sets the foundation.}}
 
 **Strategy Summary**:
+
 1. **Wave 0** establishes test infrastructure so every subsequent wave can run tests immediately.
 2. Tasks within a wave are independent and can execute in parallel.
 3. Each task follows a strict RED -> GREEN -> REFACTOR cycle.
@@ -76,17 +81,19 @@
 
 {{Search the codebase for reusable abstractions before writing new code. Document what you find.}}
 
-| Pattern | Location | Usage Count | Applicable? |
-|---------|----------|-------------|-------------|
-| [Abstract class / interface] | `path/to/pattern.ext` | N usages | Yes / No — [reason] |
-| [Test base class / fixture] | `path/to/test_base.ext` | N usages | Yes / No — [reason] |
-| [Utility / helper] | `path/to/util.ext` | N usages | Yes / No — [reason] |
+| Pattern                      | Location                | Usage Count | Applicable?         |
+| ---------------------------- | ----------------------- | ----------- | ------------------- |
+| [Abstract class / interface] | `path/to/pattern.ext`   | N usages    | Yes / No — [reason] |
+| [Test base class / fixture]  | `path/to/test_base.ext` | N usages    | Yes / No — [reason] |
+| [Utility / helper]           | `path/to/util.ext`      | N usages    | Yes / No — [reason] |
 
 **Decisions**:
+
 - {{Which patterns we will reuse and why}}
 - {{Which patterns we will NOT reuse and why}}
 
 **Deviations from Prior Research**:
+
 - {{If the approach differs from a prior research doc, explain why here. If no prior research, state "N/A".}}
 
 ---
@@ -95,16 +102,17 @@
 
 {{Search the target repo for coding standards and guidelines. Document what you find.}}
 
-| Source | Location | Key Rules |
-|--------|----------|-----------|
-| [CONTRIBUTING.md] | `path/to/CONTRIBUTING.md` | [Summarize key rules] |
-| [.editorconfig] | `.editorconfig` | [Summarize settings] |
-| [CLAUDE.md] | `CLAUDE.md` | [Summarize relevant instructions] |
-| [Lint config] | `path/to/lint_config` | [Summarize key rules] |
+| Source            | Location                  | Key Rules                         |
+| ----------------- | ------------------------- | --------------------------------- |
+| [CONTRIBUTING.md] | `path/to/CONTRIBUTING.md` | [Summarize key rules]             |
+| [.editorconfig]   | `.editorconfig`           | [Summarize settings]              |
+| [CLAUDE.md]       | `CLAUDE.md`               | [Summarize relevant instructions] |
+| [Lint config]     | `path/to/lint_config`     | [Summarize key rules]             |
 
 {{If no guidelines found, state: "No repo-specific coding guidelines discovered."}}
 
 **Key constraints for implementation agents:**
+
 - {{Constraint 1 derived from guidelines — e.g., "Use 4-space indentation per .editorconfig"}}
 - {{Constraint 2 — e.g., "All public methods must have Javadoc per CONTRIBUTING.md"}}
 - {{Constraint 3 — e.g., "No wildcard imports per CLAUDE.md"}}
@@ -117,15 +125,15 @@
 
 ### New Files
 
-| File Path | Purpose | Responsibility | Interface |
-|-----------|---------|---------------|-----------|
+| File Path              | Purpose                  | Responsibility            | Interface                  |
+| ---------------------- | ------------------------ | ------------------------- | -------------------------- |
 | `path/to/new_file.ext` | {{Why this file exists}} | {{Single responsibility}} | {{Public methods/exports}} |
 
 ### Modified Files
 
-| File Path | Current Responsibility | Planned Changes | Growth Estimate |
-|-----------|----------------------|-----------------|-----------------|
-| `path/to/existing.ext` | {{What it does now}} | {{What changes}} | {{+N lines}} |
+| File Path              | Current Responsibility | Planned Changes  | Growth Estimate |
+| ---------------------- | ---------------------- | ---------------- | --------------- |
+| `path/to/existing.ext` | {{What it does now}}   | {{What changes}} | {{+N lines}}    |
 
 ### File Structure Principles
 
@@ -139,29 +147,42 @@
 
 ### Dependency Table
 
-| Task | Depends On | Files Touched | Wave Assignment |
-|------|-----------|---------------|-----------------|
-| 0.1: [Test infrastructure setup] | None | `test config files` | Wave 0 |
-| 1.1: [Task name] | Wave 0 | `path/to/file_a.ext`, `path/to/test_a.ext` | Wave 1 |
-| 1.2: [Task name] | Wave 0 | `path/to/file_b.ext`, `path/to/test_b.ext` | Wave 1 |
-| 2.1: [Task name] | 1.1 | `path/to/file_c.ext`, `path/to/test_c.ext` | Wave 2 |
-| 2.2: [Task name] | 1.2 | `path/to/file_a.ext`, `path/to/test_d.ext` | Wave 2 |
+| Task                             | Depends On | Files Touched                              | Wave Assignment | Fulfills                 |
+| -------------------------------- | ---------- | ------------------------------------------ | --------------- | ------------------------ |
+| 0.1: [Test infrastructure setup] | None       | `test config files`                        | Wave 0          | —                        |
+| 1.1: [Task name]                 | Wave 0     | `path/to/file_a.ext`, `path/to/test_a.ext` | Wave 1          | VAL-API-001, VAL-API-002 |
+| 1.2: [Task name]                 | Wave 0     | `path/to/file_b.ext`, `path/to/test_b.ext` | Wave 1          | VAL-DATA-001             |
+| 2.1: [Task name]                 | 1.1        | `path/to/file_c.ext`, `path/to/test_c.ext` | Wave 2          | VAL-API-003              |
+| 2.2: [Task name]                 | 1.2        | `path/to/file_a.ext`, `path/to/test_d.ext` | Wave 2          | VAL-DATA-002             |
 
 ### File Overlap Matrix
 
 {{Show which tasks touch the same files. This identifies potential merge conflicts when tasks run in parallel.}}
 
-| File | Task 1.1 | Task 1.2 | Task 2.1 | Task 2.2 |
-|------|----------|----------|----------|----------|
-| `path/to/file_a.ext` | W | - | - | W |
-| `path/to/file_b.ext` | - | W | - | - |
-| `path/to/test_a.ext` | W | - | - | - |
+| File                 | Task 1.1 | Task 1.2 | Task 2.1 | Task 2.2 |
+| -------------------- | -------- | -------- | -------- | -------- |
+| `path/to/file_a.ext` | W        | -        | -        | W        |
+| `path/to/file_b.ext` | -        | W        | -        | -        |
+| `path/to/test_a.ext` | W        | -        | -        | -        |
 
-*W = Write, R = Read only, - = Not touched*
+_W = Write, R = Read only, - = Not touched_
 
 **Intra-Wave File Conflicts**:
+
 - {{List any files written by multiple tasks in the SAME wave. These are conflicts that must be resolved by reordering tasks or merging them.}}
 - {{If none, state "No intra-wave file conflicts detected."}}
+
+### Contract Coverage Matrix
+
+{{When `--contract` is provided, list every assertion from the validation contract and map it to claiming tasks. If no contract is provided, omit this section.}}
+
+| Assertion ID | Description                           | Covered by Task(s) | Status    |
+| ------------ | ------------------------------------- | ------------------ | --------- |
+| VAL-API-001  | [assertion description from contract] | 1.1                | Covered   |
+| VAL-API-002  | [assertion description]               | 1.1, 1.3           | Covered   |
+| VAL-DATA-001 | [assertion description]               | —                  | UNCOVERED |
+
+**Coverage note**: `UNCOVERED` assertions are planning gaps. The plan reviewer should either add a task to cover the assertion or document why coverage is not achievable. The matrix is informational — it surfaces gaps rather than blocking plan completion.
 
 ---
 
@@ -169,19 +190,19 @@
 
 ### Wave Execution Schedule
 
-| Wave | Tasks | Max Concurrency | Estimated Duration |
-|------|-------|----------------|--------------------|
-| 0 | 0.1: Test infrastructure | 1 | {{estimate}} |
-| 1 | 1.1: [name], 1.2: [name] | 2 | {{estimate}} |
-| 2 | 2.1: [name], 2.2: [name] | 2 | {{estimate}} |
+| Wave | Tasks                    | Max Concurrency | Estimated Duration |
+| ---- | ------------------------ | --------------- | ------------------ |
+| 0    | 0.1: Test infrastructure | 1               | {{estimate}}       |
+| 1    | 1.1: [name], 1.2: [name] | 2               | {{estimate}}       |
+| 2    | 2.1: [name], 2.2: [name] | 2               | {{estimate}}       |
 
 ### Agent Selection
 
-| Task | Agent Type | Rationale |
-|------|-----------|-----------|
-| 0.1 | {{e.g., infrastructure agent}} | {{Why this agent type}} |
-| 1.1 | {{e.g., backend agent}} | {{Why this agent type}} |
-| 1.2 | {{e.g., backend agent}} | {{Why this agent type}} |
+| Task | Agent Type                     | Rationale               |
+| ---- | ------------------------------ | ----------------------- |
+| 0.1  | {{e.g., infrastructure agent}} | {{Why this agent type}} |
+| 1.1  | {{e.g., backend agent}}        | {{Why this agent type}} |
+| 1.2  | {{e.g., backend agent}}        | {{Why this agent type}} |
 
 ---
 
@@ -193,9 +214,10 @@
 
 - **Framework**: {{e.g., JUnit 5, pytest, Jest, etc.}}
 - **Runner**: {{e.g., Maven Surefire, pytest, npm test}}
-- **Coverage tool**: {{e.g., JaCoCo, coverage.py, Istanbul}} *(optional)*
+- **Coverage tool**: {{e.g., JaCoCo, coverage.py, Istanbul}} _(optional)_
 
 **Setup tasks**:
+
 - [ ] {{Add test dependencies to build file if not present}}
 - [ ] {{Configure test runner settings}}
 - [ ] {{Set up test source directories}}
@@ -227,18 +249,21 @@
 ### CI Verification
 
 **Command**:
+
 ```bash
 [command to run the stub test and verify infrastructure works]
 ```
 
 ### Wave 0 Success Criteria
 
-*Automated*:
+_Automated_:
+
 - [ ] Stub test passes
 - [ ] Test runner produces output in expected format
 - [ ] Shared fixtures importable from test files
 
-*Manual*:
+_Manual_:
+
 - [ ] Test command runs without configuration errors
 
 ---
@@ -250,6 +275,7 @@
 ### Task 1.1: [Task Name]
 
 **Wave**: 1
+**Fulfills**: VAL-API-001, VAL-API-002
 
 #### RED -- Write failing test
 
@@ -263,9 +289,12 @@
 
 **Expected failure**: `[Expected error message or assertion failure text]`
 **Run**:
+
 ```bash
 [test command targeting this specific test]
 ```
+
+**No wall-clock-dependent literals.** Compute times relative to `now()` rather than hardcoding a date. A plan that hardcoded a token expiry of `datetime(2026, 7, 7, ...)` was correct when written and, by the time it executed, failed closed for entirely the wrong reason — which looks like a real defect and costs a debugging cycle to dismiss.
 
 #### GREEN -- Make it pass
 
@@ -279,11 +308,17 @@
 
 **Run**: `[test command]` -- should pass
 
+**The embedded code must be executable as written.** Two things follow from that, and both are cheap at planning time and expensive later:
+
+- **No placeholders.** No `...`, no TBD, and no deferral notes like "verify the exact signature during implementation" or "reuse X if importable, else mirror it". A GREEN block carrying those is exploratory coding wearing a TDD costume: the implementer discovers the real design at execution time, which is exactly what planning was supposed to settle.
+- **Hand-trace this GREEN block against this task's own RED test before writing the plan.** Read the test, execute the implementation mentally against it, and confirm it actually passes. One plan shipped GREEN code that failed its own plan-embedded RED test and was caught only because a reviewer traced it by hand; another's pseudocode would have raised at runtime because `zip(..., strict=True)` received a silently dropped role.
+
 #### REFACTOR -- Clean up
 
 **Focus**: [What to improve — naming, DRY, extract method, performance, readability, etc.]
 **Constraint**: All tests must remain green
 **Run**:
+
 ```bash
 [full test suite command]
 ```
@@ -293,6 +328,7 @@
 ### Task 1.2: [Task Name]
 
 **Wave**: 1
+**Fulfills**: VAL-DATA-001
 
 #### RED -- Write failing test
 
@@ -305,6 +341,7 @@
 
 **Expected failure**: `[Expected error/assertion message]`
 **Run**:
+
 ```bash
 [test command]
 ```
@@ -325,6 +362,7 @@
 **Focus**: [Improvement areas]
 **Constraint**: All tests must remain green
 **Run**:
+
 ```bash
 [full test suite command]
 ```
@@ -333,12 +371,14 @@
 
 ### Phase 1 Success Criteria
 
-*Automated*:
+_Automated_:
+
 - [ ] All Wave 1 tests pass: `[test command for wave 1]`
 - [ ] No regressions in Wave 0 tests
 - [ ] {{Additional automated checks}}
 
-*Manual*:
+_Manual_:
+
 - [ ] {{Manual verification relevant to this phase}}
 
 ---
@@ -350,6 +390,7 @@
 ### Task 2.1: [Task Name]
 
 **Wave**: 2
+**Fulfills**: VAL-API-003
 
 #### RED -- Write failing test
 
@@ -362,6 +403,7 @@
 
 **Expected failure**: `[Expected error/assertion message]`
 **Run**:
+
 ```bash
 [test command]
 ```
@@ -382,6 +424,7 @@
 **Focus**: [Improvement areas]
 **Constraint**: All tests must remain green
 **Run**:
+
 ```bash
 [full test suite command]
 ```
@@ -390,33 +433,38 @@
 
 ### Phase 2 Success Criteria
 
-*Automated*:
+_Automated_:
+
 - [ ] All Wave 2 tests pass: `[test command for wave 2]`
 - [ ] No regressions in Wave 0 or Wave 1 tests
 - [ ] Full suite green: `[full test suite command]`
 
-*Manual*:
+_Manual_:
+
 - [ ] {{Manual verification for this phase}}
 
 ---
 
-*{{Repeat Phase N sections as needed for additional waves.}}*
+_{{Repeat Phase N sections as needed for additional waves.}}_
 
 ---
 
 ## Testing Strategy
 
 ### Unit Tests
+
 - **Scope**: {{What unit tests cover — individual functions, classes, methods}}
 - **Location**: `path/to/unit/tests/`
 - **Run**: `[unit test command]`
 
 ### Integration Tests
+
 - **Scope**: {{What integration tests cover — cross-module interactions, API contracts, database access}}
 - **Location**: `path/to/integration/tests/`
 - **Run**: `[integration test command]`
 
 ### Manual Testing
+
 - {{Manual test scenario 1}}
 - {{Manual test scenario 2}}
 

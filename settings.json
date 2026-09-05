@@ -1,43 +1,86 @@
 {
-  "alwaysThinkingEnabled": true,
-  "effortLevel": "high",
-  "enabledPlugins": {
-    "pyright-lsp@claude-plugins-official": true,
-    "typescript-lsp@claude-plugins-official": false,
-    "context7@claude-plugins-official": true,
-    "skill-creator@claude-plugins-official": true,
-    "frontend-design@claude-plugins-official": true,
-    "crit@crit": true,
-    "feature-dev@claude-plugins-official": true,
-    "eng-utils@jbb-claude-code-plugins": true,
-    "jiffy-toolkit@jbb-claude-code-plugins": true,
-    "jbb-feature-dev@jbb-claude-code-plugins": true,
-    "weaviate@weaviate-plugins": true
-  },
   "env": {
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
+    "CLAUDE_AFK_TIMEOUT_MS": "2147483647",
+    "CLAUDE_AFK_COUNTDOWN_MS": "2147483647"
   },
-  "extraKnownMarketplaces": {
-    "crit": {
-      "source": {
-        "source": "github",
-        "repo": "tomasz-tomczyk/crit"
-      }
-    },
-    "jbb-claude-code-plugins": {
-      "source": {
-        "source": "git",
-        "url": "https://github.com/JonnyCBB/claude-code-config.git"
-      },
-      "autoUpdate": true
-    },
-    "weaviate-plugins": {
-      "source": {
-        "source": "github",
-        "repo": "weaviate/agent-skills"
-      }
-    }
+  "permissions": {
+    "allow": [
+      "Write",
+      "Edit",
+      "Read",
+      "Grep",
+      "Glob",
+      "WebSearch",
+      "WebFetch",
+      "Search(pattern:*)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(wc *)",
+      "Bash(find *)",
+      "Bash(file *)",
+      "Bash(stat *)",
+      "Bash(which *)",
+      "Bash(pwd)",
+      "Bash(echo *)",
+      "Bash(env)",
+      "Bash(printenv *)",
+      "Bash(lsof *)",
+      "Bash(awk *)",
+      "Bash(test -f *)",
+      "Bash(realpath *)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git fetch *)",
+      "Bash(git rev-parse *)",
+      "Bash(git branch *)",
+      "Bash(git show *)",
+      "Bash(git remote *)",
+      "Bash(gh pr *)",
+      "Bash(gh issue *)",
+      "Bash(gh repo view *)",
+      "Bash(gh api *)",
+      "Bash(gh gist create *)",
+      "Bash(gsutil ls *)",
+      "Bash(bq query *)",
+      "Bash(bq ls *)",
+      "Bash(curl *)",
+      "Bash(mkdir *)",
+      "Bash(pytest *)",
+      "Bash(tox -e *)",
+      "Bash(uv run isort *)",
+      "Bash(uv run black *)",
+      "Bash(uv run ruff *)",
+      "Bash(uv run pytest *)",
+      "Bash(python3 -c *)",
+      "Bash(npm run *)",
+      "Bash(npm test *)",
+      "Bash(npx tsc *)",
+      "Bash(npx eslint *)",
+      "Bash(npx prettier *)",
+      "Bash(bd *)",
+      "Bash(agent-deck *)",
+      "Bash(crit *)",
+      "Bash(CLAUDE_MODE=*)",
+      "mcp__claude_ai_GDrive_MCP__*",
+      "mcp__infinite-memory__remember",
+      "mcp__infinite-memory__recall",
+      "mcp__infinite-memory__forget",
+      "mcp__infinite-memory__forget_matching",
+      "mcp__infinite-memory__update_memory",
+      "mcp__infinite-memory__get_memory",
+      "mcp__infinite-memory__list_memories",
+      "mcp__infinite-memory__memory_stats",
+      "mcp__infinite-memory__get_related"
+    ],
+    "deny": [],
+    "ask": [],
+    "defaultMode": "auto"
   },
+  "model": "claude-opus-5[1m]",
   "hooks": {
     "Notification": [
       {
@@ -105,7 +148,17 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash -c 'CMD=$(jq -r \".tool_input.command\" \u003c /dev/stdin); if echo \"$CMD\" | grep -q \"git commit\"; then echo \"{\\\"additionalContext\\\": \\\"Before committing, ensure tests pass and code is formatted.\\\"}\"; fi'"
+            "command": "bash -c 'CMD=$(jq -r \".tool_input.command\" < /dev/stdin); if echo \"$CMD\" | grep -q \"git commit\"; then echo \"{\\\"additionalContext\\\": \\\"Before committing, ensure tests pass and code is formatted.\\\"}\"; fi'"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "timeout": 10,
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'H=\"$HOME/.claude/hooks/preclose_guard.py\"; [ -r \"$H\" ] || exit 0; exec python3 \"$H\"'"
           }
         ]
       }
@@ -130,12 +183,12 @@
           },
           {
             "type": "command",
-            "command": "~/.claude/hooks/sync-plugins.sh"
+            "command": "agent-deck hook-handler",
+            "async": true
           },
           {
             "type": "command",
-            "command": "agent-deck hook-handler",
-            "async": true
+            "command": "~/.claude/hooks/sync-plugins.sh"
           }
         ]
       }
@@ -152,6 +205,14 @@
             "command": "agent-deck hook-handler"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/comms-contract-check.py"
+          }
+        ]
       }
     ],
     "UserPromptSubmit": [
@@ -166,66 +227,70 @@
       }
     ]
   },
-  "model": "opus[1m]",
-  "permissions": {
-    "allow": [
-      "Write",
-      "Edit",
-      "Read",
-      "Grep",
-      "Glob",
-      "WebSearch",
-      "WebFetch",
-      "Search(pattern:*)",
-      "Bash(ls *)",
-      "Bash(cat *)",
-      "Bash(head *)",
-      "Bash(tail *)",
-      "Bash(wc *)",
-      "Bash(find *)",
-      "Bash(file *)",
-      "Bash(stat *)",
-      "Bash(which *)",
-      "Bash(pwd)",
-      "Bash(echo *)",
-      "Bash(env)",
-      "Bash(printenv *)",
-      "Bash(lsof *)",
-      "Bash(awk *)",
-      "Bash(test -f *)",
-      "Bash(realpath *)",
-      "Bash(git status *)",
-      "Bash(git diff *)",
-      "Bash(git log *)",
-      "Bash(git fetch *)",
-      "Bash(git rev-parse *)",
-      "Bash(git branch *)",
-      "Bash(git show *)",
-      "Bash(git remote *)",
-      "Bash(gh pr *)",
-      "Bash(gh issue *)",
-      "Bash(gh repo view *)",
-      "Bash(gh api *)",
-      "Bash(gh gist create *)",
-      "Bash(gsutil ls *)",
-      "Bash(bq query *)",
-      "Bash(bq ls *)",
-      "Bash(curl *)",
-      "Bash(mkdir *)",
-      "Bash(pytest *)",
-      "Bash(tox -e *)",
-      "Bash(uv run isort *)",
-      "Bash(uv run black *)",
-      "Bash(uv run ruff *)",
-      "Bash(python3 -c *)",
-      "Bash(uv run pytest *)"
-    ],
-    "deny": [],
-    "ask": []
-  },
-  "skipDangerousModePermissionPrompt": true,
   "statusLine": {
     "type": "command",
     "command": "~/.claude/statusline.sh"
-  }
+  },
+  "enabledPlugins": {
+    "pyright-lsp@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true,
+    "spec-workflow@ky1ejs-plugins": true,
+    "context7@claude-plugins-official": true,
+    "skill-creator@claude-plugins-official": true,
+    "frontend-design@claude-plugins-official": true,
+    "figma@claude-plugins-official": true,
+    "crit@crit": true,
+    "codex@openai-codex": true,
+    "agent-deck@agent-deck": true,
+    "weaviate@weaviate-plugins": true,
+    "jbb-feature-dev@jbb-claude-code-plugins": true,
+    "eng-utils@jbb-claude-code-plugins": true,
+    "jiffy-toolkit@jbb-claude-code-plugins": true
+  },
+  "extraKnownMarketplaces": {
+    "ky1ejs-plugins": {
+      "source": {
+        "source": "github",
+        "repo": "ky1ejs/claude-plugins"
+      },
+      "autoUpdate": true
+    },
+    "crit": {
+      "source": {
+        "source": "github",
+        "repo": "tomasz-tomczyk/crit"
+      },
+      "autoUpdate": true
+    },
+    "jbb-claude-code-plugins": {
+      "source": {
+        "source": "git",
+        "url": "https://github.com/JonnyCBB/claude-code-config.git"
+      },
+      "autoUpdate": true
+    },
+    "agent-deck": {
+      "source": {
+        "source": "github",
+        "repo": "asheshgoplani/agent-deck"
+      },
+      "autoUpdate": true
+    },
+    "weaviate-plugins": {
+      "source": {
+        "source": "github",
+        "repo": "weaviate/agent-skills"
+      }
+    },
+    "openai-codex": {
+      "source": {
+        "source": "github",
+        "repo": "openai/codex-plugin-cc"
+      }
+    }
+  },
+  "alwaysThinkingEnabled": true,
+  "effortLevel": "xhigh",
+  "skipAutoPermissionPrompt": true,
+  "skipDangerousModePermissionPrompt": true
 }

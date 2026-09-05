@@ -4,7 +4,7 @@
 
 set -euo pipefail
 
-SKILL_DIR="$HOME/.claude/skills/verify-implementation"
+SKILL_DIR="$HOME/.claude/plugins/jbb-feature-dev/skills/verify-implementation"
 
 PASS_COUNT=0
 FAIL_COUNT=0
@@ -76,6 +76,11 @@ run_check \
   "live-testing-guide.md documents service account impersonation" \
   "Contains serviceauth.serviceAccountEmail" \
   grep -q "serviceAccountEmail" "$SKILL_DIR/references/live-testing-guide.md"
+
+run_check \
+  "live-testing-guide.md documents authx dual-token auth" \
+  "Contains print-identity-token reference" \
+  grep -q "print-identity-token" "$SKILL_DIR/references/live-testing-guide.md"
 
 run_check \
   "live-testing-guide.md documents standard ports" \

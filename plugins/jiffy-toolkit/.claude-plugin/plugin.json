@@ -1,9 +1,9 @@
 {
   "name": "jiffy-toolkit",
-  "description": "Creative and standards tools: /teach-me for interactive scrollytelling explanations, /frontend-slides for HTML presentations, plus editorial, diagram, and skills-authoring standards with companion review agents.",
-  "version": "0.1.0",
+  "description": "Creative and standards tools: /teach-me for interactive scrollytelling explanations, /frontend-slides for HTML presentations, /explain for self-contained HTML explainers of research documents and pull requests, /sound-like-me for removing AI writing patterns and writing in a named voice, /reflect for extracting session learnings to persistent storage, /optimize-for-opus5 and /optimize-for-fable5 for model-specific prompt optimization, plus editorial, diagram, and skills-authoring standards with companion review agents.",
+  "version": "0.16.1",
   "author": {
-    "name": "jbrooksbartlett",
+    "name": "JonnyCBB",
     "email": "jonnybrooks04@gmail.com"
   }
 }

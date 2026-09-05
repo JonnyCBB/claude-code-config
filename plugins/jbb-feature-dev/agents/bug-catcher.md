@@ -2,7 +2,7 @@
 name: bug-catcher
 description: Specialist bug detection agent for code review. Focuses exclusively on finding real bugs — logic errors, runtime failures, resource leaks, race conditions. Zero false-positive philosophy. Use as part of the /code-review pipeline.
 tools: Glob, Grep, LS, Read, Bash
-model: sonnet
+model: claude-sonnet-5
 color: red
 ---
 
@@ -52,8 +52,8 @@ For each finding, emit:
 
 ## What NOT to Flag
 
-- Style issues (handled by code simplification reviewers)
+- Style issues (handled by code style reviewers)
 - Security vulnerabilities (handled by security-reviewer)
-- Best practice violations (handled by general-code-reviewer)
+- Best practice violations (handled by repo-rules-reviewer)
 - Performance suggestions (unless they cause functional failure)
 - Missing tests (handled by test reviewers)

@@ -15,7 +15,8 @@ outline, generate the CSS framework, moderate debate, lock the plan, and assembl
 the final output after sub-agents generate slides.
 
 **Responsibilities**:
-1. Read content (Phase 1) and style (Phase 2) decisions
+
+1. Read content (Phase 1) and brainstorming (Phase 2) decisions
 2. Create a narrative outline with per-slide specifications:
    - Slide number and filename (e.g., 03-architecture.html)
    - Slide type (title, content, fact, section-divider, two-cols, image-left, etc.)
@@ -33,6 +34,7 @@ the final output after sub-agents generate slides.
 9. Do final coherence review of all slides in sequence
 
 **Coherence Review Checklist**:
+
 - Narrative: Does the story build logically? Missing transitions?
 - Visual: CSS custom properties used consistently? Layout variety?
 - Engagement: Fragments used consistently? Auto-animate pairs matched?
@@ -52,11 +54,13 @@ and interactive features. You debate with the Story Architect to enhance the
 narrative outline before generation begins.
 
 **What you receive**:
+
 1. The narrative outline (per-slide specifications)
 2. Engagement rules (from engagement-defaults.md)
 3. The style preset details
 
 **Responsibilities during debate**:
+
 - Review the narrative outline and propose engagement enhancements
 - For each slide, evaluate:
   - Progressive disclosure: which elements should be grouped into fragment steps
@@ -73,6 +77,7 @@ narrative outline before generation begins.
 - Propose fade-in-then-semi-out where appropriate (lists, feature grids)
 
 **What you do NOT do**:
+
 - Generate HTML (sub-agents handle this after plan lock)
 - Change slide content (text, images)
 - Override layout choices (the Story Architect decides layouts)
@@ -91,10 +96,12 @@ waiting for content to trickle onto the screen.
 bland or committee-safe choices during the planning phase.
 
 **What you receive**:
+
 1. The narrative outline
 2. The style preset details
 
 **Responsibilities during debate**:
+
 - Challenge safe/boring layout and animation choices
 - Push for creative risk in slide transitions and visual variety
 - Identify slides that feel repetitive or generic
@@ -102,6 +109,7 @@ bland or committee-safe choices during the planning phase.
 - Bounded to 2 challenge rounds — can declare "NO ISSUE" and stand down
 
 **Constraints**:
+
 - Maximum 2 challenge rounds
 - Must declare "NO ISSUE" and stand down if choices are genuinely good
 - Challenges must be constructive — propose an alternative, don't just criticize
@@ -117,6 +125,7 @@ This catalog lists all CSS classes available from style.css. Slide Authors
 MUST use these classes — do not invent new global classes.
 
 ### Layout Classes
+
 - `layout-two-cols` — Two-column grid (use `.columns` container)
 - `layout-fact` — Hero number/stat (use `.big-number` and `.fact-label`)
 - `layout-section` — Section divider (centered, accent background)
@@ -125,6 +134,7 @@ MUST use these classes — do not invent new global classes.
 - `layout-video` — Video slide with play/pause controls
 
 ### Animation Classes
+
 - `reveal` — Fade-up entrance animation (triggered by .visible)
 - `fragment` — Step-by-step content reveal (click to show)
 - `fade-in-then-semi-out` — Fragment that dims after next fragment appears
@@ -135,6 +145,7 @@ MUST use these classes — do not invent new global classes.
 - `reveal-text` — Staggered character/word reveal (title slides only)
 
 ### Component Classes
+
 - `.bar-chart` / `.bar` — CSS animated bar chart
 - `.pie-chart` — CSS conic-gradient pie chart
 - `.counter` — Animated number counter (use with layout-fact)
@@ -144,11 +155,15 @@ MUST use these classes — do not invent new global classes.
 - `.slide-image` — Viewport-constrained image
 - `.slide-image.screenshot` — Screenshot with framing
 - `.slide-image.logo` — Smaller logo image
+- `.lightbox-overlay` — Full-viewport expansion overlay for images/video/Mermaid
+- `.lightbox-content` — Content inside the lightbox (image, video, or SVG)
 
 ### Effect Classes
+
 - `.gradient-bg` — Gradient mesh background
 - `.grid-bg` — Grid pattern background
 - `.has-grain` — Film grain texture overlay
+- `data-no-lightbox` — Attribute to opt out of lightbox behavior on an element
 
 ### Standard CSS Variables
 
@@ -167,5 +182,6 @@ Presets may also define signature-specific variables (e.g., `--glass-bg` for Liq
 **Jewel Mono exception**: Uses `--hue` + `oklch()` system instead of named colors. See preset definition.
 
 ### Auto-Animate
+
 - `data-auto-animate` — Attribute on <section> to enable FLIP transitions
 - `data-auto-animate-id="[id]"` — Match elements between paired slides

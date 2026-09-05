@@ -39,6 +39,30 @@ feat/ftp-slice-b    → PR 3 (base: feat/ftp-slice-a)
 **Creation order**: Dependency order (blockers first) so real issue/PR numbers can
 be referenced.
 
+## Branch Chain Format
+
+When the strategy is "Stacked PRs", the scoping document includes a machine-readable Branch Chain table under the PR Strategy section. This table is the contract between map-feature-to-plans (producer) and downstream skills (consumers: implement-plan-tdd, submit-pr, rebase-stack).
+
+### Table Schema
+
+| Column        | Description                                                                   |
+| ------------- | ----------------------------------------------------------------------------- |
+| Plan          | Plan identifier matching the Plan Outlines section (e.g., "Plan A", "Plan 1") |
+| Branch Name   | Git branch name for this plan's work, following the naming convention above   |
+| Base Branch   | The branch this plan's branch is created from and targets for PR merge        |
+| Estimated LOC | Estimated lines of code for this plan (from Plan Outlines)                    |
+
+### Parsing Contract
+
+Downstream skills read the Branch Chain table to extract each plan's **Branch Name** and **Base Branch** for branch creation and PR targeting. Plans are processed in table order (top to bottom = dependency order).
+
+### Derivation Rules
+
+- The table order matches the Dependency Graph execution order
+- A plan with no upstream dependency uses `master` as its Base Branch
+- A plan that depends on another plan uses that plan's Branch Name as its Base Branch
+- Independent plans (fan-out with no dependency between them) both list `master` — they produce separate PR stacks, not one chain
+
 ## Multi-Repo Handling
 
 Each repository gets its own independent PR chain. Stacking is within a single repo

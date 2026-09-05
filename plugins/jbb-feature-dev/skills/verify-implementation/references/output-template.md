@@ -35,28 +35,28 @@ Use this template when generating the verification evidence document in Step 9.
 
 ### Acceptance Criteria Verification
 
-| #    | Acceptance Criterion              | Evidence Type | Evidence                          | Status              |
-| ---- | --------------------------------- | ------------- | --------------------------------- | ------------------- |
-| AC-1 | GIVEN X WHEN Y THEN Z            | Live test     | Scenario 3: [name] — PASS        | PASS                |
-| AC-2 | GIVEN A WHEN B THEN C            | Code + Live   | `file:line` + Scenario 5 — PASS  | PASS                |
-| AC-3 | GIVEN D WHEN E THEN F            | Code only     | `file:line` — no live test       | GAP                 |
-| AC-4 | GIVEN G WHEN H THEN latency < Xms| —             | Requires production load testing  | DEFERRED            |
+| #    | Acceptance Criterion              | Evidence Type | Evidence                         | Status   |
+| ---- | --------------------------------- | ------------- | -------------------------------- | -------- |
+| AC-1 | GIVEN X WHEN Y THEN Z             | Live test     | Scenario 3: [name] — PASS        | PASS     |
+| AC-2 | GIVEN A WHEN B THEN C             | Code + Live   | `file:line` + Scenario 5 — PASS  | PASS     |
+| AC-3 | GIVEN D WHEN E THEN F             | Code only     | `file:line` — no live test       | GAP      |
+| AC-4 | GIVEN G WHEN H THEN latency < Xms | —             | Requires production load testing | DEFERRED |
 
 **Evidence strength**: Live test > Code + Live test > Code only > Deferred
 
 ### Scope Verification
 
-| Feature / Sub-task | Priority    | Expected           | Actual              | Status |
-| ------------------ | ----------- | ------------------ | ------------------- | ------ |
-| [Feature 1]        | Essential   | Implemented        | [evidence]          | PASS   |
-| [Feature 2]        | Nice-to-have| Not over-built     | [evidence]          | PASS   |
-| [Feature 3]        | Not needed  | Absent             | [evidence]          | PASS   |
+| Feature / Sub-task | Priority     | Expected       | Actual     | Status |
+| ------------------ | ------------ | -------------- | ---------- | ------ |
+| [Feature 1]        | Essential    | Implemented    | [evidence] | PASS   |
+| [Feature 2]        | Nice-to-have | Not over-built | [evidence] | PASS   |
+| [Feature 3]        | Not needed   | Absent         | [evidence] | PASS   |
 
 ### Success Criteria
 
-| # | Success Criterion       | Evidence            | Status        |
-|---|------------------------|---------------------|---------------|
-| 1 | [metric/outcome]       | [evidence]          | PASS/DEFERRED |
+| #   | Success Criterion | Evidence   | Status        |
+| --- | ----------------- | ---------- | ------------- |
+| 1   | [metric/outcome]  | [evidence] | PASS/DEFERRED |
 
 ## Automated Verification Results
 
@@ -240,15 +240,15 @@ Use this template when generating the verification evidence document in Step 9.
 
 ## Summary
 
-| Category                | Total | Pass  | Fail  | Skip     |
-| ----------------------- | ----- | ----- | ----- | -------- |
-| Objective Alignment     | X     | X     | 0     | 0        |
-| Requirements Alignment  | X     | X     | 0     | DEFERRED |
-| Plan Criteria           | X     | X     | 0     | 0        |
-| Verification Examples | X     | X     | 0     | 0     |
-| Test Suites           | X     | X     | 0     | 0     |
-| Negative Assertions   | X     | X     | 0     | 0     |
-| **Overall**           | **X** | **X** | **0** | **0** |
+| Category               | Total | Pass  | Fail  | Skip     |
+| ---------------------- | ----- | ----- | ----- | -------- |
+| Objective Alignment    | X     | X     | 0     | 0        |
+| Requirements Alignment | X     | X     | 0     | DEFERRED |
+| Plan Criteria          | X     | X     | 0     | 0        |
+| Verification Examples  | X     | X     | 0     | 0        |
+| Test Suites            | X     | X     | 0     | 0        |
+| Negative Assertions    | X     | X     | 0     | 0        |
+| **Overall**            | **X** | **X** | **0** | **0**    |
 
 ## Verdict: PASS / FAIL / PARTIAL
 
@@ -258,16 +258,67 @@ Use this template when generating the verification evidence document in Step 9.
 
 To reproduce this verification:
 
-1. Checkout branch: `git checkout [branch]`
-2. Build: `[build command]`
-3. Start service (if applicable): `[start command]`
-4. Run verification script: `~/.claude/thoughts/shared/verification/scripts/verify-[description].sh`
+### Prerequisites
+
+- [Language/runtime version — e.g., "Java 25 via SDKMAN (`sdk env`)"]
+- [Required tools — e.g., "`spgrpcurl` installed", "`grpcurl` installed"]
+- [Auth setup — e.g., "GCP ADC configured (`gcloud auth application-default login`)"]
+- [Environment variables — e.g., "`SERVICE_DOMAIN=internal.example` exported"]
+- [Any other prerequisites — e.g., "`USER_ID` exported"]
+
+### Step 1: Run automated verification script
+
+\```bash
+~/.claude/thoughts/shared/verification/scripts/verify-[description].sh
+\```
+
+Expected: [N]/[N] PASS.
+
+### Step 2: Run test suites
+
+\```bash
+[exact test command for each test suite, with expected output]
+\```
+
+### Step 3: Start service for live verification
+
+\```bash
+[exact startup command including env vars]
+\```
+
+Wait for startup (~[N] seconds). Verify with health check:
+
+\```bash
+[exact health check command]
+
+# Expected: [expected output, e.g., {"status": "SERVING"}]
+
+\```
+
+### Step 4: Send test requests
+
+[For each scenario, provide the exact copy-pasteable command and expected outcome]:
+
+**S[N] — [Scenario name]:**
+
+\```bash
+[exact request command]
+\```
+
+Expected: [what to look for in the response]
+
+### Step 5: Cleanup
+
+\```bash
+[exact cleanup/kill command]
+\```
 
 ## Appendix: Raw Request/Response Transcripts
 
-This section is MANDATORY for all Backend API verifications. Include the verbatim
-request and response for every live test scenario. This allows reviewers to
-independently assess the results without re-running tests.
+This section is MANDATORY for ALL verifications that include live testing, regardless
+of domain. Include the verbatim request and response for every live test scenario.
+This allows reviewers to independently assess the results without re-running tests.
+Do NOT truncate, abbreviate, or summarize responses — include the full payload as received.
 
 Format each transcript as:
 

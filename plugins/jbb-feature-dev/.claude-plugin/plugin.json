@@ -1,9 +1,9 @@
 {
   "name": "jbb-feature-dev",
-  "description": "Complete feature development workflow: /interview for requirements gathering, /research-problem for codebase research, /map-feature-to-plans and /break-down-initiative for feature splitting, /create-plan-tdd and /implement-plan-tdd for test-driven planning and execution, /code-review for multi-agent review, /verify-implementation for evidence generation, /commit and /pr-description for git workflows.",
-  "version": "0.2.0",
+  "description": "Complete feature development workflow: /elicit-requirements for requirements gathering, /research-problem for codebase research (/research-problem-fable for the Fable-native outcome-gated variant), /map-feature-to-plans and /break-down-initiative for feature splitting, /create-plan-tdd and /implement-plan-tdd for test-driven planning and execution (with stacked PR support via --scoping-doc), /code-review for multi-agent review, /validation-contract-generation for acceptance criteria traceability, /orchestrate-feature-dev for end-to-end pipeline orchestration, /orchestrate-feature-dev-fable for the Fable-native outcome-gated variant, /orchestrate-feature-dev-slim for the six-stage variant that drops the plan DAG, /commit and /submit-pr for PR lifecycle, /rebase-stack for cascade-rebasing stacked PR branches, /sweep-followups for filing follow-ups that were mentioned but never captured, /create-verification-skill and /maintain-verification-skill for project-persistent verification, and /create-my-mode-skill for building a personal <handle>-mode skill from your own session transcripts. Ships a Stop hook that asks the model to file work it deferred without recording.",
+  "version": "0.28.0",
   "author": {
-    "name": "jbrooksbartlett",
+    "name": "JonnyCBB",
     "email": "jonnybrooks04@gmail.com"
   }
 }

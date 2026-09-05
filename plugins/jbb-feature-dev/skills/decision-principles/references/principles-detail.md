@@ -166,22 +166,22 @@ finalizing the design.
 
 ## Principle 8: Internal Tools Over External When Available
 
-**Default**: Check if your organization already has a solution before looking externally. Internal
-tools integrate better, have support channels, and are maintained by teams you can reach directly.
+**Default**: Check if your organisation already has a solution before looking externally. Internal tools
+integrate better, have support channels, and are maintained by teams you can reach on Slack.
 
 **Rationale**: External tools require integration work, may not support internal authentication
 and infrastructure, and their maintainers don't know your context.
 
 **Examples**:
 
-- Research documents consistently check internal documentation before external sources
-- Skills encode organization-specific knowledge that the model wouldn't know from training data
+- Research documents consistently check internal docs, and Aika before external sources
+- Skills encode organisation-specific knowledge that the model wouldn't know from training data
 
 **Override**: When no internal tool exists for the need, or when the internal tool is
-deprecated/unmaintained. Also when the external tool is an industry standard that the
-organization explicitly supports (e.g., gRPC, Kubernetes, Ray).
+deprecated/unmaintained. Also when the external tool is an industry standard that the organisation
+explicitly supports (e.g., gRPC, Kubernetes, Ray).
 
-**Test**: "Have I checked internal tools and documentation before recommending an
+**Test**: "Have I checked internal tools (internal docs, Aika) before recommending an
 external solution?" If not, check first.
 
 ---
@@ -255,7 +255,7 @@ leading to "assumption drift" where earlier decisions silently shift as complexi
 (Bockeler, Thoughtworks).
 
 **Example**: interview.py's 5 categories (Objective, Context, Constraints, References,
-Success Criteria) represent the minimum. The interview skill extends this with scope
+Success Criteria) represent the minimum. The elicit-requirements skill extends this with scope
 classification, acceptance criteria in GIVEN/WHEN/THEN format, and domain-adaptive questions.
 
 **Override**: Well-specified bug fix with clear reproduction steps and expected behavior
@@ -306,7 +306,7 @@ costly.
 
 **Rationale**: GSD's domain-adaptive approach (different questions for APIs vs. UIs vs.
 content systems) outperforms generic question checklists. A 40+ question comprehensive
-interview causes fatigue; 8-12 domain-targeted questions are more effective. The dimensions
+questionnaire causes fatigue; 8-12 domain-targeted questions are more effective. The dimensions
 that matter most vary by domain.
 
 **Examples**:

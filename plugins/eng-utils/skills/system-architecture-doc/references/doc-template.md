@@ -21,7 +21,7 @@ Each flow follows the pattern: prose intro → `sequenceDiagram` → prose walkt
 
 **4. Further Reading**
 - Link to `workspace.dsl` (the enriched Structurizr DSL model)
-- Links to TechDocs for each component (from Phase 2 inventory)
+- Links to internal docs for each component (from Phase 2 inventory)
 - Links to source documentation discovered in Phase 3
 
 ## Conditional Sections (include only if scope produced meaningful content)

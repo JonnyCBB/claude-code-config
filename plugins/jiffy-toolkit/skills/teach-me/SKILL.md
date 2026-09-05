@@ -33,8 +33,8 @@ Parse the user's request to extract:
 
 - **Target concept** (e.g., "ADAM optimizer", "binary search", "gradient descent")
 - **Audience context** (e.g., "for a product manager", "for someone who knows basic programming")
-- **Scope hints** (e.g., Mathematical? Algorithmic? Domain-specific?)
-- **Theme preference** (e.g., "in the observatory style", "use the corporate brand theme") — optional
+- **Scope hints** (e.g., internal to a codebase? Mathematical? Algorithmic?)
+- **Theme preference** (e.g., "in the observatory style", "use a dark neon theme") — optional
 
 If audience is ambiguous, ask the user to clarify what background they have.
 
@@ -79,18 +79,19 @@ The user can interrupt if something looks wrong.
 
 For each question from Step 1, determine:
 
-- What type of information is needed (general knowledge, codebase, mathematical)
+- What type of information is needed (general knowledge, internal docs, codebase, mathematical)
 - Which agent type is best suited (see decision tree below)
 - Dependencies on other questions' answers
 
 **Agent selection decision tree:**
 
-| Question Type                                     | Default Agent                                    | Override Conditions                                            |
-| ------------------------------------------------- | ------------------------------------------------ | -------------------------------------------------------------- |
-| General explanations, analogies, misconceptions   | `web-search-researcher`                          | Default for most concepts                                      |
-| Codebase implementation details                   | `codebase-explorer`                              | Only when concept maps to actual code in the working directory |
-| Mathematical foundations, proofs, formal notation | `web-search-researcher` with math-focused prompt | When concept involves equations, proofs, or formal definitions |
-| Domain-specific (ML, data, search, etc.)          | Domain expert agent from detected domain         | When concept maps to a known domain                            |
+| Question Type                                      | Default Agent                                    | Override Conditions                                            |
+| -------------------------------------------------- | ------------------------------------------------ | -------------------------------------------------------------- |
+| General explanations, analogies, misconceptions    | `web-search-researcher`                          | Skip if concept is purely internal                     |
+| internal context (tools, libraries, infra) | `web-search-researcher`                        | Only when concept has organisation-specific aspects                 |
+| Codebase implementation details                    | `codebase-explorer`                              | Only when concept maps to actual code in the working directory |
+| Mathematical foundations, proofs, formal notation  | `web-search-researcher` with math-focused prompt | When concept involves equations, proofs, or formal definitions |
+| Domain-specific (ML, data, search, etc.)           | Domain expert agent from detected domain         | When concept maps to a known domain                            |
 
 Display the research plan:
 
@@ -129,10 +130,14 @@ Total agents to spawn: [N]
 This list is my CONTRACT.
 ```
 
+**Agent delivery resilience**: Subagents may go idle without delivering results (known Claude Code issue). If an agent sends an `idle_notification` without content: (1) prompt it via SendMessage using its agent ID (not name), (2) if still no delivery, respawn once, (3) if respawn fails, gather data directly. When spawning 5+ agents, use sequential sub-batches of 3-5.
+
 **Important**: This plan is informational — do NOT wait for user approval.
 Display and proceed immediately. The user can interrupt if the direction is wrong.
 
 #### Step 4: Spawn research agents
+
+**Agent delivery resilience**: Subagents may go idle without delivering results (known Claude Code issue). If an agent sends an `idle_notification` without content: (1) prompt it via SendMessage using its agent ID (not name), (2) if still no delivery, respawn once, (3) if respawn fails, gather data directly or document the gap. When spawning 5+ agents, consider sequential sub-batches to reduce cascade-failure risk.
 
 Execute batches per the plan:
 
@@ -502,55 +507,23 @@ If Manim is not installed, inform the user that Manim installation is needed (~2
 bash ${CLAUDE_PLUGIN_ROOT}/skills/teach-me/scripts/install_deps.sh
 ```
 
-### Phase 7 — Quality Check
+### Phase 7 — Visual QA Review
 
-#### Step 1: Structural checks
+Read [`${CLAUDE_PLUGIN_ROOT}/skills/shared/references/visual-qa-review.md`](${CLAUDE_PLUGIN_ROOT}/skills/shared/references/visual-qa-review.md) for the full review process.
 
-The creative team (or main session in fallback mode) already reviewed the HTML for
-teaching effectiveness and interaction quality. This step is a sanity check for:
-
-- No broken script/style references (all CDN links load)
-- Dark/light theme toggle works
-- Sidebar TOC has correct anchor links
-- Playback controls function on all GSAP animations
-- Manim media files are present if referenced
-
-Fix any issues found before proceeding to Step 2.
-
-#### Step 2: Visual rendering QA
-
-After structural checks pass, render the page and review it visually:
-
-1. Run the visual QA script to capture screenshots:
+1. Run the QA script:
 
    ```bash
-   python3 ${CLAUDE_PLUGIN_ROOT}/skills/teach-me/scripts/visual_qa.py ~/.claude/teach-me/<slug>/index.html
+   python3 ${CLAUDE_PLUGIN_ROOT}/skills/shared/scripts/visual_qa.py ~/.claude/teach-me/<slug>/index.html --skill teach-me --output-dir /tmp/teach-me-qa
    ```
 
-2. Review screenshots using the Read tool (which supports image files).
-   Read at minimum:
-   - `/tmp/teach-me-qa/full-page.png` — check overall layout and spacing
-   - Each `/tmp/teach-me-qa/visual-*.png` — check individual visualizations
+2. Follow the review process defined in the shared reference:
+   - Spawn review agents (adaptive — skip Interaction Reviewer if zero interactive elements)
+   - Synthesize findings into Must Fix / Should Fix / Minor / Advisory
+   - If Must Fix items exist: spawn fix agent, re-run QA, re-review (max 3 iterations)
+   - Present brief summary to user before proceeding
 
-3. For each screenshot, check for these defect categories:
-   - **Text overflow**: Text extending beyond its container (SVG circles, boxes, cards)
-   - **Overlapping elements**: Nodes, labels, or arrows colliding with each other
-   - **Empty visualizations**: SVG/canvas areas that should have content but are blank
-   - **Broken layout**: Elements misaligned, incorrectly stacked, or cut off
-   - **Unreadable text**: Too small, clipped, or low contrast against background
-   - **Bad initial state**: GSAP animations starting in a visually broken position
-
-4. If defects are found:
-   - Identify the root cause in the HTML/JS (e.g., font-size too large for container,
-     circle radius too small for label text)
-   - Fix the HTML source
-   - Re-run the visual QA script to verify the fix
-   - Maximum 2 fix-and-verify iterations
-
-5. Common fixes reference:
-   - **SVG text overflow**: Reduce `font-size`, increase circle `r`, split into `<tspan>` lines, or abbreviate label
-   - **Overlapping nodes**: Adjust x/y coordinates to increase spacing
-   - **Empty visualization**: Check that animation initial state has `opacity: 1` on at least the base elements
+3. Proceed to Phase 8 (Deliver) only after review approves or iteration ceiling reached.
 
 ### Phase 8 — Deliver
 
@@ -578,7 +551,11 @@ After structural checks pass, render the page and review it visually:
    open ~/.claude/teach-me/<slug>/index.html
    ```
 
-6. Report the output path to the user.
+6. Report the output path to the user, including:
+   ```
+   **To share internally:**
+   - Say "publish" or "share this" to deploy to your internal static host (SSO-protected)
+   ```
 
 ## Reference Files
 
@@ -608,4 +585,3 @@ After structural checks pass, render the page and review it visually:
 | `scripts/install_deps.sh` | `bash scripts/install_deps.sh [--check-only]`                                    |
 | `scripts/render_manim.py` | `python3 scripts/render_manim.py <file> <class> --format gif --output-dir <dir>` |
 | `scripts/embed_media.py`  | `python3 scripts/embed_media.py <html_file> --max-size 500000`                   |
-| `scripts/visual_qa.py`    | `python3 scripts/visual_qa.py <html_file> [--output-dir DIR] [--width WIDTH]`    |

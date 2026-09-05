@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Overlapping Elements Test Fixture</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+    }
+    .container {
+      position: relative;
+      height: 300px;
+      background: #f0f0f0;
+    }
+    .box-a {
+      position: absolute;
+      top: 50px;
+      left: 100px;
+      width: 200px;
+      height: 150px;
+      background: rgba(255, 0, 0, 0.5);
+      z-index: 1;
+    }
+    .box-b {
+      position: absolute;
+      top: 90px;
+      left: 160px;
+      width: 200px;
+      height: 150px;
+      background: rgba(0, 0, 255, 0.5);
+      z-index: 2;
+    }
+    .sidebar {
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: 200px;
+      height: 100%;
+      background: #333;
+      color: #fff;
+      overflow: hidden;
+    }
+    .clipping-heading {
+      position: absolute;
+      top: 10px;
+      right: 0;
+      width: 400px;
+      font-size: 2rem;
+      white-space: nowrap;
+      background: #ffe0e0;
+    }
+    .fixed-width-block {
+      width: 1200px;
+      background: #d0ffd0;
+      padding: 20px;
+      font-size: 1.2rem;
+      overflow: visible;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Two absolutely positioned divs overlapping by 40px at desktop -->
+    <div class="box-a">Box A (position: absolute)</div>
+    <div class="box-b">Box B (position: absolute, overlaps A by ~40px)</div>
+
+    <!-- Sidebar that clips the heading at 375px mobile viewport -->
+    <div class="sidebar">Sidebar</div>
+    <h2 class="clipping-heading">This heading clips against the sidebar at mobile viewport</h2>
+  </div>
+
+  <!-- SVG with text overflowing the circle boundary -->
+  <svg width="200" height="200" viewBox="0 0 200 200">
+    <circle cx="100" cy="100" r="40" fill="#4a90d9" />
+    <text x="100" y="110" text-anchor="middle" font-size="48" fill="#fff">
+      Overflow Text
+    </text>
+  </svg>
+
+  <!-- Fixed-width content block causing horizontal overflow on mobile -->
+  <div class="fixed-width-block">
+    This content block has a fixed width of 1200px, which causes horizontal
+    overflow on any viewport narrower than that. On a 375px mobile device,
+    this will scroll horizontally and break the layout.
+  </div>
+</body>
+</html>

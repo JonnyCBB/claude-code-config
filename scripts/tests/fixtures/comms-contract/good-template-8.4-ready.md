@@ -1,0 +1,5 @@
+READY: the check on how I write to you (jbrooksbartlett-5r44 - Build the outgoing-message check that enforces the communication contract, PR #89 - Add the outgoing-message contract check)
+What changed: there is now a program that reads every message I am about to send you and refuses it if it contains a code, a session name, a pull request number or a commit fingerprint with nothing beside it saying what that thing is.
+What it means for you: you are approving the check itself. Once it is merged, the rule you have had to correct twice by hand is enforced by a program instead of by my memory.
+Checked: the four-step chain ran, and the check was run against six of my real messages from the day the rule was broken, which it refused, and against the four message shapes from the contract, which it accepted.
+NOT verified: this repository runs no continuous integration at all, so there is no build result to show you - the test suite is the only evidence. The check also cannot stop a message before it appears on your screen; it catches it and makes me re-send.

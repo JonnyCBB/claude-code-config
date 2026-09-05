@@ -1,9 +1,9 @@
 {
   "name": "eng-utils",
-  "description": "Engineering utilities: /assess-incident for severity classification, /incident-investigation for root cause analysis across backend/data/indexing domains, /refactor-architecture for codebase friction analysis and proposals, /system-architecture-doc for C4 architecture documentation, plus service diagnostics and operational skills.",
-  "version": "0.1.0",
+  "description": "Engineering utilities: /improve-codebase-architecture for codebase friction analysis and proposals, /system-architecture-doc and /c4-architecture for C4 architecture documentation, and /bug-hunter-3000 for multi-candidate bug investigation over named components with independent mechanism/intent verification and an HTML digest.",
+  "version": "0.24.1",
   "author": {
-    "name": "jbrooksbartlett",
+    "name": "JonnyCBB",
     "email": "jonnybrooks04@gmail.com"
   }
 }

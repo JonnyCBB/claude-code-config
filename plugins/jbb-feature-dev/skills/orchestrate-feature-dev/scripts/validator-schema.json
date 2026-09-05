@@ -1,0 +1,25 @@
+{
+  "type": "object",
+  "properties": {
+    "assertions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "status": { "enum": ["passed", "failed", "blocked"] },
+          "actual": { "type": "string" },
+          "expected": { "type": "string" },
+          "commands_executed": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "evidence": { "type": "string" },
+          "block_reason": { "type": "string" }
+        },
+        "required": ["id", "status"]
+      }
+    }
+  },
+  "required": ["assertions"]
+}

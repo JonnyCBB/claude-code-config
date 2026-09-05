@@ -131,16 +131,17 @@ tests/test_model.py |   W    |        |   W    |        |
 ```
 
 Legend:
+
 - **W** = task writes (creates or modifies) this file
 - **R** = task reads (imports or references) this file
 
 ### Conflict Rules
 
-| Same-wave combination     | Verdict              | Action                                              |
-|---------------------------|----------------------|-----------------------------------------------------|
-| Two tasks both Write (W/W) | **CONFLICT**         | Move one task to the next wave                      |
+| Same-wave combination       | Verdict                | Action                                                                                                                                                                                            |
+| --------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Two tasks both Write (W/W)  | **CONFLICT**           | Move one task to the next wave                                                                                                                                                                    |
 | One Writes, one Reads (W/R) | **POTENTIAL CONFLICT** | Check if the read depends on that specific write. If yes, it is a hard dependency and they cannot be in the same wave. If no (the file already exists and the write is additive), it may be safe. |
-| Two tasks both Read (R/R)  | **NO CONFLICT**      | Safe to keep in the same wave                       |
+| Two tasks both Read (R/R)   | **NO CONFLICT**        | Safe to keep in the same wave                                                                                                                                                                     |
 
 ### How to Build the Matrix
 
@@ -161,8 +162,15 @@ Before finalizing wave assignments, verify that ALL of the following conditions 
 - [ ] No shared test fixtures being modified (reading shared fixtures is OK; writing to them is not)
 - [ ] No database schema changes that affect both tasks
 - [ ] No shared configuration files being modified by both tasks
+- [ ] **No overlapping test-execution scope**: the tasks' own prescribed verification commands must not collect the same test files or directories. A sibling's in-flight edit — or a deleted module that something else still imports — breaks the other task's collection even when the two write sets are perfectly disjoint.
+- [ ] **No task reads project-wide derived state that a sibling mutates**: import graphs, fence or allowlist scans, AST sweeps, lockfiles, digests. Independence has to hold over what each task _reads_, including global and derived state, not only over what it writes.
+- [ ] **No task's own Verification step asserts on a file another task in the same wave owns.** Move every cross-file assertion up to the wave's Success Criteria, where it becomes a genuine wave-exit gate instead of a race.
 
 If ANY condition fails for a pair of tasks, they cannot be in the same wave. Move one to a later wave.
+
+**Why the last three exist:** disjoint writes are necessary but not sufficient, and treating them as sufficient produced four defects across three sessions. A wave analyst confirmed one wave's "genuinely file-disjoint" claim was true at the write level and false at the test-execution level, because the plan's own verification commands raced at pytest collection time. An implementer had to override another wave because a task's import-fence allowlist performs a project-wide AST scan whose correct output depends on two sibling tasks' edits already being on disk. Two other tasks carried cross-file consistency checks in their own Verification steps that could not run at all inside a 10-task parallel wave.
+
+**One more trap, if the same verbatim passage must appear in several files** (an acceptance-criteria quote, a licence header, a shared docstring): name one owning task and pin the exact byte form, punctuation included. Three tasks each told to reproduce the same AC text independently normalized it differently — em-dash versus ASCII hyphen — and the divergence had to be reconciled afterwards.
 
 ---
 
@@ -180,6 +188,11 @@ Wave 0 is a dedicated wave for test infrastructure. It must complete before any 
 2. **Shared fixtures**: Test data, mock objects, factory functions, and builders that multiple tasks will use. These go here because implementation tasks should be able to import them immediately.
 3. **Stub test files**: Empty or minimal test files with the correct directory structure. Their purpose is to verify that the test framework discovers and runs tests in the expected locations.
 4. **CI verification**: A command (or set of commands) to run that proves tests execute correctly, even when all tests are stubs.
+5. **Executable precondition gates** — one per assumption the Current State Analysis makes about another plan's landed state. Each gate is a concrete command (a `grep` for a symbol, an import, a targeted test) that halts and escalates on mismatch. A prose caveat in the Overview is not a gate: nothing executes it, so nothing catches it when it is wrong.
+
+   **Why:** one plan's central assumption — "Plans 1-6 already landed" — existed only as Overview prose, and a reviewer proved it false in the real tree. The same failure then recurred four more times in a single plan sequence: a task was already fully implemented by an earlier plan; a premise that an earlier plan had deleted a module was false and it still had 7 live callers; a task assumed an earlier plan had repointed a root agent when it had not; and a handoff claimed only Wave 0 was complete when all of Wave 1 was done but uncommitted. Every one of these is cheap to detect with a single command and expensive to discover mid-implementation.
+
+6. **Any task whose acceptance criteria reference a pre-implementation state.** A criterion like "run every check before Wave 1 and confirm every check fails" is unobtainable once a later wave has created those files on disk — the RED baseline no longer exists to observe. Either place the task in Wave 0 where the baseline is still real, keep only the GREEN confirmation in the later wave, or write down an explicit checkout-an-earlier-commit mechanism. Two plans generated on the same day carried this defect, and three separate reviewer personas caught it: a task required a pre-Wave-1 failing baseline while the wave schedule placed it entirely in Wave 2.
 
 ### Wave 0 Success Criteria
 
@@ -219,32 +232,32 @@ This section walks through a complete wave analysis for a concrete scenario.
 
 Building a user notification feature with 5 implementation tasks:
 
-| Task | Description                                      |
-|------|--------------------------------------------------|
-| A    | Create notification model + tests                |
-| B    | Create notification service (uses model) + tests |
-| C    | Create email sender (standalone) + tests         |
+| Task | Description                                                              |
+| ---- | ------------------------------------------------------------------------ |
+| A    | Create notification model + tests                                        |
+| B    | Create notification service (uses model) + tests                         |
+| C    | Create email sender (standalone) + tests                                 |
 | D    | Create notification API endpoint (uses service and email sender) + tests |
-| E    | Create notification preferences (uses model) + tests |
+| E    | Create notification preferences (uses model) + tests                     |
 
 ### Step 1 — List Inputs and Outputs
 
-| Task | Creates (W)                                    | Reads (R)                                |
-|------|------------------------------------------------|------------------------------------------|
-| A    | `src/models/notification.py`, `tests/test_notification_model.py` | (none beyond Wave 0 fixtures) |
-| B    | `src/services/notification_service.py`, `tests/test_notification_service.py` | `src/models/notification.py` |
-| C    | `src/services/email_sender.py`, `tests/test_email_sender.py` | (none beyond Wave 0 fixtures) |
-| D    | `src/api/notification_endpoint.py`, `tests/test_notification_endpoint.py` | `src/services/notification_service.py`, `src/services/email_sender.py` |
-| E    | `src/models/notification_preferences.py`, `tests/test_notification_preferences.py` | `src/models/notification.py` |
+| Task | Creates (W)                                                                        | Reads (R)                                                              |
+| ---- | ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| A    | `src/models/notification.py`, `tests/test_notification_model.py`                   | (none beyond Wave 0 fixtures)                                          |
+| B    | `src/services/notification_service.py`, `tests/test_notification_service.py`       | `src/models/notification.py`                                           |
+| C    | `src/services/email_sender.py`, `tests/test_email_sender.py`                       | (none beyond Wave 0 fixtures)                                          |
+| D    | `src/api/notification_endpoint.py`, `tests/test_notification_endpoint.py`          | `src/services/notification_service.py`, `src/services/email_sender.py` |
+| E    | `src/models/notification_preferences.py`, `tests/test_notification_preferences.py` | `src/models/notification.py`                                           |
 
 ### Step 2 — Identify Hard Dependencies
 
-| Dependent | Depends On | Reason                                                |
-|-----------|------------|-------------------------------------------------------|
-| B         | A          | Service imports and uses the notification model       |
-| D         | B          | Endpoint imports and uses the notification service    |
-| D         | C          | Endpoint imports and uses the email sender            |
-| E         | A          | Preferences model references the notification model   |
+| Dependent | Depends On | Reason                                              |
+| --------- | ---------- | --------------------------------------------------- |
+| B         | A          | Service imports and uses the notification model     |
+| D         | B          | Endpoint imports and uses the notification service  |
+| D         | C          | Endpoint imports and uses the email sender          |
+| E         | A          | Preferences model references the notification model |
 
 Dependency graph:
 
@@ -327,7 +340,7 @@ Wave 3: Task D (notification API endpoint)
 ### Dependency Summary Table
 
 | Task | Wave | Hard Dependencies | Soft Dependencies |
-|------|------|-------------------|-------------------|
+| ---- | ---- | ----------------- | ----------------- |
 | 0    | 0    | (none)            | (none)            |
 | A    | 1    | Task 0            | (none)            |
 | C    | 1    | Task 0            | (none)            |
@@ -352,12 +365,12 @@ If a task has no hard dependencies (other than Wave 0), its wave is 1.
 
 ### Conflict Detection Summary
 
-| Situation                          | Same Wave? |
-|------------------------------------|------------|
-| No shared files                    | OK         |
-| Both read same file                | OK         |
-| One writes, other reads same file  | Check dependency direction |
-| Both write same file               | NOT OK — move one to later wave |
+| Situation                         | Same Wave?                      |
+| --------------------------------- | ------------------------------- |
+| No shared files                   | OK                              |
+| Both read same file               | OK                              |
+| One writes, other reads same file | Check dependency direction      |
+| Both write same file              | NOT OK — move one to later wave |
 
 ### Checklist Before Finalizing Waves
 

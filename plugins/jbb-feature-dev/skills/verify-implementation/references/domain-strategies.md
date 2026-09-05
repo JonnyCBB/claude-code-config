@@ -55,7 +55,7 @@ restart" steps below apply only to Step 9's non-live Before/After verification.
 
 ### Verification Techniques
 
-- **gRPC requests**: `grpcurl` request/response pairs
+- **gRPC requests**: `spgrpcurl` or `grpcurl` request/response pairs
 - **REST requests**: `curl` request/response pairs
 - **Response field extraction**: Use `jq` or `grpcurl -format json` for targeted comparison (skip timestamps, request IDs, trace IDs)
 
@@ -67,7 +67,7 @@ restart" steps below apply only to Step 9's non-live Before/After verification.
    # Send requests and capture responses
    curl -s <endpoint> | jq '.' > /tmp/verify-after-<label>.json
    # or
-   grpcurl <service> <method> '<request>' > /tmp/verify-after-<label>.json
+   spgrpcurl <service> <method> '<request>' > /tmp/verify-after-<label>.json
    ```
 
 2. Record all responses before switching branches.
@@ -87,7 +87,7 @@ restart" steps below apply only to Step 9's non-live Before/After verification.
    ```bash
    curl -s <endpoint> | jq '.' > /tmp/verify-before-<label>.json
    # or
-   grpcurl <service> <method> '<request>' > /tmp/verify-before-<label>.json
+   spgrpcurl <service> <method> '<request>' > /tmp/verify-before-<label>.json
    ```
 
 6. Return to feature branch:

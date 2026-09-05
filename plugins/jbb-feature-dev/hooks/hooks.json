@@ -1,0 +1,16 @@
+{
+  "description": "Turn-end follow-up capture. Asks the model to file work it deferred but never recorded. Silent when there is nothing to file.",
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/followup_capture.py\" hook",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

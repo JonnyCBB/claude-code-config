@@ -1,7 +1,6 @@
 ---
 name: c4-architecture
-description:
-  C4 model architecture diagrams for systems. Use when asked to create
+description: C4 model architecture diagrams for systems. Use when asked to create
   architecture documentation, model a system for agent reasoning, generate C4 diagrams from
   code/config, or plan multi-system refactorings that need architectural context.
 allowed-tools:
@@ -13,12 +12,11 @@ allowed-tools:
 # C4 Architecture Skill
 
 Guides agents in creating C4 model architecture diagrams that serve two audiences:
-humans reading TechDocs/GitHub and agents reasoning about multi-system changes.
+humans reading internal docs/GitHub and agents reasoning about multi-system changes.
 
 ## When to Use This Skill
 
 Invoke when:
-
 - Asked to "create architecture documentation" or "document this system"
 - Asked to "generate a C4 diagram" (any level)
 - Working on a cross-service refactoring and needing architectural context
@@ -26,7 +24,6 @@ Invoke when:
 - Asked "what does this system's architecture look like?"
 
 Do NOT use for:
-
 - Flowcharts, ER diagrams, sequence diagrams standalone (use `diagram-standards/`)
 - Code-level class diagrams
 - Enterprise/business architecture (ArchiMate territory)
@@ -35,10 +32,10 @@ Do NOT use for:
 
 Two output formats serve different purposes:
 
-| Format              | When to use                                              | Key property                                                        |
-| ------------------- | -------------------------------------------------------- | ------------------------------------------------------------------- |
-| **Structurizr DSL** | Creating a persistent `workspace.dsl` architecture model | One file captures full model; agents read directly as text          |
-| **PlantUML C4**     | TechDocs, architecture docs, RFC sections                | Renders natively in TechDocs; pre-render to SVG for GitHub/markdown |
+| Format | When to use | Key property |
+|--------|-------------|--------------|
+| **Structurizr DSL** | Creating a persistent `workspace.dsl` architecture model | One file captures full model; agents read directly as text |
+| **PlantUML C4** | internal docs, architecture docs, RFC sections | Renders natively in internal docs; pre-render to SVG for GitHub/markdown |
 
 **Default**: Always create a Structurizr DSL `workspace.dsl` as the primary model — it
 defines all levels in one file and provides maximum flexibility. Additionally generate
@@ -49,20 +46,19 @@ Mermaid is used only for `sequenceDiagram` blocks (request flow diagrams).
 
 ## C4 Level Selection
 
-| Task type                                              | Right C4 level     | Diagram type      |
-| ------------------------------------------------------ | ------------------ | ----------------- |
-| Cross-service refactoring, multi-system API change     | Level 2: Container | `C4Container`     |
-| Understanding system boundaries, external dependencies | Level 1: Context   | `C4Context`       |
-| Within-service component change                        | Level 3: Component | `C4Component`     |
-| Request flow / change propagation across services      | Supplementary      | `sequenceDiagram` |
-| Deployment topology (K8s nodes, regions)               | Supplementary      | `C4Deployment`    |
+| Task type | Right C4 level | Diagram type |
+|-----------|---------------|--------------|
+| Cross-service refactoring, multi-system API change | Level 2: Container | `C4Container` |
+| Understanding system boundaries, external dependencies | Level 1: Context | `C4Context` |
+| Within-service component change | Level 3: Component | `C4Component` |
+| Request flow / change propagation across services | Supplementary | `sequenceDiagram` |
+| Deployment topology (K8s nodes, regions) | Supplementary | `C4Deployment` |
 
 **Avoid Level 4 (Code/C4Code)** — too granular, equivalent to reading source files.
 
 ## File Conventions
 
 Architecture docs are stored centrally in:
-
 ```
 ~/.claude/thoughts/shared/architecture/
 ├── <system-name>/

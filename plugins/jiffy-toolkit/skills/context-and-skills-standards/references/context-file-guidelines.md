@@ -30,7 +30,10 @@ Every line in a context file has a non-zero token cost. The model will:
 
 This means a context file with 10 well-chosen instructions outperforms one with 50 mixed-quality
 instructions. The cost of an unnecessary instruction is not zero — it's a small performance
-penalty that compounds across every task.
+penalty that compounds across every task. Instruction-following degrades as total instruction
+count grows — more requirements can drop performance 19% (Prompt Underspecification) and
+performance degrades with input length even when all evidence is retrievable (Context Length
+Hurts).
 
 **The key insight from "Evaluating AGENTS.md" (2602.11988):** When existing documentation was
 removed from repos, LLM-generated context files improved performance by 2.7% — proving their
@@ -87,8 +90,8 @@ knowledge.
 
 ```
 # Good: non-obvious, specific to this repo
-Use the Grep tool for code search, NOT the Bash tool with `grep` — the Grep tool
-has better permissions handling and output formatting.
+Use the MCP tool `mcp__plugin_jiffy-toolkit_code-search-mcp__search_code` for code search, NOT the Bash tool
+with `grep` — the MCP tool has access to internal repos not available via Bash.
 ```
 
 ---
@@ -99,9 +102,11 @@ has better permissions handling and output formatting.
 explaining the architecture. Research finding: no meaningful reduction in steps to locate
 files. The model uses codebase exploration tools, not prose descriptions.
 
-**Auto-generated content** — Running `/init` or asking an LLM to "generate a CLAUDE.md."
-"Evaluating AGENTS.md": −2 to −3% performance, +20–23% cost. LLMs identify that documentation
-is needed but generate generic, noisy content that consumes budget without helping.
+**Single-pass LLM-generated content** — Running `/init` or asking an LLM to "generate a
+CLAUDE.md" in one pass. This approach yields −2 to −3% performance and +20–23% cost
+(Evaluating AGENTS.md) because LLMs generate generic, noisy content that consumes budget
+without providing procedural value. Eval-driven iteration with human review can work
+(+5.19% per cycle, Arize), but single-pass generation does not.
 
 **Standard language conventions** — Instructions like "write clean code," "use descriptive
 variable names," or "follow PEP 8." The model already does these without being told. Including
@@ -119,17 +124,43 @@ for your repo (e.g., "this project uses tabs, not spaces").
 
 ## Length Guidance
 
-There is no optimal line count — the right length is determined by signal-to-noise ratio.
+Anthropic recommends CLAUDE.md under 200 lines (empirical target). The right length is
+still determined by signal-to-noise ratio, but official guidance now provides a concrete
+ceiling.
 
 **Practical references:**
 
-- HumanLayer recommends under 60 lines
-- Anthropic: "keep it concise" — important rules get lost in noise if the file is too long
+- Anthropic: under 200 lines (official target, may change with model updates)
+- HumanLayer: under 60 lines (more aggressive, based on system_reminder framing analysis)
 - Martin Fowler (Feb 2026): models have become powerful enough that extensive context
   previously necessary may no longer be required
+
+**Why shorter works better:** CLAUDE.md is wrapped in a `<system_reminder>` tag with "may
+or may not be relevant" framing (HumanLayer finding). This means instructions compete for
+attention — the more you add, the less weight each individual instruction carries.
 
 **The test to apply to every line:**
 _"Would removing this line cause the model to make a specific, observable mistake on a real task?"_
 
 If no → delete it. Apply this test ruthlessly. The value of a context file comes from
 precision, not completeness.
+
+---
+
+## CLAUDE.md vs Skills Decision Rule
+
+Anthropic provides a clear decision rule for where content belongs:
+
+**CLAUDE.md** — "Always do X" rules that apply to every task. Loads every session. Keep
+under 200 lines. Examples: test commands, formatting exceptions, tooling quirks.
+
+**Skills** — Reference material and invocable workflows. Loaded on demand when the description
+matches the task. Examples: deployment procedures, framework-specific patterns, review
+checklists.
+
+**`.claude/rules/*.md`** — Conditional rules scoped by glob pattern. Use for file-type or
+directory-specific instructions that don't apply globally.
+
+**The migration signal:** If CLAUDE.md is growing past 200 lines, move reference content
+to skills or split conditional rules into `.claude/rules/` files. Each line in CLAUDE.md
+costs tokens on every task; content that only applies sometimes should be lazy-loaded.

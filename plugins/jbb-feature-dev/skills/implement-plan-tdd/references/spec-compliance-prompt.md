@@ -51,6 +51,18 @@ If the plan has a `## File Structure` section, does the implementation conform t
 planned file purposes and responsibilities? If no File Structure section exists, SKIP
 this check.
 
+### 6. Requirements constraints conformance
+If a requirements document was provided (see {{REQUIREMENTS_CONSTRAINTS_BLOCK}} below),
+verify that the implementation does not violate any MUST/MUST NOT constraint from that
+document. Check each constraint against the actual code behavior. Pay special attention to:
+- Execution patterns (parallel vs. sequential, async vs. sync)
+- Service boundaries (changes confined to the specified service)
+- Latency constraints (no added latency on the critical path)
+- Scope constraints (features marked "Not needed" are absent)
+If no requirements document was provided, SKIP this check.
+
+{{REQUIREMENTS_CONSTRAINTS_BLOCK}}
+
 ## Output Format
 
 For each checklist item, report:
@@ -69,16 +81,17 @@ For each checklist item, report:
 
 ## 2. Severity Classification
 
-| Finding | Severity | Action |
-|---------|----------|--------|
-| Missing planned file | FAIL (blocking) | Stop — planned work was not completed |
-| Unplanned file modification | FAIL (blocking) | Stop — scope creep or misunderstanding |
-| Implementation contradicts spec | FAIL (blocking) | Stop — wrong behavior implemented |
-| Trivially passing test | FAIL (blocking) | Stop — TDD contract violated |
-| Different naming than plan | WARN | Continue — cosmetic deviation |
-| Additional helper method | WARN | Continue — implementation detail |
-| Slightly different approach, same outcome | WARN | Continue — agent judgment call |
-| Extra import or dependency | WARN | Continue — minor addition |
+| Finding                                         | Severity        | Action                                 |
+| ----------------------------------------------- | --------------- | -------------------------------------- |
+| Missing planned file                            | FAIL (blocking) | Stop — planned work was not completed  |
+| Unplanned file modification                     | FAIL (blocking) | Stop — scope creep or misunderstanding |
+| Implementation contradicts spec                 | FAIL (blocking) | Stop — wrong behavior implemented      |
+| Trivially passing test                          | FAIL (blocking) | Stop — TDD contract violated           |
+| Different naming than plan                      | WARN            | Continue — cosmetic deviation          |
+| Additional helper method                        | WARN            | Continue — implementation detail       |
+| Slightly different approach, same outcome       | WARN            | Continue — agent judgment call         |
+| Extra import or dependency                      | WARN            | Continue — minor addition              |
+| Implementation violates requirements constraint | FAIL (blocking) | Stop — requirements are non-negotiable |
 
 ---
 

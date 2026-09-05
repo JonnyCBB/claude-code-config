@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Broken Interactivity Test Fixture</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 20px;
+      background: #fafafa;
+    }
+    .control-group {
+      margin: 20px 0;
+      padding: 16px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background: #fff;
+    }
+    .control-group h3 {
+      margin-top: 0;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 1rem;
+      cursor: pointer;
+      margin: 4px;
+    }
+    .broken-btn { background: #ff6b6b; color: #fff; border: none; border-radius: 4px; }
+    .working-btn { background: #51cf66; color: #fff; border: none; border-radius: 4px; }
+    .range-display {
+      font-size: 1.5rem;
+      font-weight: bold;
+      margin-left: 12px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Broken Interactivity Test Fixture</h1>
+
+  <!-- Broken button: calls a function that does not exist -->
+  <div class="control-group">
+    <h3>Broken Button (calls undefinedFunction)</h3>
+    <button class="broken-btn" onclick="undefinedFunction()">
+      Click Me (Will Error)
+    </button>
+    <p>This button calls <code>undefinedFunction()</code>, which does not exist.</p>
+  </div>
+
+  <!-- Range slider with no event listener: display never updates -->
+  <div class="control-group">
+    <h3>Broken Range Slider (display does not update)</h3>
+    <input type="range" id="brokenRange" min="0" max="100" value="50">
+    <span class="range-display" id="rangeValue">50</span>
+    <p>The span should update as you drag, but no event listener is attached.</p>
+  </div>
+
+  <!-- Working button for comparison -->
+  <div class="control-group">
+    <h3>Working Button (for comparison)</h3>
+    <button class="working-btn" id="workingBtn">Click Me (Works)</button>
+    <p id="workingOutput">Nothing clicked yet.</p>
+  </div>
+
+  <!-- Working button script -->
+  <script>
+    document.getElementById("workingBtn").addEventListener("click", function() {
+      document.getElementById("workingOutput").textContent =
+        "Button clicked at " + new Date().toLocaleTimeString();
+    });
+  </script>
+
+  <!-- Intentional console error on page load -->
+  <script>
+    console.error("Intentional error for testing");
+  </script>
+
+  <!-- Script referencing a non-existent CDN library (will 404) -->
+  <script src="https://cdn.example.com/nonexistent-lib.js"></script>
+</body>
+</html>

@@ -5,7 +5,7 @@ description: >
   executed. Produces before/after comparisons, happy path demonstrations, edge case tests,
   and structured evidence documents at ~/.claude/thoughts/shared/verification/.
   Use when asked to "verify the plan", "generate verification evidence", "run verification",
-  or at the /verify-implementation step in the workflow after /tidy and /commit.
+  or at the /verify-implementation step in the workflow after /polish-code and /commit.
 ---
 
 # Verify
@@ -25,6 +25,21 @@ If a requirements doc path is provided (via `--requirements <path>` or as a seco
 read it fully. The requirements doc is optional — if not provided, skip all
 requirements-based verification (Steps 2b, 4b, and the Requirements Alignment section
 in the evidence document).
+
+## Live Testing Philosophy
+
+Live testing — starting the service locally and sending real requests — is the strongest
+form of verification evidence. It proves the implementation works end-to-end in a way
+that static code analysis and unit tests cannot.
+
+**Default**: ALWAYS attempt live testing.
+**Exception**: Only skip when technically impossible (no runnable service exists).
+**When skipped**: Document exactly why with specifics in the evidence document.
+**When successful**: ALWAYS include in the verification report:
+
+- Raw/verbatim logging of every request sent and response received
+- Comprehensive reproduction instructions (prerequisites, build, startup, health check,
+  all test request commands, cleanup)
 
 ## Step 2: Parse Plan for Testable Assertions
 
@@ -106,28 +121,29 @@ For scope items:
 
 ## Step 5: Domain Detection
 
-Scan changed files for domain patterns.
+Follow the detection procedure in `${CLAUDE_PLUGIN_ROOT}/skills/shared-references/domain-agent-registry.md` — check changed file names/paths against file triggers first, then check content for strong and corroborating signals.
 
-For v1, only two domains produce verification examples:
+For v1, the following domains produce verification examples:
 
-- **Backend API** — gRPC/REST services with request/response verification.
-  Triggers Step 8 (Live Service Testing) for comprehensive scenario-based testing.
+- **Backend API** — gRPC/REST services with request/response verification
 - **Infrastructure/Skills** — file existence, content matching, command output verification
 
-Other detected domains are noted in the evidence document but not actively verified.
+All domains may trigger Step 8 (Live Service Testing) — see Step 8 for the mandatory
+live testing policy. Domain detection informs the verification approach but does NOT
+gate whether live testing is attempted.
 
 ## Step 6: Verification Strategy Selection
 
 Based on plan content, determine which example types to include:
 
-| Type                     | When to Include                                        | Minimum                                                                               |
-| ------------------------ | ------------------------------------------------------ | ------------------------------------------------------------------------------------- |
-| **Happy Path**           | Always                                                 | 1 per desired end state item                                                          |
-| **Before/After**         | Filtering, removal, transformation, behavioral changes | As warranted                                                                          |
-| **Edge Cases**           | Special inputs, boundary conditions, format variations | As warranted                                                                          |
-| **Failure Modes**        | Error handling, timeouts, retries, fallbacks           | As warranted                                                                          |
-| **Live Service Testing** | Backend API domain detected in Step 5                  | Agent determines count based on code complexity, branching paths, and plan objectives |
-| **Regression**           | Always                                                 | Existing test suites must pass                                                        |
+| Type                     | When to Include                                                                                                                        | Minimum                                                                               |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| **Happy Path**           | Always                                                                                                                                 | 1 per desired end state item                                                          |
+| **Before/After**         | Filtering, removal, transformation, behavioral changes                                                                                 | As warranted                                                                          |
+| **Edge Cases**           | Special inputs, boundary conditions, format variations                                                                                 | As warranted                                                                          |
+| **Failure Modes**        | Error handling, timeouts, retries, fallbacks                                                                                           | As warranted                                                                          |
+| **Live Service Testing** | Always, unless technically impossible (no runnable service exists — e.g., pure library, data pipeline, or infrastructure-only changes) | Agent determines count based on code complexity, branching paths, and plan objectives |
+| **Regression**           | Always                                                                                                                                 | Existing test suites must pass                                                        |
 
 Use agent judgement to determine relevance — do not rely on rigid keyword matching.
 
@@ -138,7 +154,7 @@ Document the selected strategy and rationale in the evidence document.
 Run each command from the plan's `#### Automated Verification:` sections across all phases.
 Record PASS/FAIL for each with the command output.
 
-Also run test suites identified via `${CLAUDE_PLUGIN_ROOT}/commands/shared/language-agent-registry.md`:
+Also run test suites identified via `${CLAUDE_PLUGIN_ROOT}/skills/shared-references/language-agent-registry.md`:
 
 - Detect languages from changed file extensions
 - Find test files using the Test File Detection patterns
@@ -146,10 +162,18 @@ Also run test suites identified via `${CLAUDE_PLUGIN_ROOT}/commands/shared/langu
 
 If a command fails, capture the error output and continue with remaining commands.
 
-## Step 8: Live Service Testing (Backend API Only)
+## Step 8: Live Service Testing
 
-If Step 5 detected the Backend API domain, execute live service testing. Otherwise skip
-to Step 9.
+> **Mandatory by default.** Live testing is the DEFINITIVE way to verify that an
+> implementation works. The agent MUST attempt to start the service locally and run
+> live requests against it. Only skip this step when it is technically impossible —
+> for example, the changes are to a pure library with no runnable service, a data
+> pipeline that cannot be run locally, or infrastructure-only files with no service
+> component.
+>
+> When live testing is skipped, the evidence document MUST include a section explaining
+> exactly WHY with specifics (not just "not applicable" — state what was checked and
+> why no service exists to test).
 
 Read `references/live-testing-guide.md` for the full procedure.
 
@@ -167,9 +191,12 @@ dependencies):
 
 1. **Investigate and resolve** — common blockers have known solutions (see
    "Common Local Startup Blockers" in `references/live-testing-guide.md`):
+   - Secret-store lookup failure → use the local secret-override setting in user conf
    - PubSub → run `gcloud beta emulators pubsub start`
-   - Service auth → disable auth enforcement for local testing
-   - Service discovery → configure service domain for local environment
+   - NLS resolution → set `apollo.domain` to a real environment
+   - Service auth → prefer an in-process integration test with a fake gRPC stub;
+     disabling `serviceauth.enabled` in `-user.conf` requires explicit user
+     permission (auto-mode classifies it as auth-weakening)
 2. **If unresolvable**, stop and ask the user:
    - Explain what is blocking direct testing
    - Propose workarounds (e.g., testing a related endpoint, calling the deployed
@@ -183,12 +210,14 @@ dependencies):
 
 ### Phase 1: Service Startup
 
-1. Auth pre-flight check (ADC, service account impersonation)
+1. Auth pre-flight check (ADC, service account impersonation, if applicable)
 2. Detect build system and Main class
 3. Build the project
 4. Start the service as a background process
 5. Poll for readiness (up to 60 seconds via gRPC health check)
-6. On failure: capture error, record as FAIL, proceed to Step 9
+6. On failure: consult "Common Local Startup Blockers" in `references/live-testing-guide.md`,
+   attempt fixes, and retry. If still failing after investigation: capture error, record
+   as FAIL, proceed to Step 9
 
 ### Phase 2: Test Scenario Generation
 

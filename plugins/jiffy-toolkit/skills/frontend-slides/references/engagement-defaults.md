@@ -13,6 +13,7 @@ Excessive fragmentation disrupts presentation flow. The audience should never fe
 **Related elements MUST appear together as a single fragment group, not individually.** Use `data-fragment-index` to assign the same index to elements that belong together.
 
 Examples of logical groups:
+
 - **Diagrams/DAGs**: All nodes AND their connecting edges within the same layer appear together
 - **Title + subtitle**: These are one unit — show together or not at all
 - **A bullet point + its sub-bullets**: Reveal as one group
@@ -33,27 +34,30 @@ Examples of logical groups:
 
 ### Fragment Strategy by Slide Type
 
-| Slide Type | Fragment Strategy |
-|------------|------------------|
-| Title slide | **No fragments by default.** Title, subtitle, and tags appear immediately. Only fragment if the agent judges it adds narrative value (e.g., a dramatic reveal). |
-| Section divider | No fragments (single visual element) |
-| Content (bullets) | Group into 2-3 logical reveal steps, NOT one-per-bullet. E.g., 6 bullets = 2 groups of 3, or 3 groups of 2. |
-| Two-column | Left column appears first, then right column (2 steps max) |
-| Feature grid | Reveal row by row (2-3 steps), NOT card by card |
-| Code slide | Code is always visible; line highlights are fragments (2-3 highlight groups) |
-| Fact/stat | Number appears first (with counter animation), then label (2 steps) |
-| Image-left/right | Show everything at once, or image first then text (1-2 steps max) |
-| Quote | Show everything at once, or quote then attribution (1-2 steps max) |
-| Diagram/DAG | Reveal by logical layer — all nodes AND edges in a layer appear together |
-| Image-only | No fragments |
+| Slide Type          | Fragment Strategy                                                                                                                                               |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Title slide         | **No fragments by default.** Title, subtitle, and tags appear immediately. Only fragment if the agent judges it adds narrative value (e.g., a dramatic reveal). |
+| Section divider     | No fragments (single visual element)                                                                                                                            |
+| Content (bullets)   | Group into 2-3 logical reveal steps, NOT one-per-bullet. E.g., 6 bullets = 2 groups of 3, or 3 groups of 2.                                                     |
+| Two-column          | Left column appears first, then right column (2 steps max)                                                                                                      |
+| Feature grid        | Reveal row by row (2-3 steps), NOT card by card                                                                                                                 |
+| Code slide          | Code is always visible; line highlights are fragments (2-3 highlight groups)                                                                                    |
+| Fact/stat           | Number appears first (with counter animation), then label (2 steps)                                                                                             |
+| Image-left/right    | Show everything at once, or image first then text (1-2 steps max)                                                                                               |
+| Quote               | Show everything at once, or quote then attribution (1-2 steps max)                                                                                              |
+| Diagram/DAG         | Reveal by logical layer — all nodes AND edges in a layer appear together                                                                                        |
+| Image-only          | No fragments                                                                                                                                                    |
+| Image with lightbox | No fragments — image is always visible. Lightbox is activated by click, not fragments.                                                                          |
 
 ### Fragment Animation Defaults
+
 - Standard fragments: `fade-up` (opacity + translateY), 0.4s duration
 - Lists: stagger 0.1s between items within a group
 - Emphasis: `fade-in-then-semi-out` for "highlight current" effect
 - Code: highlight current line group, dim others to 30%
 
 ### When NOT to Fragment
+
 - Title slides (default — agent may override with justification)
 - Section divider slides
 - Image-only slides
@@ -66,12 +70,14 @@ Examples of logical groups:
 **Rule: Use auto-animate for 2-4 slide pairs per presentation maximum.**
 
 Best candidates:
+
 1. Code evolution — show code changing across 2-3 slides
 2. Progressive building — architecture diagram that adds components
 3. Before/After — layout that morphs to show transformation
 4. Concept expansion — simple version expands to detailed version
 
 Implementation:
+
 - Mark paired slides with `data-auto-animate` attribute
 - Match elements with `data-auto-animate-id="[unique-id]"`
 - Duration: 0.8s with ease-out easing
@@ -87,12 +93,14 @@ Implementation:
 - Use `fade-in-then-semi-out` so previous items dim as new ones appear
 
 ### Enforcement Limits
+
 - Content items > 6 on a single slide -> Split into multiple slides
 - Bullet points > 4 -> Consider splitting or different layout (cards, timeline)
 - Paragraphs > 1 -> Split into separate slides
 - Code > 10 lines -> Use code highlighting with fragments
 
 ### Additional Engagement Patterns
+
 1. Section dividers between topic changes (visual breathing room)
 2. Fact slides for key metrics (`layout-fact` with animated counter)
 3. Varied layouts (don't repeat same layout on consecutive slides)

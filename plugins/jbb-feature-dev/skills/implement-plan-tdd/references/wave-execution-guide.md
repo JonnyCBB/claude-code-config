@@ -6,8 +6,9 @@ This guide provides detailed mechanics for executing waves from a TDD plan. It i
 
 - Plan format: `${CLAUDE_PLUGIN_ROOT}/skills/create-plan-tdd/references/plan-template.md`
 - Wave design: `${CLAUDE_PLUGIN_ROOT}/skills/create-plan-tdd/references/wave-analysis-guide.md`
-- Language agents: `${CLAUDE_PLUGIN_ROOT}/commands/shared/language-agent-registry.md`
-- Verification pattern: `${CLAUDE_PLUGIN_ROOT}/commands/shared/agent-verification-pattern.md`
+- Domain agents: `${CLAUDE_PLUGIN_ROOT}/skills/shared-references/domain-agent-registry.md`
+- Language agents: `${CLAUDE_PLUGIN_ROOT}/skills/shared-references/language-agent-registry.md`
+- Verification pattern: `${CLAUDE_PLUGIN_ROOT}/skills/shared-references/agent-verification-pattern.md`
 
 ---
 
@@ -134,21 +135,32 @@ For each task, select the appropriate agent using this decision tree. The goal i
 
 For each task:
 
-1. Check language-agent-registry
+1. Check domain-agent-registry
+   - Follow the detection procedure in
+     ${CLAUDE_PLUGIN_ROOT}/skills/shared-references/domain-agent-registry.md
+     (file triggers first, then strong signals, then corroborating signals)
+   - If a domain match is found -> note the domain expert agent
+     (e.g., `ml-pipeline-reviewer` for ML training code)
+
+2. Check language-agent-registry
    - Identify file extensions for the task's files
    - Look up the language in
-     ${CLAUDE_PLUGIN_ROOT}/commands/shared/language-agent-registry.md
-   - Note the test reviewer and code simplification reviewer
-     (e.g., `java-test-reviewer` for .java files)
+     ${CLAUDE_PLUGIN_ROOT}/skills/shared-references/language-agent-registry.md
+   - Read the `Expert Agent` column for each detected language
+     (e.g., `typescript-expert` for .ts files, `python-expert` for .py)
+   - Spawn that single agent per language with mode framing matching the
+     work: `mode=implement` for implementer agents (the language expert
+     writes idiomatic code, not only reviews it); `mode=test-review` or
+     `mode=code-style-review` when reviewing the diff
 
-2. Check plan's Agent Selection table
+3. Check plan's Agent Selection table
    - If the plan specifies an agent type for this task -> use that as the
      primary agent type
    - The plan's recommendation takes precedence over auto-detection when
      there is a conflict
 
-3. Fallback
-   - If no language match and no plan specification ->
+4. Fallback
+   - If no domain match, no language match, and no plan specification ->
      use `general-purpose` agent
 
 ```
@@ -157,16 +169,17 @@ For each task:
 
 The final agent receives context from all applicable sources:
 
-- **Primary agent type**: From the plan's Agent Selection table (Step 2), or from domain detection if the plan does not specify.
-- **Language context**: Always included. The agent prompt should reference the language-specific test patterns and idioms from the language-agent-registry. For example, a Java RED agent should know about JUnit 5 patterns; a Python RED agent should know about pytest patterns.
-- **Domain context**: Included when detected. The agent prompt should reference domain-specific best practices.
+- **Primary agent type**: From the plan's Agent Selection table (Step 3), or from domain detection (Step 1) if the plan does not specify.
+- **Language context**: Always included. The agent prompt should reference the language-specific test patterns and idioms from the language-agent-registry. For example, a Java implementer should know about JUnit 5 patterns; a Python implementer should know about pytest patterns.
+- **Domain context**: Included when detected. The agent prompt should reference domain-specific best practices. For example, an ML pipeline agent should know that domain's test-harness patterns.
 
 **Do not duplicate** the contents of the registries into agent prompts. Instead, reference them:
-- `${CLAUDE_PLUGIN_ROOT}/commands/shared/language-agent-registry.md` for language detection, test file patterns, and reviewer agents
+- `${CLAUDE_PLUGIN_ROOT}/skills/shared-references/domain-agent-registry.md` for domain detection patterns and expert agents
+- `${CLAUDE_PLUGIN_ROOT}/skills/shared-references/language-agent-registry.md` for language detection, test file patterns, and reviewer agents
 
 ### Agent Verification
 
-Before spawning agents for a wave, apply the verification pattern from `${CLAUDE_PLUGIN_ROOT}/commands/shared/agent-verification-pattern.md`:
+Before spawning agents for a wave, apply the verification pattern from `${CLAUDE_PLUGIN_ROOT}/skills/shared-references/agent-verification-pattern.md`:
 
 1. Output the **Agent Type Verification** contract listing all agents to spawn.
 2. Output the **Pre-Spawn Verification Table** cross-checking the contract against actual Task calls.
@@ -176,7 +189,7 @@ Before spawning agents for a wave, apply the verification pattern from `${CLAUDE
 
 ## 3. Wave 0 Execution (Detail)
 
-Wave 0 establishes the test infrastructure. It is always sequential and always runs in the main context (no worktrees). No implementation code is written in Wave 0.
+Wave 0 establishes the test infrastructure. It is always sequential and always runs in the main context (no subagents). No implementation code is written in Wave 0.
 
 ### Execution Steps
 
@@ -220,94 +233,43 @@ Wave 0 failure is not retryable by simply re-running -- it typically indicates a
 
 ## 4. Wave N Execution (Detail)
 
-Waves 1 through N follow a RED-then-GREEN two-pass pattern. Each pass spawns agents in parallel using worktrees. The two-pass design enforces strict TDD discipline: GREEN agents cannot see tests until they are merged from the RED pass.
+Waves 1 through N spawn **one implementer agent per task**. Each implementer executes red→green→refactor internally (see `tdd-agent-prompts.md` Section 1). TDD discipline is enforced by evidence, not agent separation: every code-task report must contain the verbatim failing-test output captured BEFORE implementation began (RED_EVIDENCE), and the orchestrator rejects code-task reports without it.
 
-### Pass 1: RED (Write Failing Tests)
+### Parallelism Rules
 
-1. **Spawn one RED agent per task in the wave, all in parallel.**
-   - Each RED agent runs in its own worktree (via `EnterWorktree`).
-   - Each RED agent receives:
-     - The task's `#### RED -- Write failing test` section from the plan.
-     - The test file path and expected behavior.
-     - The expected failure message.
-     - The run command.
-   - Each RED agent's responsibilities:
-     - Write the failing test code exactly as specified (or adapted if the plan's code needs minor adjustments for the current codebase state).
-     - Run the test command.
-     - **Verify the test fails** with the expected failure. A RED agent's test MUST fail. If it passes, this is an error (see "Unexpected Pass" below).
-     - Commit the failing test to the worktree branch.
+1. Consult the File Overlap Matrix (Section 1). Tasks whose write sets are fully disjoint MAY run in parallel; tasks sharing any written file run sequentially. When the matrix is missing or ambiguous, run sequentially.
+2. Parallel implementers run **targeted tests only** (their task's run commands). The full suite runs once per wave in the integration check. This caps CPU load and prevents cross-task noise from concurrent full-suite runs.
+3. All work happens in the main working directory on the target branch — there are no per-task worktrees or merges. Implementer agents do NOT commit; the orchestrator (or the calling pipeline's `/commit` stage) owns git operations, because concurrent commits from parallel agents to a shared branch are race-prone.
 
-2. **Wait for all RED agents to complete.**
+### Execution Flow
 
-3. **Merge all RED branches into the main branch.**
-   - Merge each RED agent's branch sequentially.
-   - Since tasks within a wave do not write to the same files (validated by the file overlap matrix), merges should be conflict-free.
-
-### Pass 2: GREEN (Write Implementation + Refactor)
-
-1. **Spawn one GREEN agent per task in the wave, all in parallel.**
-   - Each GREEN agent runs in its own worktree (via `EnterWorktree`).
-   - Each GREEN agent's worktree starts from the main branch, which now contains all RED tests from Pass 1.
-   - Each GREEN agent receives:
-     - The task's `#### GREEN -- Make it pass` section from the plan.
-     - The implementation file path and change description.
-     - The run command.
-     - The task's `#### REFACTOR -- Clean up` section from the plan.
-   - Each GREEN agent's responsibilities:
-     - Write the minimal implementation code to make the failing test pass.
-     - Run the test command. **Verify the test passes.** If it fails, this is an error (see "Persistent Failure" below).
-     - Perform the REFACTOR step: clean up code while keeping all tests green.
-     - Run the full test suite command from the REFACTOR section. All tests must pass.
-     - Commit the implementation and refactoring to the worktree branch.
-
-2. **Wait for all GREEN agents to complete.**
-
-3. **Merge all GREEN branches into the main branch.**
-   - Merge each GREEN agent's branch sequentially.
-   - Again, merges should be conflict-free per the file overlap matrix validation.
-
-### Why Two Passes
-
-The two-pass design provides stronger TDD enforcement than a single pass where each agent does RED+GREEN together:
-
-- **Isolation**: GREEN agents start with the failing tests already merged. They cannot "cheat" by writing the implementation first and then writing a test that matches it.
-- **Verification**: The RED pass independently confirms that each test fails before any implementation exists. This catches tests that accidentally pass due to existing code.
-- **Visibility**: The orchestrator can inspect all failing tests after Pass 1 before any implementation begins, providing an early checkpoint.
-
-### Inter-Wave Integration Testing
-
-After merging all GREEN branches for a wave, run the full test suite from the main directory:
-
-1. Execute the full test suite command (from the plan's `## Testing Strategy` section or the most recent Phase's success criteria).
-2. Verify all tests pass -- not just the current wave's tests, but all tests from previous waves as well.
-3. If any test fails, this is an integration issue. See Section 6 (Error Handling) for resolution steps.
-
-Only proceed to the next wave after the integration test passes.
+1. Assemble each implementer's prompt per `tdd-agent-prompts.md` Section 6.
+2. Spawn the current flight of implementers (parallel only where the rules above allow).
+3. Wait for all in-flight implementers to complete. Collect STATUS reports; verify RED_EVIDENCE on code tasks.
+4. Act on statuses per the protocol (`tdd-agent-prompts.md` Section 7 and SKILL.md Step 5).
+5. **Inter-wave integration check**: run the full test suite from the main working directory (command from the plan's `## Testing Strategy` section or the most recent Phase's success criteria). All tests must pass — this wave's and every previous wave's. If any fail, see Section 6 (Error Handling).
+6. After the integration check passes, the orchestrator MAY create a checkpoint commit on the target branch for rollback granularity, then proceed to the next wave.
 
 ### Handling Unexpected Test Outcomes
 
-#### RED Agent: Test Passes Unexpectedly
+#### Test Passes Unexpectedly (before implementation)
 
-If a RED agent's test passes when it should fail, this means the behavior is already implemented (or the test is wrong).
+If an implementer's new test passes before any implementation exists, the behavior is already implemented or the test is wrong. The implementer stops immediately — no implementation — and reports BLOCKED with the unexpected-pass output. The orchestrator should:
 
-1. The RED agent must report: "Test passed unexpectedly. Expected failure: `[expected error]`. Actual: test passed."
-2. The orchestrator should:
-   - Check whether existing code already implements the behavior. If so, the task may be redundant -- mark it as skipped and note why.
-   - Check whether the test is incorrect (testing the wrong thing). If so, fix the test to properly target the unimplemented behavior, and re-run.
-   - In interactive mode: present the situation to the user for a decision.
-   - In non-interactive mode: log the mismatch, skip the task's GREEN pass (there is nothing to implement), and continue.
+- Check whether existing code already implements the behavior. If so, the task may be redundant -- mark it as skipped and note why.
+- Check whether the test is incorrect (testing the wrong thing). If so, fix the test specification and re-dispatch the implementer.
+- In interactive mode: present the situation to the user for a decision.
+- In non-interactive mode: log the mismatch; if the behavior verifiably already exists, mark the task complete-by-existing-code and continue.
 
-#### GREEN Agent: Test Still Fails After Implementation
+#### Test Still Fails After Implementation
 
-If a GREEN agent cannot make the test pass:
+If an implementer cannot make its test pass, it reports BLOCKED with the actual failure output. The orchestrator should:
 
-1. The GREEN agent must report: "Test still fails after implementation. Failure: `[actual error]`."
-2. The orchestrator should:
-   - Check the agent's implementation against the plan's specification. Did the agent follow the plan correctly?
-   - Retry once with additional context (e.g., include the test's full error output in the retry prompt).
-   - If the retry also fails:
-     - In interactive mode: present the failure to the user with the test output and the agent's implementation attempt.
-     - In non-interactive mode: log the failure, mark the task as failed, and continue with remaining tasks in the wave if they are independent. Do NOT proceed to the next wave if the failed task has downstream dependents.
+- Check the agent's implementation against the plan's specification. Did the agent follow the plan correctly?
+- Retry once with additional context (e.g., include the test's full error output in the retry prompt).
+- If the retry also fails:
+  - In interactive mode: present the failure to the user with the test output and the agent's implementation attempt.
+  - In non-interactive mode: log the failure, mark the task as failed, and continue with remaining tasks in the wave if they are independent. Do NOT proceed to the next wave if the failed task has downstream dependents.
 
 ---
 
@@ -324,10 +286,8 @@ Use `TodoWrite` to maintain a live view of wave and task status. Structure the t
 - Wave 0: Test Infrastructure [completed/in_progress/pending]
   - Task 0.1: Test framework setup [completed/in_progress/pending]
 - Wave 1: [Wave Name] [completed/in_progress/pending]
-  - Task 1.1: [Name] RED [completed/in_progress/pending]
-  - Task 1.1: [Name] GREEN [completed/in_progress/pending]
-  - Task 1.2: [Name] RED [completed/in_progress/pending]
-  - Task 1.2: [Name] GREEN [completed/in_progress/pending]
+  - Task 1.1: [Name] [completed/in_progress/pending]
+  - Task 1.2: [Name] [completed/in_progress/pending]
 - Wave 2: [Wave Name] [completed/in_progress/pending]
   ...
 
@@ -335,7 +295,7 @@ Use `TodoWrite` to maintain a live view of wave and task status. Structure the t
 
 Update todo status at these checkpoints:
 - When a wave starts: mark wave as `in_progress`.
-- When a RED or GREEN agent completes: mark the corresponding sub-task.
+- When an implementer agent completes: mark the corresponding task.
 - When all tasks in a wave complete and integration tests pass: mark wave as `completed`.
 - When a task fails: mark it with a note explaining the failure.
 
@@ -356,7 +316,7 @@ The main context (orchestrator) should NOT accumulate implementation details. It
 - Integration test results (pass/fail + summary, not full output).
 - Agent spawn/completion status.
 
-Implementation details (code written, test output, refactoring decisions) live in the agent worktrees. The orchestrator reads only the final status from each agent, not the full work log. This keeps the orchestrator's context window focused on coordination rather than filling up with code.
+Implementation details (code written, test output, refactoring decisions) live in each implementer agent's own context. The orchestrator reads only the structured report from each agent (STATUS, CONCERNS, RED/GREEN evidence, FILES_CHANGED), not the full work log. This keeps the orchestrator's context window focused on coordination rather than filling up with code.
 
 ---
 
@@ -372,34 +332,23 @@ If an agent does not complete within a reasonable time or crashes:
 
 ### Test Failure During Integration Check
 
-When the full test suite fails after merging a wave's GREEN branches:
+When the full test suite fails during a wave's integration check:
 
-- **Interactive mode**: Stop execution. Present the failing test(s) and the merge that introduced the failure. Ask the user whether to attempt automatic resolution, manually fix, or roll back the wave.
+- **Interactive mode**: Stop execution. Present the failing test(s) and the task(s) whose changes plausibly introduced the failure. Ask the user whether to attempt automatic resolution, manually fix, or roll back the wave (to the previous checkpoint commit, if one exists).
 - **Non-interactive mode**: Log the failure with full test output. Attempt resolution by:
-  1. Identifying which test(s) fail and which merge introduced the failure.
-  2. Spawning a fix agent in a worktree to address the specific failure.
-  3. If the fix agent succeeds, merge its fix and re-run integration tests.
+  1. Identifying which test(s) fail and which task's changes introduced the failure (use the implementers' FILES_CHANGED reports).
+  2. Spawning a fix agent to address the specific failure.
+  3. If the fix agent succeeds, re-run the integration check.
   4. If the fix agent fails, halt execution and report the unresolved failure.
 
-### Worktree Creation Failure
+### Same-File Parallelism Violation
 
-If `EnterWorktree` fails (e.g., disk space, git state issues):
-
-1. Log the failure.
-2. **Fall back to sequential execution in the main context**: execute tasks one at a time in the main working directory instead of in parallel worktrees.
-3. The RED-then-GREEN two-pass pattern still applies -- run all RED tasks sequentially first, then all GREEN tasks sequentially.
-4. This is slower but functionally equivalent.
-
-### Merge Conflict
-
-Merge conflicts between tasks in the same wave should never happen if the file overlap matrix was validated correctly (Strategy C from the wave analysis guide: no two tasks in the same wave write to the same file).
-
-If a merge conflict occurs despite this:
+Two tasks that ran in parallel must never both modify the same file — the File Overlap Matrix gates parallelism. If post-hoc evidence shows it happened anyway (overlapping FILES_CHANGED reports, or `git status` attribution during the integration check):
 
 1. **Log it as a wave analysis bug**: The plan's file overlap matrix was incorrect or incomplete.
-2. **STOP execution**: Do not attempt automatic conflict resolution.
-3. **Present to user**: Show the conflicting files, the tasks that wrote to them, and the file overlap matrix entry that should have caught this.
+2. **STOP execution**: Do not attempt automatic reconciliation — the file may interleave both tasks' edits incoherently.
+3. **Present to user**: Show the affected files, the tasks that wrote to them, and the file overlap matrix entry that should have caught this.
 4. **Resolution path**: The user (or orchestrator, if instructed) must either:
-   - Fix the plan to move one task to a later wave.
-   - Manually resolve the conflict and continue.
+   - Restore the affected files to the last good state (checkpoint commit or pre-wave state) and re-run the two tasks sequentially.
+   - Fix the plan to move one task to a later wave, then re-run.
 ```

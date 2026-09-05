@@ -16,11 +16,11 @@ produce a structured decision record.
 
 ## Reference Files
 
-| File | When to Read |
-|------|-------------|
-| `references/roles.md` | Phase 3 (Compose Team) — to get persona prompts |
-| `references/dynamic-composition.md` | Phase 2 (Classify) — to determine team composition |
-| `references/decision-record-template.md` | Phase 6 (Decision Record) — to format output |
+| File                                     | When to Read                                       |
+| ---------------------------------------- | -------------------------------------------------- |
+| `references/roles.md`                    | Phase 3 (Compose Team) — to get persona prompts    |
+| `references/dynamic-composition.md`      | Phase 2 (Classify) — to determine team composition |
+| `references/decision-record-template.md` | Phase 6 (Decision Record) — to format output       |
 
 Teammates are told to use the `decision-principles` skill for judgement calls —
 the skill is referenced by name, not embedded into prompts.
@@ -96,7 +96,8 @@ Branch to Phase 4A (agent team) or Phase 4B (sub-agent fallback).
    CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 in your environment.
    ```
 3. Spawn all determined roles as **parallel sub-agents** (Agent tool,
-   subagent_type: `general-purpose`, model: `sonnet`):
+   subagent_type: `general-purpose`, model: `sonnet`).
+   **Agent delivery resilience**: Subagents may go idle without delivering results (known Claude Code issue). If an agent sends an `idle_notification` without content: (1) prompt it via SendMessage using its agent ID (not name), (2) if still no delivery, respawn once, (3) if respawn fails, document the gap and proceed with available reviews. When spawning 5+ reviewers, consider sequential sub-batches to reduce cascade-failure risk.
    - Each receives: their persona prompt + instruction to use `decision-principles`
      skill + the full document text + review criteria for the document type
    - Each returns: structured findings with severity tags (Critical / High /
@@ -120,6 +121,7 @@ The review team applies document changes autonomously — no user approval neede
 per change. All changes are documented in the decision record for traceability.
 
 **If changes are proposed:**
+
 1. Team deliberates on each proposed change (agent team) or the main session
    evaluates consensus from reviewer findings (sub-agent fallback)
 2. Changes with consensus are applied directly to the document
@@ -127,6 +129,7 @@ per change. All changes are documented in the decision record for traceability.
    consensus method, rationale
 
 **If the team cannot reach consensus on a specific change:**
+
 - Categorise the blocker: **lack of information** or **requires user judgement**
 - Lack of information: at least one reviewer runs a research task to find the
   answer, then the team re-deliberates
@@ -159,6 +162,7 @@ fallback) produces the decision record:
 ### Phase 7: Present Results
 
 Display to user:
+
 - **Verdict**: Approved / Approved with Revisions / Rejected
 - **Key discussion points** (top 3)
 - **Dissenting opinions** (if any)
@@ -171,6 +175,7 @@ Display to user:
 ## Human Escalation Protocol
 
 **Interactive mode** — escalate to the human when:
+
 - Critical Analyst reaches max iterations (4 rounds) without resolution
 - Fundamental disagreement that consensus can't resolve
 - Review requires judgement beyond the team's scope
