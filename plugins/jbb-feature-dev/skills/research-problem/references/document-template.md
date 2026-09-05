@@ -1,9 +1,9 @@
-# Document Template for Steps 8-11: Research Document Generation
+# Document Template for Steps 10-13: Research Document Generation
 
 Metadata gathering, file naming, document structure, permalinks, and follow-up format.
-Read this file when Steps 8-11 instruct you to `Read references/document-template.md`.
+Read this file when Steps 10-13 instruct you to `Read references/document-template.md`.
 
-## Step 8: Metadata Gathering
+## Step 10: Metadata Gathering
 
 Run this script to collect metadata:
 
@@ -45,9 +45,9 @@ Create `~/.claude/thoughts/shared/research/` if it doesn't exist.
   - With ticket: `2025-01-08-ENG-1478-parent-child-tracking.md`
   - Without ticket: `2025-01-08-authentication-flow.md`
 
-## Step 9: Research Document Template
+## Step 11: Research Document Template
 
-Use the metadata from Step 8 and structure the document with YAML frontmatter:
+Use the metadata from Step 10 and structure the document with YAML frontmatter:
 
 ```markdown
 ---
@@ -61,14 +61,16 @@ tags: [research, codebase, tools, libraries, relevant-component-names]
 status: complete
 last_updated: [Current date in YYYY-MM-DD format]
 last_updated_by: [Researcher name]
+review_phase_status: [completed | skipped_simple_complexity]
+complexity: [Simple | Medium | Complex]
 ---
 
 # Research: [User's Question/Topic]
 
-**Date**: [Current date and time with timezone from Step 8]
+**Date**: [Current date and time with timezone from Step 10]
 **Researcher**: [Researcher name]
-**Git Commit**: [Current commit hash from Step 8]
-**Branch**: [Current branch name from Step 8]
+**Git Commit**: [Current commit hash from Step 10]
+**Branch**: [Current branch name from Step 10]
 **Repository**: [Repository name]
 
 ## Research Question
@@ -113,7 +115,15 @@ last_updated_by: [Researcher name]
 
 ## Open Questions
 
-[Any areas that need further investigation]
+[Only questions the Step 8 grounding pass classified UNRESOLVABLE or SKIP, each stating the
+qualifying reason it was classified under. `references/grounding-pass.md`
+`## What Legitimately Stays Open` is the canonical list of which reasons qualify and which
+phrasings disqualify a question from appearing here — do not restate it, apply it.
+
+Open questions here are expected and healthy; there is no target of zero. What must not
+appear is a question that more research alone could answer.
+
+Format each as: the question — why research cannot close it — what would close it.]
 
 ## Operational Context Recommendation
 
@@ -132,9 +142,29 @@ health, and deployment status to inform planning decisions.
 
 No specific services were identified in this research. Operational context
 gathering is not recommended at this time.
+
+## Design Exploration Recommendation
+
+{{If this research identified 2+ design tensions, ambiguities, or competing approaches, include:}}
+
+Multiple viable design approaches were identified in this research:
+
+- [tension/ambiguity 1]
+- [tension/ambiguity 2]
+
+Consider running `/design-approach [path-to-this-doc]` to explore and compare
+approaches before creating an implementation plan with `/create-plan-tdd`.
+
+{{If requirements were gathered, add:}}
+Include the requirements doc: `/design-approach [research-doc] --requirements=[requirements-doc]`
+
+{{If this research is straightforward with one clear approach, include:}}
+
+No significant design tensions were identified. Proceeding directly to
+`/create-plan-tdd` is recommended.
 ```
 
-## Step 10: GitHub Permalink Generation
+## Step 12: GitHub Permalink Generation
 
 - Check if on main branch or if commit is pushed: `git branch --show-current` and `git status`
 - If on main/master or pushed, generate GitHub permalinks:
@@ -142,14 +172,15 @@ gathering is not recommended at this time.
   - Create permalinks: `https://github.com/{owner}/{repo}/blob/{commit}/{file}#L{line}`
 - Replace local file references with permalinks in the document
 
-## Step 11: MCP Call Documentation
+## Step 13: MCP Call Documentation
 
-Include information from research agent outputs so findings can be reproduced:
+Include information from the web-search-researcher output so findings can be reproduced:
 
+- **aika mcp search**: query, source, and description
+- **codesearch mcp search**: query, repository name, and description
 - **relevant webpages**: links and descriptions
-- **code searches**: queries and results
 
-## Follow-up Research Format (Step 13)
+## Follow-up Research Format (Step 15)
 
 When handling follow-up questions, update the existing research document:
 

@@ -3,4 +3,5 @@
 # Usage: notify.sh "message"
 
 MESSAGE="${1:-Claude Code notification}"
-osascript -e "display notification \"$MESSAGE\" with title \"Claude Code\" sound name \"Glass\""
+osascript -e "display notification \"$MESSAGE\" with title \"Claude Code\""
+afplay /System/Library/Sounds/Glass.aiff &

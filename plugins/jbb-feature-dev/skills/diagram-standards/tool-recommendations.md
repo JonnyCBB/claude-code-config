@@ -2,7 +2,7 @@
 
 ## Primary Tools (recommend these first)
 
-1. **Mermaid** - General purpose, ~23+ types incl. Radar, Treemap, Architecture, Kanban; v11.12.3 (Feb 2025). Easiest syntax
+1. **Mermaid** - General purpose, ~23+ types incl. Radar, Treemap, Architecture, Kanban; v11.12.3 (Feb 2025). widely supported, easiest syntax
 2. **PlantUML** - UML specialist, comprehensive, good for architecture; v1.2026.1 (Jan 2026), new Chart diagram type
 3. **D2** - Modern syntax, great for architecture with code snippets. Still v0.x (v0.7.1, Aug 2024), release cadence slowed
 4. **GraphViz** - Complex graphs, network topology, dependencies
@@ -18,7 +18,7 @@
 
 ## Selection Criteria
 
-- For general diagrams: Prefer Mermaid (easiest, widely supported)
+- For general diagrams: Prefer Mermaid (easiest)
 - For UML: Prefer PlantUML (industry standard)
 - For architecture: Prefer C4 Model or Mermaid
 - For graphs/networks: Prefer GraphViz or BlockDiag
@@ -30,42 +30,36 @@
 
 Detect document type from context and adjust tool recommendations accordingly:
 
-### For TechDocs/Backstage Documentation
-
+### For internal docs Documentation
 - **Strongly prefer Mermaid** (native MkDocs Material support, no export needed)
-- Note: "Mermaid recommended - renders natively in TechDocs"
+- Note: "Mermaid recommended - renders natively in internal docs"
 - Fallback to static PNG if Mermaid cannot express the diagram
 - Avoid PlantUML unless UML-specific need
 
 ### For RFCs (Google Docs)
-
 - **Prefer Mermaid, PlantUML, or D2** (all work well with google-docs skill)
 - Note: "Diagram code will be included in the Google Doc"
 - Mention compatibility with `${CLAUDE_PLUGIN_ROOT}/skills/google-docs/`
 
 ### For Tutorials/Blog Posts
-
 - **Prefer simple, readable syntax** (Mermaid, D2)
 - Avoid overly complex tools like full PlantUML syntax
 - Note: "Simple syntax makes tutorial easier to follow and modify"
 
 ### For Architecture Documentation
-
 - **Prefer C4 Model, PlantUML, or D2**
 - Consider multi-level C4 diagrams for progressive disclosure
 - Note: "C4 recommended for multi-level architecture views"
 
 ### For Print/PDF Documentation
-
 - **Consider SVG vs PNG rendering**
 - Note export format considerations
 - Mention: "SVG recommended for scalability in print"
 
 ### Detection Method
-
 1. Ask user to specify document type if not immediately clear from context
 2. Look for clues in document:
-   - mkdocs.yml present → TechDocs
+   - mkdocs.yml present → internal docs
    - "RFC:" in title → RFC
    - Tutorial keywords ("Getting Started", "How to") → Tutorial
    - Architecture keywords ("System Design", "Architecture") → Architecture doc

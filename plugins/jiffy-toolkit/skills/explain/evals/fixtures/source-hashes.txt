@@ -1,0 +1,2 @@
+2026-08-20-code-review-loop-cost.md                        187d7539c5cbfa54
+2026-08-17-seal-live-verification-commit-bound-gate.md     f2236517d775c0aa

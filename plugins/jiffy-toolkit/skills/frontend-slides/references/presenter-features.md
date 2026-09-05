@@ -7,23 +7,28 @@ Speaker view, cross-tab sync, blackout/whiteout, theme toggle, print stylesheet,
 Press "S" to open a presenter window with speaker notes, elapsed timer, and pacing indicator. Uses `BroadcastChannel` for sync (simpler than `postMessage`, survives window refresh, 96%+ support).
 
 **HTML (hidden speaker notes per slide):**
+
 ```html
 <section class="slide">
-    <h2>Our Strategy</h2>
-    <p>Content visible to audience...</p>
-    <aside class="notes">
-        Mention Q3 results. Pause for questions.
-        Transition: "Now let me show you the numbers..."
-    </aside>
+  <h2>Our Strategy</h2>
+  <p>Content visible to audience...</p>
+  <aside class="notes">
+    Mention Q3 results. Pause for questions. Transition: "Now let me show you
+    the numbers..."
+  </aside>
 </section>
 ```
 
 **CSS:**
+
 ```css
-aside.notes { display: none; } /* Hidden in main presentation */
+aside.notes {
+  display: none;
+} /* Hidden in main presentation */
 ```
 
 **JS (BroadcastChannel sync):**
+
 ```javascript
 // In SlidePresentation class:
 openPresenterView() {
@@ -91,30 +96,46 @@ new BroadcastChannel('slide-sync').postMessage({
 ## Code Copy Button
 
 ```css
-pre { position: relative; }
-pre .copy-btn {
-    position: absolute; top: 0.5rem; right: 0.5rem;
-    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
-    color: inherit; padding: 0.25rem 0.5rem; border-radius: 4px;
-    font-size: var(--small-size); cursor: pointer;
-    opacity: 0; transition: opacity 0.2s;
+pre {
+  position: relative;
 }
-pre:hover .copy-btn { opacity: 1; }
-pre .copy-btn.copied { background: rgba(0,255,100,0.2); }
+pre .copy-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: inherit;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: var(--small-size);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+pre:hover .copy-btn {
+  opacity: 1;
+}
+pre .copy-btn.copied {
+  background: rgba(0, 255, 100, 0.2);
+}
 ```
 
 ```javascript
-document.querySelectorAll('pre code').forEach(block => {
-    const btn = document.createElement('button');
-    btn.className = 'copy-btn';
-    btn.textContent = 'Copy';
-    btn.addEventListener('click', async () => {
-        await navigator.clipboard.writeText(block.textContent);
-        btn.textContent = 'Copied!';
-        btn.classList.add('copied');
-        setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
-    });
-    block.parentElement.appendChild(btn);
+document.querySelectorAll("pre code").forEach((block) => {
+  const btn = document.createElement("button");
+  btn.className = "copy-btn";
+  btn.textContent = "Copy";
+  btn.addEventListener("click", async () => {
+    await navigator.clipboard.writeText(block.textContent);
+    btn.textContent = "Copied!";
+    btn.classList.add("copied");
+    setTimeout(() => {
+      btn.textContent = "Copy";
+      btn.classList.remove("copied");
+    }, 2000);
+  });
+  block.parentElement.appendChild(btn);
 });
 ```
 
@@ -194,33 +215,38 @@ case 'P':
    CROSS-TAB SYNC UI
    =========================================== */
 .sync-notification {
-    position: fixed;
-    bottom: 2rem;
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 0.5rem 1.5rem;
-    background: color-mix(in oklch, var(--bg-primary), black 20%);
-    color: var(--text-primary);
-    border-radius: 2rem;
-    font-size: var(--small-size);
-    z-index: 10000;
-    animation: notification-fade 2s ease forwards;
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.5rem 1.5rem;
+  background: color-mix(in oklch, var(--bg-primary), black 20%);
+  color: var(--text-primary);
+  border-radius: 2rem;
+  font-size: var(--small-size);
+  z-index: 10000;
+  animation: notification-fade 2s ease forwards;
 }
 
 @keyframes notification-fade {
-    0%, 70% { opacity: 1; }
-    100% { opacity: 0; }
+  0%,
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 
 /* Presenter mode indicator — subtle border glow */
 body.presenter-mode::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    border: 2px solid var(--accent, #4a9eff);
-    pointer-events: none;
-    z-index: 9999;
-    opacity: 0.5;
+  content: "";
+  position: fixed;
+  inset: 0;
+  border: 2px solid var(--accent, #4a9eff);
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.5;
 }
 ```
 
@@ -232,18 +258,23 @@ Press B for blackout, W for whiteout. Press again to dismiss.
 
 ```css
 .blackout-overlay {
-    position: fixed; inset: 0;
-    z-index: 9999;
-    transition: opacity 0.3s;
-    pointer-events: none;
-    opacity: 0;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  transition: opacity 0.3s;
+  pointer-events: none;
+  opacity: 0;
 }
 .blackout-overlay.active {
-    pointer-events: auto;
-    opacity: 1;
+  pointer-events: auto;
+  opacity: 1;
 }
-.blackout-overlay.black { background: #000; }
-.blackout-overlay.white { background: #fff; }
+.blackout-overlay.black {
+  background: #000;
+}
+.blackout-overlay.white {
+  background: #fff;
+}
 ```
 
 ```javascript
@@ -275,30 +306,43 @@ Each preset can define 2-3 runtime variants (light/dark/high-contrast) that swap
 ```css
 /* ===========================================
    RUNTIME THEME VARIANTS
-   T key cycles through color variants within the
-   current preset. Stored in localStorage.
-   Each preset defines its own variants.
+   Two complementary systems:
+   1. color-scheme + light-dark(): Responds to OS dark/light preference.
+      Use for presets that define both a dark and light appearance.
+   2. data-theme attribute: Cycles through preset-specific variants
+      with T key. Use for presets with >2 variants or custom palettes.
+
+   Most presets should use approach 1. Use approach 2 only when
+   a preset needs a third variant (e.g., high-contrast) or when
+   the dark/light variants don't map cleanly to OS preference.
    =========================================== */
 
-/* Default variant (the preset's original colors) */
+/* Approach 1: light-dark() — OS-responsive (preferred)
+   Set color-scheme on :root, then use light-dark() in variable definitions.
+   All modern browsers since May 2024. */
+:root {
+  color-scheme: light dark;
+  --bg-primary: light-dark(#fafafa, #1a1a2e);
+  --text-primary: light-dark(#1a1a1a, #e8e8e8);
+  --text-secondary: light-dark(#555, #a0a0a0);
+  /* Accent stays the same in both modes */
+}
+
+/* Approach 2: data-theme attribute — preset-specific variants
+   Cycled with T key. Stored in localStorage.
+   Use when preset has >2 variants or custom palettes. */
 html[data-theme="default"] {
-    /* Uses preset's original --bg-primary, --text-primary, etc. */
+  /* Uses preset's original colors */
 }
-
-/* Dark variant */
 html[data-theme="dark"] {
-    --bg-primary: #1a1a2e;
-    --text-primary: #e8e8e8;
-    --text-secondary: #a0a0a0;
-    /* Accent stays the same */
+  --bg-primary: #1a1a2e;
+  --text-primary: #e8e8e8;
+  --text-secondary: #a0a0a0;
 }
-
-/* Light variant */
 html[data-theme="light"] {
-    --bg-primary: #fafafa;
-    --text-primary: #1a1a1a;
-    --text-secondary: #555;
-    /* Accent stays the same */
+  --bg-primary: #fafafa;
+  --text-primary: #1a1a1a;
+  --text-secondary: #555;
 }
 ```
 
@@ -339,6 +383,15 @@ case 'T':
 
 **Anti-slop note**: This is NOT the same as switching between presets. The preset defines the full design system (fonts, layouts, decorative elements). Theme cycling only swaps color custom properties (`--bg-primary`, `--text-primary`, `--text-secondary`). The preset's accent color, fonts, and structural elements remain unchanged. Instruct presenters to define their own variant colors based on the preset's palette.
 
+**Anti-slop note (light-dark)**: `light-dark()` and `data-theme` are NOT competing approaches — they solve different problems and coexist cleanly via CSS specificity:
+
+- `light-dark()` is declared on `:root` (specificity 0,0,1). It responds to OS dark/light mode preference automatically.
+- `data-theme` variants use `html[data-theme="dark"]` (specificity 0,1,0), which is higher than `:root`. When a presenter presses T to cycle themes, the `data-theme` values **automatically override** the `light-dark()` defaults — no `!important` needed.
+- The JS `cycleTheme()` function is unchanged — it still sets `document.documentElement.dataset.theme`.
+- **Default behavior**: If the presenter never presses T, `light-dark()` picks colors based on OS preference. If they press T, `data-theme` takes over with explicit values.
+- **HTML requirement**: `:root { color-scheme: light dark; }` must be present for `light-dark()` to work. This is set once in the preset's CSS.
+- **When to use which**: Use `light-dark()` (Approach 1) for presets with exactly 2 variants (dark/light). Use `data-theme` (Approach 2) when a preset needs 3+ variants or custom palettes that don't map to OS preference.
+
 ## Print / PDF Stylesheet
 
 ```css
@@ -347,33 +400,109 @@ case 'T':
    One slide per page. Hidden navigation.
    =========================================== */
 @media print {
-    html { scroll-snap-type: none; }
-    body { overflow: visible; }
-    .slide {
-        height: auto;
-        min-height: 100vh;
-        overflow: visible;
-        page-break-after: always;
-        scroll-snap-align: none;
-    }
-    /* Show all fragments */
-    .fragment { opacity: 1 !important; transform: none !important; }
-    /* Hide UI */
-    .nav-dots, .progress-bar, .keyboard-hint,
-    .edit-hotzone, .edit-toggle, .copy-btn,
-    .blackout-overlay, .playback-controls { display: none !important; }
-    /* Video slides show placeholder */
-    .slide-video { display: none; }
-    .video-play-btn { display: none; }
-    .video-container::after {
-        content: '[Video]';
-        font-style: italic;
-        color: var(--text-secondary);
-    }
-    /* Preserve backgrounds */
-    * { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  html {
+    scroll-snap-type: none;
+  }
+  body {
+    overflow: visible;
+  }
+  .slide {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+    page-break-after: always;
+    scroll-snap-align: none;
+  }
+  /* Show all fragments */
+  .fragment {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  /* Hide UI */
+  .nav-dots,
+  .progress-bar,
+  .keyboard-hint,
+  .edit-hotzone,
+  .edit-toggle,
+  .copy-btn,
+  .blackout-overlay,
+  .playback-controls {
+    display: none !important;
+  }
+  /* Video slides show placeholder */
+  .slide-video {
+    display: none;
+  }
+  .video-play-btn {
+    display: none;
+  }
+  .video-container::after {
+    content: "[Video]";
+    font-style: italic;
+    color: var(--text-secondary);
+  }
+  /* Preserve backgrounds */
+  * {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
 }
 ```
+
+## Screen Wake Lock
+
+Prevents the screen from dimming or locking during a presentation. Acquired automatically when entering fullscreen; released on exit. Re-acquired when the tab regains focus (the browser releases wake locks on visibility change).
+
+```javascript
+/* ===========================================
+   SCREEN WAKE LOCK
+   Prevents screen dimming during presentations.
+   Acquired on fullscreen entry, released on exit.
+   97%+ browser support (all browsers since Jan 2025).
+   =========================================== */
+
+// In SlidePresentation class:
+
+async acquireWakeLock() {
+    if (!('wakeLock' in navigator)) return;
+    try {
+        this.wakeLock = await navigator.wakeLock.request('screen');
+        this.wakeLock.addEventListener('release', () => {
+            this.wakeLock = null;
+        });
+    } catch (err) {
+        // Wake lock request can fail (e.g., low battery on some devices)
+    }
+}
+
+releaseWakeLock() {
+    if (this.wakeLock) {
+        this.wakeLock.release();
+        this.wakeLock = null;
+    }
+}
+
+// In constructor:
+this.wakeLock = null;
+
+// Acquire when entering fullscreen:
+document.addEventListener('fullscreenchange', () => {
+    if (document.fullscreenElement) {
+        this.acquireWakeLock();
+    } else {
+        this.releaseWakeLock();
+    }
+});
+
+// Re-acquire when tab regains focus (browser releases on visibility change):
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && document.fullscreenElement) {
+        this.acquireWakeLock();
+    }
+});
+```
+
+**Anti-slop note**: Do NOT acquire the wake lock on page load — only on fullscreen entry. Keeping the screen awake while a user is just editing slides in a normal browser tab is wasteful. The `visibilitychange` listener is necessary because browsers release wake locks when a tab becomes hidden (user switches tabs), so we re-acquire when they return.
 
 ## Scroll-Driven Animations (Progressive Enhancement)
 
@@ -385,24 +514,34 @@ Wrap all scroll-driven animations in `@supports (animation-timeline: view())`. K
    Pure CSS alternative to Intersection Observer for entrance animations.
    =========================================== */
 @supports (animation-timeline: view()) {
-    .reveal {
-        animation: slide-entrance linear both;
-        animation-timeline: view();
-        animation-range: entry 0% entry 100%;
+  .reveal {
+    animation: slide-entrance linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 100%;
+  }
+  @keyframes slide-entrance {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
     }
-    @keyframes slide-entrance {
-        from { opacity: 0; transform: translateY(30px); }
-        to { opacity: 1; transform: translateY(0); }
+    to {
+      opacity: 1;
+      transform: translateY(0);
     }
+  }
 
-    /* CSS-only progress bar */
-    .progress-bar {
-        animation: progress-fill linear;
-        animation-timeline: scroll(root);
+  /* CSS-only progress bar */
+  .progress-bar {
+    animation: progress-fill linear;
+    animation-timeline: scroll(root);
+  }
+  @keyframes progress-fill {
+    from {
+      transform: scaleX(0);
     }
-    @keyframes progress-fill {
-        from { transform: scaleX(0); }
-        to { transform: scaleX(1); }
+    to {
+      transform: scaleX(1);
     }
+  }
 }
 ```

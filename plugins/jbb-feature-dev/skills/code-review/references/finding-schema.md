@@ -12,23 +12,30 @@ severity: enum        — ENHANCEMENT | LOW | MEDIUM | HIGH | CRITICAL
 category: enum        — BUG | SECURITY | BEST_PRACTICE | STYLE
 confidence: float     — 0.0 to 1.0
 source_agent: string  — name of the agent that produced this finding
+suggested_fix: string  — concrete fix suggestion (1-3 lines of code or mitigation steps). Optional.
+cwe_id: string         — CWE identifier for security findings (e.g., "CWE-22"). Optional, used by security-reviewer.
 ```
 
 ## Field Descriptions
 
 ### file_path
+
 Relative path from the repository root to the file containing the finding. Must match the path as it appears in the diff.
 
 Example: `src/main/java/com/example/OrderService.java`
 
 ### position
+
 The diff hunk position number where the comment should be anchored. See `position-anchoring.md` for calculation rules. Must reference a changed line (not a context line).
 
 ### body
+
 Markdown-formatted review comment following the structure defined in `comment-format.md`. Should be self-contained.
 
 ### severity
+
 One of five values:
+
 - `ENHANCEMENT` — nice-to-have improvement, not tied to a specific problem
 - `LOW` — optional improvement
 - `MEDIUM` — author discretion
@@ -38,17 +45,31 @@ One of five values:
 See `severity-rubric.md` for detailed criteria.
 
 ### category
+
 One of four values:
+
 - `BUG` — functional correctness issue (null pointer, off-by-one, logic error)
 - `SECURITY` — security vulnerability (injection, auth bypass, data exposure)
 - `BEST_PRACTICE` — deviation from established patterns or best practices
 - `STYLE` — readability, naming, documentation
 
 ### confidence
+
 Float between 0.0 and 1.0 representing how certain the reviewer is that the issue is real. Findings below 0.5 confidence MUST be filtered out before emission. See `severity-rubric.md` for confidence bands.
 
 ### source_agent
+
 String identifier of the agent that produced this finding. Used for traceability and deduplication. Examples: `security-reviewer`, `bug-reviewer`, `best-practice-reviewer`.
+
+### suggested_fix
+
+Concrete fix suggestion — 1-3 lines of code or mitigation steps. Optional. Primarily used by `security-reviewer` to provide actionable remediation. Other agents may include this field when a specific code change is recommended.
+
+Example: `"Add path validation: if not os.path.realpath(user_path).startswith(allowed_base): raise ValueError()"`
+
+### cwe_id
+
+CWE identifier for security findings (e.g., `"CWE-22"`, `"CWE-532"`). Optional. Used by `security-reviewer` for traceability. Non-security agents should omit this field.
 
 ## Contract
 
@@ -66,6 +87,8 @@ String identifier of the agent that produced this finding. Used for traceability
   "severity": "HIGH",
   "category": "BUG",
   "confidence": 0.85,
-  "source_agent": "bug-reviewer"
+  "source_agent": "bug-reviewer",
+  "suggested_fix": "Add a null check: `if (order.items == null) { return Collections.emptyList(); }`",
+  "cwe_id": null
 }
 ```

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Accessibility Violations Test Fixture</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #FFFFCC;
+      color: #FFFFFF;
+    }
+    .header {
+      padding: 16px;
+      background: #FFFFCC;
+    }
+    .content {
+      padding: 20px;
+      background: #FFFFCC;
+    }
+    .card {
+      border: 1px solid #eee;
+      padding: 16px;
+      margin: 12px 0;
+      border-radius: 8px;
+      background: #FFFFCC;
+    }
+    .form-section {
+      padding: 20px;
+      background: #FFFFCC;
+    }
+    input[type="text"] {
+      padding: 8px;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <!-- No <nav> landmark, no <main> landmark, no ARIA landmarks at all -->
+
+  <div class="header">
+    <h1>Accessibility Violations Test Page</h1>
+    <!-- Heading hierarchy jumps from h1 to h4, skipping h2 and h3 -->
+    <h4>This subheading skips h2 and h3</h4>
+  </div>
+
+  <div class="content">
+    <!-- White text on light yellow background: contrast ratio ~1.1:1 -->
+    <p>This paragraph has #FFFFFF text on a #FFFFCC background, failing WCAG contrast.</p>
+
+    <div class="card">
+      <h4>Another h4 with no h2 or h3 above it</h4>
+      <!-- Images without alt attributes -->
+      <img src="https://via.placeholder.com/300x200" width="300" height="200">
+      <img src="https://via.placeholder.com/150x100" width="150" height="100">
+      <p>The images above have no alt attributes.</p>
+    </div>
+
+    <div class="card">
+      <p>More low-contrast text that is nearly invisible against the background.</p>
+      <img src="https://via.placeholder.com/200x150" width="200" height="150">
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h4>Contact Form (no labels)</h4>
+    <!-- Form input without label or aria-label -->
+    <input type="text" placeholder="Enter your name">
+    <input type="text" placeholder="Enter your email">
+    <button>Submit</button>
+  </div>
+</body>
+</html>

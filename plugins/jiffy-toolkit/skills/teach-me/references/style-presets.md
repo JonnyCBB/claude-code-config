@@ -21,24 +21,18 @@ Every preset MUST define these exact variable names:
 **Default theme**: light
 
 **Typography**:
-
 - Heading: Instrument Serif (400)
 - Body: DM Sans (400, 600)
 - Code: JetBrains Mono (400, 600)
 
 **Font Loading**:
-
 ```html
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link
-  href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@100..1000&family=JetBrains+Mono:wght@400;600&display=swap"
-  rel="stylesheet"
-/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@100..1000&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 ```
 
 **Colors (Primary Mode)**:
-
 ```css
 :root {
   --color-bg: #faf9f5;
@@ -60,7 +54,6 @@ Every preset MUST define these exact variable names:
 ```
 
 **Colors (Alternate Mode)**:
-
 ```css
 [data-theme="dark"] {
   --color-bg: #2b2a27;
@@ -74,14 +67,13 @@ Every preset MUST define these exact variable names:
   --color-border: #4a4945;
   --color-success: #98ac7d;
   --color-error: #e07060;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.4);
+  --shadow-lg: 0 10px 25px rgba(0,0,0,0.5);
 }
 ```
 
 **Signature Elements**:
-
 - Subtle grain texture overlay (SVG noise filter at 8% opacity)
 - Warm-tinted shadows in light mode (`rgba(26,26,24,...)`)
 
@@ -94,24 +86,18 @@ Every preset MUST define these exact variable names:
 **Default theme**: dark
 
 **Typography**:
-
 - Heading: Space Grotesk (400, 600, 700)
 - Body: Source Serif 4 (400, 600, italic)
 - Code: JetBrains Mono (400, 600)
 
 **Font Loading**:
-
 ```html
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link
-  href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap"
-  rel="stylesheet"
-/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 ```
 
 **Colors (Primary Mode)**:
-
 ```css
 :root {
   --color-bg: #0f1117;
@@ -133,7 +119,6 @@ Every preset MUST define these exact variable names:
 ```
 
 **Colors (Alternate Mode)**:
-
 ```css
 [data-theme="light"] {
   --color-bg: #f8f9fc;
@@ -147,14 +132,13 @@ Every preset MUST define these exact variable names:
   --color-border: #e2e4ea;
   --color-success: #22c55e;
   --color-error: #ef4444;
-  --shadow-sm: 0 1px 2px rgba(26, 27, 38, 0.06);
-  --shadow-md: 0 4px 6px rgba(26, 27, 38, 0.08);
-  --shadow-lg: 0 10px 25px rgba(26, 27, 38, 0.12);
+  --shadow-sm: 0 1px 2px rgba(26,27,38,0.06);
+  --shadow-md: 0 4px 6px rgba(26,27,38,0.08);
+  --shadow-lg: 0 10px 25px rgba(26,27,38,0.12);
 }
 ```
 
 **Signature Elements**:
-
 - Subtle star-field particle animation in background
 - Glowing strokes on visualizations (`filter: drop-shadow(0 0 6px var(--color-primary))`)
 
@@ -167,24 +151,18 @@ Every preset MUST define these exact variable names:
 **Default theme**: light
 
 **Typography**:
-
 - Heading: Bitter (400, 700)
 - Body: Source Sans 3 (400, 600)
 - Code: Fira Code (400, 600)
 
 **Font Loading**:
-
 ```html
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link
-  href="https://fonts.googleapis.com/css2?family=Bitter:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@400;600&family=Fira+Code:wght@400;600&display=swap"
-  rel="stylesheet"
-/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bitter:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@400;600&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
 ```
 
 **Colors (Primary Mode)**:
-
 ```css
 :root {
   --color-bg: #f7f3eb;
@@ -206,7 +184,6 @@ Every preset MUST define these exact variable names:
 ```
 
 **Colors (Alternate Mode)**:
-
 ```css
 [data-theme="dark"] {
   --color-bg: #2a2520;
@@ -220,14 +197,13 @@ Every preset MUST define these exact variable names:
   --color-border: #4a4239;
   --color-success: #6da67a;
   --color-error: #d47a63;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.4);
+  --shadow-lg: 0 10px 25px rgba(0,0,0,0.5);
 }
 ```
 
 **Signature Elements**:
-
 - Rough.js hand-drawn borders on callout boxes
 - Margin annotations styled as pencil-written sidenotes
 
@@ -240,24 +216,18 @@ Every preset MUST define these exact variable names:
 **Default theme**: dark
 
 **Typography**:
-
 - Heading: Space Mono (400, 700)
 - Body: IBM Plex Sans (400, 600)
 - Code: Fira Code (400, 600)
 
 **Font Loading**:
-
 ```html
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link
-  href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Sans:wght@400;600&family=Fira+Code:wght@400;600&display=swap"
-  rel="stylesheet"
-/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Sans:wght@400;600&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
 ```
 
 **Colors (Primary Mode)**:
-
 ```css
 :root {
   --color-bg: #0a0a0f;
@@ -279,7 +249,6 @@ Every preset MUST define these exact variable names:
 ```
 
 **Colors (Alternate Mode)**:
-
 ```css
 [data-theme="light"] {
   --color-bg: #f0f2f5;
@@ -293,14 +262,13 @@ Every preset MUST define these exact variable names:
   --color-border: #d8dae0;
   --color-success: #0d8a00;
   --color-error: #c4205a;
-  --shadow-sm: 0 1px 2px rgba(10, 10, 15, 0.06);
-  --shadow-md: 0 4px 6px rgba(10, 10, 15, 0.08);
-  --shadow-lg: 0 10px 25px rgba(10, 10, 15, 0.12);
+  --shadow-sm: 0 1px 2px rgba(10,10,15,0.06);
+  --shadow-md: 0 4px 6px rgba(10,10,15,0.08);
+  --shadow-lg: 0 10px 25px rgba(10,10,15,0.12);
 }
 ```
 
 **Signature Elements**:
-
 - CRT scanline overlay effect (repeating-linear-gradient at 2px intervals)
 - ASCII-art dividers between sections (`═══════════════`)
 
@@ -313,24 +281,18 @@ Every preset MUST define these exact variable names:
 **Default theme**: light
 
 **Typography**:
-
 - Heading: Fraunces (400, 700)
 - Body: Literata (400, 600, italic)
 - Code: JetBrains Mono (400, 600)
 
 **Font Loading**:
-
 ```html
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link
-  href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,700;1,400&family=Literata:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap"
-  rel="stylesheet"
-/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,700;1,400&family=Literata:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 ```
 
 **Colors (Primary Mode)**:
-
 ```css
 :root {
   --color-bg: #fafafa;
@@ -352,7 +314,6 @@ Every preset MUST define these exact variable names:
 ```
 
 **Colors (Alternate Mode)**:
-
 ```css
 [data-theme="dark"] {
   --color-bg: #1a1a1a;
@@ -366,14 +327,13 @@ Every preset MUST define these exact variable names:
   --color-border: #3a3a3a;
   --color-success: #66bb6a;
   --color-error: #ef5350;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.4);
+  --shadow-lg: 0 10px 25px rgba(0,0,0,0.5);
 }
 ```
 
 **Signature Elements**:
-
 - Tufte-style sidenotes in wide margins
 - Full-width figures with generous whitespace and inline-expanding footnotes
 
@@ -386,24 +346,18 @@ Every preset MUST define these exact variable names:
 **Default theme**: light
 
 **Typography**:
-
 - Heading: Cormorant Garamond (400, 600)
 - Body: DM Sans (400, 600)
 - Code: Fira Code (400, 600)
 
 **Font Loading**:
-
 ```html
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link
-  href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@400;600&family=Fira+Code:wght@400;600&display=swap"
-  rel="stylesheet"
-/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@400;600&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
 ```
 
 **Colors (Primary Mode)**:
-
 ```css
 :root {
   --color-bg: #e8ede4;
@@ -425,7 +379,6 @@ Every preset MUST define these exact variable names:
 ```
 
 **Colors (Alternate Mode)**:
-
 ```css
 [data-theme="dark"] {
   --color-bg: #1a2518;
@@ -439,14 +392,13 @@ Every preset MUST define these exact variable names:
   --color-border: #3a4a35;
   --color-success: #6da67a;
   --color-error: #d47a6a;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.4);
+  --shadow-lg: 0 10px 25px rgba(0,0,0,0.5);
 }
 ```
 
 **Signature Elements**:
-
 - SVG botanical line-art at section breaks
 - Vine-shaped progress indicator with organic growth animation
 
@@ -459,24 +411,18 @@ Every preset MUST define these exact variable names:
 **Default theme**: dark
 
 **Typography**:
-
 - Heading: Archivo (400, 600, 700)
 - Body: Atkinson Hyperlegible (400, 700)
 - Code: Source Code Pro (400, 600)
 
 **Font Loading**:
-
 ```html
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link
-  href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&family=Atkinson+Hyperlegible+Next:ital,wght@0,400;0,700;1,400&family=Source+Code+Pro:wght@400;600&display=swap"
-  rel="stylesheet"
-/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&family=Atkinson+Hyperlegible+Next:ital,wght@0,400;0,700;1,400&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
 ```
 
 **Colors (Primary Mode)**:
-
 ```css
 :root {
   --color-bg: #1e2a3a;
@@ -498,7 +444,6 @@ Every preset MUST define these exact variable names:
 ```
 
 **Colors (Alternate Mode)**:
-
 ```css
 [data-theme="light"] {
   --color-bg: #f0f4f8;
@@ -512,64 +457,51 @@ Every preset MUST define these exact variable names:
   --color-border: #d0dae4;
   --color-success: #27ae60;
   --color-error: #c0392b;
-  --shadow-sm: 0 1px 2px rgba(30, 42, 58, 0.06);
-  --shadow-md: 0 4px 6px rgba(30, 42, 58, 0.08);
-  --shadow-lg: 0 10px 25px rgba(30, 42, 58, 0.12);
+  --shadow-sm: 0 1px 2px rgba(30,42,58,0.06);
+  --shadow-md: 0 4px 6px rgba(30,42,58,0.08);
+  --shadow-lg: 0 10px 25px rgba(30,42,58,0.12);
 }
 ```
 
 **Signature Elements**:
-
 - Background grid pattern (subtle repeating blueprint lines)
 - Dashed-border callout boxes with corner registration markers
 
 ---
 
-### 8. Corporate Brand
+### 8. Neon Green on Black
 
 **Vibe**: Dark, confident, brand-aligned, modern, energetic
-**Best for**: Corporate educational content, onboarding materials, tech talks
+**Best for**: internal educational content, onboarding materials, tech talks
 **Default theme**: dark
 
 **Typography**:
-
 - Heading: Satoshi (400, 700)
 - Body: General Sans (400, 600)
 - Code: JetBrains Mono (400, 600)
 
 **Font Loading**:
-
 ```html
-<link
-  href="https://api.fontshare.com/v2/css?f[]=satoshi@400,700&display=swap"
-  rel="stylesheet"
-/>
-<link
-  href="https://api.fontshare.com/v2/css?f[]=general-sans@400,600&display=swap"
-  rel="stylesheet"
-/>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link
-  href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap"
-  rel="stylesheet"
-/>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,700&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,600&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 ```
 
 **Colors (Primary Mode)**:
-
 ```css
 :root {
   --color-bg: #191414;
   --color-surface: #282828;
   --color-text: #ffffff;
   --color-text-secondary: #b3b3b3;
-  --color-primary: #1db954;
+  --color-primary: #1DB954;
   --color-primary-light: #1a3a28;
-  --color-accent: #5925ff;
+  --color-accent: #5925FF;
   --color-accent-light: #2a1a4a;
   --color-border: #3a3a3a;
-  --color-success: #19e68c;
+  --color-success: #19E68C;
   --color-error: #e07060;
 
   --font-heading: "Satoshi", system-ui, sans-serif;
@@ -579,28 +511,26 @@ Every preset MUST define these exact variable names:
 ```
 
 **Colors (Alternate Mode)**:
-
 ```css
 [data-theme="light"] {
   --color-bg: #f5f5f5;
   --color-surface: #ffffff;
   --color-text: #191414;
   --color-text-secondary: #6a6a6a;
-  --color-primary: #1db954;
+  --color-primary: #1DB954;
   --color-primary-light: #e8f5e9;
-  --color-accent: #5925ff;
+  --color-accent: #5925FF;
   --color-accent-light: #ede7f6;
   --color-border: #e0e0e0;
   --color-success: #15b870;
   --color-error: #c45050;
-  --shadow-sm: 0 1px 2px rgba(25, 20, 20, 0.06);
-  --shadow-md: 0 4px 6px rgba(25, 20, 20, 0.08);
-  --shadow-lg: 0 10px 25px rgba(25, 20, 20, 0.12);
+  --shadow-sm: 0 1px 2px rgba(25,20,20,0.06);
+  --shadow-md: 0 4px 6px rgba(25,20,20,0.08);
+  --shadow-lg: 0 10px 25px rgba(25,20,20,0.12);
 }
 ```
 
 **Signature Elements**:
-
 - Green accent bars on progress indicators and active states
 - Brand-faithful color hierarchy: green for actions, purple for illustrations
 
@@ -613,24 +543,18 @@ Every preset MUST define these exact variable names:
 **Default theme**: light
 
 **Typography**:
-
 - Heading: Syne (400, 600, 700)
 - Body: Inter (400, 600)
 - Code: JetBrains Mono (400, 600)
 
 **Font Loading**:
-
 ```html
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link
-  href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;600&display=swap"
-  rel="stylesheet"
-/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 ```
 
 **Colors (Primary Mode)**:
-
 ```css
 :root {
   --color-bg: #ffffff;
@@ -652,7 +576,6 @@ Every preset MUST define these exact variable names:
 ```
 
 **Colors (Alternate Mode)**:
-
 ```css
 [data-theme="dark"] {
   --color-bg: #1a2332;
@@ -666,14 +589,13 @@ Every preset MUST define these exact variable names:
   --color-border: #334155;
   --color-success: #4ade80;
   --color-error: #f87171;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.4);
+  --shadow-lg: 0 10px 25px rgba(0,0,0,0.5);
 }
 ```
 
 **Signature Elements**:
-
 - Heavy black-bordered cards with 3px offset box-shadows
 - Color-coded chapter markers with bold section numbering
 
@@ -686,43 +608,31 @@ Every preset MUST define these exact variable names:
 **Default theme**: dark
 
 **Typography**:
-
 - Heading: Clash Display (400, 600, 700)
 - Body: General Sans (400, 600)
 - Code: JetBrains Mono (400, 600)
 
 **Font Loading**:
-
 ```html
-<link
-  href="https://api.fontshare.com/v2/css?f[]=clash-display@400,600,700&display=swap"
-  rel="stylesheet"
-/>
-<link
-  href="https://api.fontshare.com/v2/css?f[]=general-sans@400,600&display=swap"
-  rel="stylesheet"
-/>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link
-  href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap"
-  rel="stylesheet"
-/>
+<link href="https://api.fontshare.com/v2/css?f[]=clash-display@400,600,700&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,600&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 ```
 
 **Colors (Primary Mode)**:
-
 ```css
 :root {
   --color-bg: #0c0c1d;
-  --color-surface: rgba(255, 255, 255, 0.06);
+  --color-surface: rgba(255,255,255,0.06);
   --color-text: #e4e4e7;
   --color-text-secondary: #8888a0;
   --color-primary: #8b5cf6;
   --color-primary-light: #1e1540;
   --color-accent: #06b6d4;
   --color-accent-light: #0a2030;
-  --color-border: rgba(255, 255, 255, 0.1);
+  --color-border: rgba(255,255,255,0.1);
   --color-success: #34d399;
   --color-error: #ec4899;
 
@@ -733,27 +643,25 @@ Every preset MUST define these exact variable names:
 ```
 
 **Colors (Alternate Mode)**:
-
 ```css
 [data-theme="light"] {
   --color-bg: #f5f5fa;
-  --color-surface: rgba(255, 255, 255, 0.8);
+  --color-surface: rgba(255,255,255,0.8);
   --color-text: #1a1a2e;
   --color-text-secondary: #6b6b80;
   --color-primary: #7c3aed;
   --color-primary-light: #ede9fe;
   --color-accent: #0891b2;
   --color-accent-light: #e0f7fa;
-  --color-border: rgba(0, 0, 0, 0.08);
+  --color-border: rgba(0,0,0,0.08);
   --color-success: #059669;
   --color-error: #db2777;
-  --shadow-sm: 0 1px 2px rgba(12, 12, 29, 0.06);
-  --shadow-md: 0 4px 6px rgba(12, 12, 29, 0.08);
-  --shadow-lg: 0 10px 25px rgba(12, 12, 29, 0.12);
+  --shadow-sm: 0 1px 2px rgba(12,12,29,0.06);
+  --shadow-md: 0 4px 6px rgba(12,12,29,0.08);
+  --shadow-lg: 0 10px 25px rgba(12,12,29,0.12);
 }
 ```
 
 **Signature Elements**:
-
 - Frosted glass content cards (`backdrop-filter: blur(20px)` with translucent borders)
 - Gradient mesh backgrounds with ambient animated gradient orbs

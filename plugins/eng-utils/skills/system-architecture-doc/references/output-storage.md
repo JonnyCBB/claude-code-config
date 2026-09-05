@@ -14,7 +14,7 @@ mkdir -p ~/.claude/thoughts/shared/architecture/<system-name>/
 Write output files:
 1. `workspace.dsl` — enriched Structurizr DSL model from Phase 4
 2. `README.md` — human-readable documentation from Phase 5
-3. `inventory.md` — system inventory from Phase 2 (the scope-discovery agent's output)
+3. `inventory.md` — system inventory from Phase 2 (the codebase-explorer agent's output)
 4. `diagrams/*.puml` — PlantUML C4 source files from Step 4d
 5. `diagrams/*.svg` — rendered SVG images from Step 4d
 

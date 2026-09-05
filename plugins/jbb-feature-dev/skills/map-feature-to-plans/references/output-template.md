@@ -84,6 +84,23 @@ Plan 1 ──→ Plan 3 (depends on Plan 1)
 **Strategy**: Single PR / Stacked PRs / Stacked PRs + re-scope
 **Rationale**: [Based on adaptive thresholds from pr-strategy.md]
 
+### Branch Chain
+
+> Only include when strategy is "Stacked PRs". Omit entirely for "Single PR per repo".
+
+| Plan | Branch Name | Base Branch | Estimated LOC |
+|------|-------------|-------------|---------------|
+| Plan 1 | feat/<prefix>-<slice-1> | master | N |
+| Plan 2 | feat/<prefix>-<slice-2> | feat/<prefix>-<slice-1> | N |
+| Plan 3 | feat/<prefix>-<slice-3> | feat/<prefix>-<slice-2> | N |
+
+**Rules**:
+- Branch names use the naming convention from pr-strategy.md
+- Base Branch for the first plan is always `master` (or the repo default branch)
+- Each subsequent plan's Base Branch is the previous plan's Branch Name (following the Dependency Graph order)
+- Independent plans (no dependency between them) both list `master` as their Base Branch — they are not stacked against each other
+- The Branch Chain table derives from the Dependency Graph and Execution Wave Strategy sections
+
 ## Suggested Next Steps
 
 For each plan:

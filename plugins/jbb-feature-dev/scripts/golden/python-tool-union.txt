@@ -1,0 +1,24 @@
+# Source agents (Python cluster), per language-expert consolidation plan v3:
+#   python-test-reviewer.md (frontmatter `tools:`)
+#   python-code-simplification-reviewer.md (frontmatter `tools:`)
+# Tools below are the union of the above two agents' tool surfaces,
+# alphabetically sorted. The python-expert agent's frontmatter `tools:` field
+# MUST be a superset of this list (Constraint line 132 — tool union, not subset).
+# Per Reqs line 77, python-expert MUST also declare Bash, Edit, MultiEdit, Write
+# (mandatory for implement-mode); these already appear in this union via
+# python-code-simplification-reviewer.
+Bash
+Edit
+Glob
+Grep
+LS
+ListMcpResourcesTool
+MultiEdit
+NotebookEdit
+Read
+ReadMcpResourceTool
+TodoWrite
+WebFetch
+Write
+mcp__plugin_jbb-feature-dev_code-search-mcp__read_file
+mcp__plugin_jbb-feature-dev_code-search-mcp__search_code

@@ -11,7 +11,7 @@ description: >
 
 # System Architecture Documentation
 
-You are an architecture documentation specialist. Your mission: take user input about a system (free text, repo links, screenshots) and produce two primary artifacts — an **enriched Structurizr DSL model** (`workspace.dsl`) and a **human-readable markdown document** (`README.md`) with C4 diagrams, sequence diagrams, and prose walkthroughs.
+You are an architecture documentation specialist. Your mission: take user input about a system (free text, repo links, screenshots, the service catalog URLs) and produce two primary artifacts — an **enriched Structurizr DSL model** (`workspace.dsl`) and a **human-readable markdown document** (`README.md`) with C4 diagrams, sequence diagrams, and prose walkthroughs.
 
 ## Phase Execution Rules
 
@@ -42,9 +42,10 @@ You are an architecture documentation specialist. Your mission: take user input 
 
 When this command is invoked:
 
-**If arguments provided** (e.g., `/system-architecture-doc payment-service`):
+**If arguments provided** (e.g., `/system-architecture-doc search-api`):
 
-- Parse arguments for: system names, GitHub repo links (`github.com/org/...`), local repo paths (`~/projects/...`), file paths (screenshots, docs)
+- Parse arguments for: system names, repo links (`github.com/<org>/...`), local repo paths (`~/src/...`), service-catalog URLs, file paths (screenshots, docs)
+- If a service-catalog URL is given, extract the component/system name from the URL path
 - If a screenshot or file path is given, read it for context
 - Proceed to Phase 1 with extracted context
 
@@ -56,8 +57,9 @@ When this command is invoked:
   I'll help you create architecture documentation for a system.
 
   You can provide:
-  - A system or service name (e.g., "payment-service", "the order system")
-  - A GitHub repository link
+  - A system or service name (e.g., "search-api", "the playlist system")
+  - A service-catalog URL
+  - A GHE repository link
   - A local repo path
   - Screenshots of existing diagrams or architecture docs
   - Any combination of the above
@@ -107,15 +109,17 @@ To create the right architecture documentation, I need to clarify:
 
 ## Phase 2 — Scope Discovery (Subagent)
 
-**DO NOT skip this phase even if the user has already provided repository and component information.** The user's list is a starting point, not a complete inventory. The scope-discovery agent explores dependencies and data lineage to discover components and relationships that are NOT visible from the user's initial input — hidden dependencies, shared infrastructure, data pipelines, and services the user may not know about.
+**DO NOT skip this phase even if the user has already provided repository and component information.** The user's list is a starting point, not a complete inventory. The codebase-explorer agent uses the service catalog catalog, Oliver dependencies, and data lineage to discover components and relationships that are NOT visible from the user's initial input — hidden dependencies, shared infrastructure, data pipelines, and services the user may not know about.
 
-Spawn the `scope-discovery` agent in **foreground (blocking) mode** to produce a structured inventory.
+**Agent delivery resilience**: Subagents may go idle without delivering results (known Claude Code issue). If an agent sends an `idle_notification` without content: (1) prompt it via SendMessage using its agent ID (not name), (2) if still no delivery, respawn once, (3) if respawn fails, gather data directly or document the gap. When spawning 5+ agents, consider sequential sub-batches to reduce cascade-failure risk.
+
+Spawn the `codebase-explorer` agent in **foreground (blocking) mode** to produce a structured inventory.
 
 **For single-system scope:**
 
 ```
-Spawn one scope-discovery agent with:
-- System name / repo / Backstage URL from Phase 1
+Spawn one codebase-explorer agent with:
+- System name / repo / the service catalog URL from Phase 1
 - Scope depth from Phase 1
 - Whether to include data pipelines
 - Any repositories/components the user already provided (as starting points, not a complete list)
@@ -124,12 +128,12 @@ Spawn one scope-discovery agent with:
 **For cross-system scope:**
 
 ```
-Spawn one scope-discovery agent PER system in foreground mode.
+Spawn one codebase-explorer agent PER system in foreground mode.
 Each agent receives its system name and the same scope directives.
-Launch all scope-discovery agents in a single parallel batch (multiple Task tool calls in one message), but do NOT use run_in_background.
+Launch all codebase-explorer agents in a single parallel batch (multiple Task tool calls in one message), but do NOT use run_in_background.
 ```
 
-**After all scope-discovery agents complete:**
+**After all codebase-explorer agents complete:**
 
 1. Write the combined inventory to the output directory as `inventory.md`
 2. Present the system inventory to the user
@@ -148,8 +152,10 @@ Launch all scope-discovery agents in a single parallel batch (multiple Task tool
 Read `references/agent-orchestration.md` for the complete Phase 3 workflow including domain
 detection, agent contracts, prompt templates, and orchestration details.
 
-Follow `${CLAUDE_PLUGIN_ROOT}/commands/shared/agent-verification-pattern.md` for the agent contract and
+Follow `${CLAUDE_PLUGIN_ROOT}/skills/shared-references/agent-verification-pattern.md` for the agent contract and
 verification table pattern.
+
+**Agent delivery resilience**: Subagents may go idle without delivering results (known Claude Code issue). If an agent sends an `idle_notification` without content: (1) prompt it via SendMessage using its agent ID (not name), (2) if still no delivery, respawn once, (3) if respawn fails, gather data directly. When spawning 5+ agents, use sub-batches of 3-4.
 
 **GATE**: Do not proceed to Phase 4 until all agents have completed and the pre-synthesis
 verification has been output to the user.
@@ -193,7 +199,7 @@ read `references/incremental-updates.md` for the merge strategy and change summa
 
 ## Error Handling
 
-Sub-agent-level errors (catalog misses, dependency lookup failures, data lineage failures) are handled internally by the `scope-discovery` agent and `Explore` agents. The command only handles orchestration-level errors:
+Sub-agent-level errors (catalog misses, Oliver empty, data lineage failures) are handled internally by the `codebase-explorer` agent and `Explore` agents. The command only handles orchestration-level errors:
 
 **Structurizr validation fails:**
 

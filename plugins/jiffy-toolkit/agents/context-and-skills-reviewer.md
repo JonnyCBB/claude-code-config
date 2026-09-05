@@ -9,7 +9,7 @@ description: >
   before publishing, (3) checking if existing instructions are earning their token cost.
 skills: [context-and-skills-standards]
 tools: Read, Grep, Glob
-model: sonnet
+model: claude-sonnet-5
 color: teal
 ---
 

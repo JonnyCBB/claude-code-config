@@ -1,0 +1,44 @@
+{
+  "expectations": [
+    {
+      "text": "Identifies that the three supplier prices are not like-for-like",
+      "passed": true,
+      "evidence": "'the three numbers don't measure the same thing'."
+    },
+    {
+      "text": "Specifies that Vantage excludes consumables, installation and end-of-term disposal which the others include",
+      "passed": true,
+      "evidence": "Table with 'Is this a landed total?' row; Vantage marked No."
+    },
+    {
+      "text": "States that the cheapest-headline ranking is therefore unsafe and the recommendation is not yet supported",
+      "passed": true,
+      "evidence": "'My expectation is that equalising scope flips the recommendation to Norbury'."
+    },
+    {
+      "text": "Flags that Castleford's figure is an estimate and should not sit in a ranked table as if it were a quote",
+      "passed": true,
+      "evidence": "'sitting in a price column with a rank beside it while the caveat sits eight lines below'."
+    },
+    {
+      "text": "Flags that only three of the six approved framework suppliers were approached",
+      "passed": true,
+      "evidence": "'Six approved suppliers, three approached'; 17% observed spread."
+    },
+    {
+      "text": "Notes the absence of dates or sources on the figures",
+      "passed": true,
+      "evidence": "'No quote reference, date, or contact on any figure'."
+    },
+    {
+      "text": "Does NOT simply endorse the existing recommendation to proceed with Vantage",
+      "passed": true,
+      "evidence": "'I wouldn't send this to the board as it stands.'"
+    },
+    {
+      "text": "Recommends obtaining the missing information before the comparison goes to the board",
+      "passed": true,
+      "evidence": "Gates-first next actions listed before price work."
+    }
+  ]
+}

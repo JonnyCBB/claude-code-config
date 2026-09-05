@@ -14,7 +14,7 @@ Before making ANY Task tool calls, output a verification table that cross-checks
 
 | Question | Agent in Research Questions | Agent I Will Spawn | Match? |
 |----------|---------------------------|-------------------|--------|
-| Q1       | web-search-researcher      | web-search-researcher   | Y |
+| Q1       | web-search-researcher | web-search-researcher | Y |
 | Q2       | codebase-explorer          | codebase-explorer | Y |
 | ...      | ...                        | ...               | ... |
 
@@ -31,7 +31,7 @@ Any row shows N? STOP. Reconcile — update the Research Questions (with explana
   1. Spawn all agents in that batch in parallel
   2. Wait for all agents in the batch to complete
   3. Extract relevant findings to pass as context to the next batch
-  4. Update TODO list to reflect batch completion
+  4. Call `TaskUpdate` to mark completed agent tasks; call `TaskList` to verify batch status
   5. Proceed to next batch with enriched context
 
 When spawning agents in Batch N+1, include a structured "Batch Summary" in their prompts:
@@ -62,7 +62,7 @@ You MAY combine multiple related questions into a single subagent IF:
 - The questions are closely related and can be answered by the same source/agent type
 - It's more efficient than spawning separate agents
 - **Tell the user which questions you're combining and why**
-  Example: "Combining questions 1 & 2 into codebase-explorer since both involve the same service's request handling"
+  Example: "Combining questions 1 & 2 into codebase-explorer since both involve search-api video detection"
 
 ## Direct Question Handling
 
@@ -75,11 +75,24 @@ Direct questions do not appear in the Pre-Spawn Verification Table since they do
 ## Model Selection for Sub-Agents
 
 For guidance on choosing sub-agent models (when to use Sonnet vs. the user's default), see
-`${CLAUDE_PLUGIN_ROOT}/commands/shared/model-selection-guide.md`.
+`${CLAUDE_PLUGIN_ROOT}/skills/shared-references/model-selection-guide.md`.
 
 ## Default Agent Choice
 
-**Default subagent choice: codebase-explorer** (most questions involve understanding the local codebase).
+**Default subagent choice: codebase-explorer** for questions the code can answer; **web-search-researcher** when the answer lives outside the repo.
+
+**Before defaulting, check the question against these routing rules** — historical analysis of 69 research plans showed live-system questions were routinely misrouted to doc-searchers and left unanswered:
+
+| Question needs...                                                                            | Route to                                             |
+| -------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| Production behavior: metrics, latency/error baselines, SLOs, alerts, incidents, logs, traces | web-search-researcher                     |
+| Deployment state: pods, canaries, rollout status                                             | web-search-researcher                     |
+| Service topology: who calls whom, service catalog, component ownership                       | web-search-researcher                     |
+| Data: warehouse datasets, dataset contents/schemas, lineage, scheduled workflows             | web-search-researcher                     |
+| Experiment state: experiment results and exposures                                           | web-search-researcher                     |
+| Live Slack thread/channel content                                                            | web-search-researcher (live Slack tools)  |
+| GitHub PR/issue/CI state                                                                     | web-search-researcher (gh CLI via Bash)   |
+| Docs, indexed Slack search, Drive/RFCs, issue tracker, people/teams                          | web-search-researcher                     |
 
 ## Codebase Research Agents
 
@@ -102,6 +115,8 @@ For guidance on choosing sub-agent models (when to use Sonnet vs. the user's def
 
 **IMPORTANT**: All agents are documentarians, not critics. They will describe what exists without suggesting improvements.
 
+**Empirical Testing Principle**: When you discover a tool, API, or configuration that is relevant to the research question, attempt to verify it works by calling it with a minimal test input. Report both the existence AND the empirical result. This does not violate the documentarian principle — you are documenting empirical behavior, not evaluating or suggesting improvements.
+
 ## Confidence Signaling
 
 All research agents MUST include a Confidence Assessment section in their output:
@@ -117,28 +132,69 @@ All research agents MUST include a Confidence Assessment section in their output
 This enables the synthesis step to weight findings appropriately and the review phase to
 focus on low-confidence areas.
 
+### Close What You Can Before You Report It
+
+Instruct every research agent: **before listing anything under "areas of low confidence" or
+"inconclusive searches", check whether one more tool call, file read, or command would close
+it — and if so, run it.** Report the gap only if you attempted it and it failed, or if closing
+it needs access you do not have; say which of the two it was.
+
+This matters because a gap listed here flows into the synthesis and, if nobody notices it was
+cheap to close, into the finished document's Open Questions. Observed failure: an agent ran
+`git log --follow` on a deleted file, reported "last commit was X", and stopped — one more
+flag (`--diff-filter=D`) would have named the deletion commit and answered the question
+outright. Surfacing a fact _adjacent to_ the answer is not the same as answering.
+
+Two specific habits to avoid:
+
+- Writing "this could be confirmed by [instrument]" instead of using that instrument. If you
+  can name what would settle it, you are one step from settling it.
+- Grounding an absence claim in an index, cache, or capped listing. Prefer a count or an
+  existence check against the live source, and say which you used.
+
 ## External Research Agents
 
 **web-search-researcher** -- use for:
 
-- External documentation and resources
-- When no existing internal solution exists
+- Recommended/approved tools and libraries, and how others solved the same problem
+- Relevant Slack discussions -- both the historical index AND live thread/channel reads (prefer live reads when the exact thread matters or the index looks stale)
+- Google Docs/Slides/Sheets
+- Relevant email threads (Gmail) about decisions or announcements
+- Meeting/calendar context
+- People/team/ownership facts
+- GitHub PR/issue/CI state (gh CLI via Bash)
+- Production behavior of named services: metrics, SLOs, alerts, incidents, logs, traces
+- Deployment state: pods, canaries, rollout status
+- Service topology: production callgraph, service catalog, component ownership
+- Data questions: warehouse queries, dataset schemas/contents, lineage, scheduled workflows
+- Anything where the honest answer requires querying a live system rather than reading about it
+- Discovering whether an MCP server exists that could answer an otherwise-unanswerable question (report-only -- name candidate servers in the findings; do not invoke them)
 
-**LINKS requirement**: Instruct agents to return links with their findings, and include those links in the final report.
+**When to spawn as primary researcher:**
 
-## Domain Expert Table
+- The research question explicitly mentions a technology a domain expert covers
+- The question asks HOW something works in a domain, not just WHERE code lives
+- Domain-specific knowledge would narrow the search or produce richer findings
 
-If the research question involves specific technical domains, consider spawning domain experts:
+### Domain Expert as Verifier (Step 7)
 
-| Domain Pattern             | Expert Agent           | When to Use                        |
-| -------------------------- | ---------------------- | ---------------------------------- |
-| Experiments, feature flags | experimentation-expert | Experimentation platform questions |
+When a domain expert matches the research topic, it MUST be spawned in Step 7 as a
+**Technical Accuracy Verifier** alongside the generic reviewer personas (for Medium and
+Complex research). See `references/review-personas.md` for the verifier persona definition
+and prompt template.
 
-Spawn domain experts when:
+**When to spawn as verifier:**
 
-- The research question explicitly mentions domain technologies
-- Initial codebase research reveals domain-specific patterns
-- You need best practices specific to a domain
+- Medium or Complex complexity AND a domain expert matches the research topic
+- The domain expert was NOT used as primary researcher (verification is especially valuable
+  when generalist agents produced the findings)
+- The domain expert WAS used as primary researcher but findings from OTHER agents touch
+  the domain (cross-check between agents)
+
+**When to skip verification:**
+
+- Simple complexity (unless user requests it)
+- No domain expert matches the research topic
 
 ## Agent Usage Tips
 

@@ -60,7 +60,10 @@ First, determine what the user wants:
 **Mode A: New Presentation**
 
 - User wants to create slides from scratch
-- Proceed to Phase 1 (Content Discovery)
+- Proceed to Phase 1 (Content Discovery) Step 1.1 (context questions)
+- **Content-based routing**: After Phase 1 Step 1.1 Question 3 (content readiness):
+  - "I have a topic only" → Phase 2 (Collaborative Brainstorming) runs NEXT, before Phase 1 continues with remaining steps
+  - "I have rough notes" / "I have all content ready" → Phase 1 completes fully, then Phase 2 runs
 
 **Mode B: PPT Conversion**
 
@@ -198,7 +201,7 @@ If user has content, ask them to share it (text, bullet points, images, etc.).
 
 **User-provided assets are important visual anchors** — but not every asset is necessarily usable. The first step is always to evaluate. After evaluation, the curated assets become additional context that shapes how the presentation is built. This is a **co-design process**: text content + curated visuals together inform the slide structure from the start, not a post-hoc "fit images in after the fact."
 
-**If user selected "No images"** -> Skip the entire image pipeline. Proceed directly to Phase 2 (Style Discovery) and Phase 3 (Generate Presentation) using text content only. The presentation will use CSS-generated visuals (gradients, shapes, patterns, typography) for visual interest — this is the original behavior and produces fully polished results without any images.
+**If user selected "No images"** -> Skip the entire image pipeline. Proceed directly to Phase 2 (Collaborative Brainstorming) and Phase 3 (Generate Presentation) using text content only. The presentation will use CSS-generated visuals (gradients, shapes, patterns, typography) for visual interest — this is the original behavior and produces fully polished results without any images.
 
 **If user provides an image folder:**
 
@@ -222,7 +225,7 @@ After evaluation, the **usable** images become context for planning the slide st
 - 1 usable architecture diagram -> dedicated "How It Works" slide
 - 1 blurry/irrelevant image -> excluded, with explanation to user
 
-This means curated images are factored in **before** style selection (Phase 2) and **before** HTML generation (Phase 3). They are co-equal context in the design process.
+This means curated images are factored in **before** brainstorming (Phase 2) and **before** HTML generation (Phase 3). They are co-equal context in the design process.
 
 5. **Confirm outline via AskUserQuestion** — Do NOT break the flow by asking the user to type free text. Use AskUserQuestion to confirm:
 
@@ -241,175 +244,29 @@ For image processing code (Pillow operations), see [references/media-and-widgets
 
 ---
 
-## Phase 2: Style Discovery (Visual Exploration)
+## Phase 2: Collaborative Brainstorming
 
-**CRITICAL: This is the "show, don't tell" phase.**
+Capture narrative arc, per-slide messaging, animation key moments, and visual direction — including style preset selection — before slide generation. This phase uses a 3-wave interview with visual mockup checkpoints and dual-channel feedback (crit preview + AskUserQuestion).
 
-Most people can't articulate design preferences in words. Instead of asking "do you want minimalist or bold?", we generate mini-previews and let them react.
+For the full brainstorming phase implementation, see [references/brainstorming-phase.md](references/brainstorming-phase.md).
 
-### How Users Choose Presets
+### Orchestration Steps
 
-Users can select a style in **three ways**:
+1. **Session resume**: Check for existing `brainstorm-notes.md` at `~/.claude/presentations/[name]/.brainstorm/`. If found with partial state, offer resume/proceed/skip options.
+2. **Skip prompt**: Offer the user a choice — brainstorm or proceed directly to generation. If skipped, no `brainstorm-notes.md` is created and the pipeline proceeds to Phase 3.
+3. **Wave 1 — Narrative Foundation**: Interview about audience, core message, narrative arc. Generate HTML storyboard overview. Open for dual-channel feedback.
+4. **Wave 2 — Slide-Level Design**: Interview about per-slide content, engagement moments, animation key moments (3-5 slides identified). Generate HTML slide wireframes. Open for dual-channel feedback.
+5. **Wave 3 — Visual Direction + Style**: Interview about mood, colors, typography, imagery. Agent curates style preset recommendations from [references/style-presets.md](references/style-presets.md). Generate HTML mood board with preset previews. Open for dual-channel feedback. Opt-in speaker notes.
+6. **Persist**: Write all decisions to `brainstorm-notes.md` for Phase 1 (smart dedup) and Phase 3 (generation) consumption.
+7. **Exit synthesis**: Summarize all brainstorming decisions and proceed to Phase 3.
 
-**Option A: Guided Discovery ("Show me options")**
+### Content-Based Routing
 
-- User answers a mood question
-- Skill generates a theme explorer with recommended presets highlighted
-- User browses and picks their favorite
-- Best for users who don't have a specific style in mind
+When the user selected "I have a topic only" in Phase 1 Step 1.1 Q3, Phase 2 runs before Phase 1 completes. See [references/brainstorming-phase.md](references/brainstorming-phase.md) § Content-Based Routing Logic for details.
 
-**Option B: Direct Selection ("I know what I want")**
+### Smart Dedup (Phase 1 after Brainstorming)
 
-- User picks from a shortlist of popular presets
-- Skip to Phase 3 immediately
-
-**Option C: Full Browse ("Let me browse all")**
-
-- User browses all 20 presets in the theme explorer with no filtering
-- Best for users who want to see everything before deciding
-
-**Available Presets:**
-| Preset | Vibe | Best For |
-|--------|------|----------|
-| Bold Signal | Confident, high-impact | Pitch decks, keynotes |
-| Electric Studio | Clean, professional | Agency presentations |
-| Creative Voltage | Energetic, retro-modern | Creative pitches |
-| Dark Botanical | Elegant, sophisticated | Premium brands |
-| Notebook Tabs | Editorial, organized | Reports, reviews |
-| Pastel Geometry | Friendly, approachable | Product overviews |
-| Vintage Editorial | Witty, personality-driven | Personal brands |
-| Neon Cyber | Futuristic, techy | Tech startups |
-| Terminal Green | Developer-focused | Dev tools, APIs |
-| Swiss Modern | Minimal, precise | Corporate, data |
-| Paper & Ink | Literary, thoughtful | Storytelling |
-| Liquid Glass | Modern, premium, depth | Product launches |
-| Director's Cut | Cinematic, moody | Keynotes, stories |
-| Micrographic | Precise, technical | Engineering reviews |
-| Jewel Mono | Focused, brandable | Corporate, fintech |
-| Whiteboard | Informal, sketch-like | Brainstorming, workshops |
-| Bento Box | Premium, modular | Product launches, QBRs |
-| Aurora Glow | Atmospheric, cinematic | Vision decks, keynotes |
-| Scrapbook | Curated chaos, collage | Retrospectives, culture |
-| Retro Futura | Space-age, retrofuturist | Roadmaps, innovation |
-
-For full preset details (colors, fonts, signature elements), see [references/style-presets.md](references/style-presets.md).
-
-### Step 2.0: Style Path Selection
-
-First, ask how the user wants to choose their style:
-
-**Question: Style Selection Method**
-
-- Header: "Style"
-- Question: "How would you like to choose your presentation style?"
-- Options:
-  - "Show me options" — Answer a quick mood question, then browse recommended styles (best for undecided users)
-  - "I know what I want" — Pick from popular presets directly
-  - "Let me browse all" — Open the full theme explorer with all 20 styles
-
-**If "Show me options"** -> Continue to Step 2.1 (Mood Selection)
-
-**If "I know what I want"** -> Show preset picker:
-
-**Question: Pick a Preset**
-
-- Header: "Preset"
-- Question: "Which style would you like to use?"
-- Options:
-  - "Bold Signal" — Vibrant card on dark, confident and high-impact
-  - "Dark Botanical" — Elegant dark with soft abstract shapes
-  - "Liquid Glass" — Modern glassmorphism with depth
-  - "Bento Box" — Premium modular tile grid, Apple-style
-  - "Notebook Tabs" — Editorial paper look with colorful section tabs
-  - "Scrapbook" — Curated collage with washi tape and polaroids
-
-(If user picks one, skip to Phase 3. If they want to see more options, proceed to "Let me browse all" flow.)
-
-**If "Let me browse all"** -> Skip to Step 2.2, generating the theme explorer with ALL 20 presets visible (no mood filtering, no highlighted recommendations).
-
-### Step 2.1: Mood Selection (Guided Discovery -- "Show me options" path only)
-
-This step only runs when the user chose "Show me options" in Step 2.0.
-
-**Question 1: Feeling**
-
-- Header: "Vibe"
-- Question: "What feeling should the audience have when viewing your slides?"
-- Options:
-  - "Impressed/Confident" — Professional, trustworthy, this team knows what they're doing
-  - "Excited/Energized" — Innovative, bold, this is the future
-  - "Calm/Focused" — Clear, thoughtful, easy to follow
-  - "Inspired/Moved" — Emotional, storytelling, memorable
-- multiSelect: true (can choose up to 2)
-
-### Step 2.2: Generate Theme Explorer
-
-Based on the user's path, generate a **single self-contained HTML file** as the theme explorer:
-
-**Output**: `~/.claude/presentations/.theme-explorer/index.html`
-
-This file replaces the old 3-file preview system. It contains all candidate presets as switchable views in a single page.
-
-#### Theme Explorer Specification
-
-**Structure**:
-
-- Single HTML file, fully self-contained (inline CSS + JS, no external dependencies except Google Fonts)
-- Each preset is rendered as a mini title-slide preview in its own CSS scope
-- CSS scoping: each preset preview lives in a `<section>` with inline CSS variables in a `<style>` block, preventing cross-contamination
-
-**Layout**:
-
-- **Gallery view** (default): Grid of preset cards. Each card shows the preset name, a mini title-slide preview rendered in that preset's style (typography, colors, signature elements)
-- If coming from "Show me options" path: 3 recommended presets highlighted at top with "Recommended for you" label, remaining presets in "All styles" grid below
-- If coming from "Let me browse all" path: all 20 presets in a single grid, no recommendations section
-
-**Interaction**:
-
-- Click a card -> full-width preview of a representative slide (title heading + subtitle + 2-3 content elements) rendered in that preset's full style
-- Keyboard navigation: arrow keys to cycle between presets in full-width view, Enter to select, Escape to return to gallery
-- Each full-width preview includes a "Select [Preset Name]" button and a "Back to gallery" link
-
-**Mood-to-Preset Mapping** (for "Show me options" path -- determines which 3 presets are highlighted):
-
-| Mood                | Recommended Presets                                                                        |
-| ------------------- | ------------------------------------------------------------------------------------------ |
-| Impressed/Confident | Bold Signal, Electric Studio, Dark Botanical, Liquid Glass, Bento Box                      |
-| Excited/Energized   | Creative Voltage, Neon Cyber, Retro Futura                                                 |
-| Calm/Focused        | Notebook Tabs, Paper & Ink, Swiss Modern, Micrographic, Jewel Mono                         |
-| Inspired/Moved      | Dark Botanical, Vintage Editorial, Pastel Geometry, Director's Cut, Aurora Glow, Scrapbook |
-
-Pick 3 presets from the matching mood(s). If the user selected 2 moods, pick 2 from the first mood and 1 from the second.
-
-**Logo in explorer**: If the user provided images in Phase 1 and a logo was identified as `USABLE`, embed it (base64) into each preset's preview card. This creates a "wow moment" -- the user sees their own brand identity styled twenty different ways.
-
-### Step 2.3: Present Theme Explorer
-
-Open the theme explorer in the browser:
-
-```
-I've created a theme explorer for you to browse all available styles:
-
-~/.claude/presentations/.theme-explorer/index.html
-
-Open it in your browser to see each style in action. Click any card for a full-size preview, use arrow keys to cycle, and press Escape to return to the gallery.
-```
-
-Then use AskUserQuestion:
-
-**Question: Pick Your Style**
-
-- Header: "Style"
-- Question: "Which style do you prefer?"
-- Options:
-  - "[Recommended 1]" — [Brief description] _(only if "Show me options" path)_
-  - "[Recommended 2]" — [Brief description] _(only if "Show me options" path)_
-  - "[Recommended 3]" — [Brief description] _(only if "Show me options" path)_
-  - "Other" — I found a different style I like in the explorer
-  - "Mix elements" — Combine aspects from different styles
-
-If "Other", ask which preset name.
-If "Mix elements", ask for specifics.
+When Phase 2 runs before Phase 1 (content-routing case), Phase 1 reads `brainstorm-notes.md` and skips questions already answered during brainstorming. See [references/brainstorming-phase.md](references/brainstorming-phase.md) § Smart Dedup.
 
 ---
 
@@ -417,6 +274,16 @@ If "Mix elements", ask for specifics.
 
 Now generate the full presentation using the multi-file architecture.
 Output directory: `~/.claude/presentations/[presentation-name]/`
+
+**If `brainstorm-notes.md` exists** (from Phase 2), read it and use its decisions as the creative brief:
+
+- Narrative framework and arc → structure the narrative outline
+- Slide Plan table → per-slide content assignment
+- Animation key moments → plan fragments and auto-animate
+- Style preset → select CSS variables and signature elements
+- Speaker notes flag → generate notes if opted in
+
+The agent MUST respect content structure and narrative framework from brainstorming. The agent CAN freely choose animations, transitions, visual flourishes, layout details, and aesthetic enhancements not specified in the brainstorm notes.
 
 For agent persona prompts, see [references/agent-team-prompts.md](references/agent-team-prompts.md).
 For engagement defaults, see [references/engagement-defaults.md](references/engagement-defaults.md).
@@ -431,6 +298,8 @@ echo $CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS
 ```
 
 Branch to Step 3A (agent team) or Step 3B (sub-agent fallback).
+
+**MANDATORY: You MUST execute either Step 3A or Step 3B. NEVER skip both. These steps represent the agent teams that plan and generate the presentation — they are the core of this skill, not an optional optimization. A single generic planning agent is NOT a substitute for these paths. Only skip Steps 3A/3B if the user explicitly asks you to skip them.**
 
 ### Step 3A: Agent Team Path (PREFERRED when enabled)
 
@@ -525,6 +394,8 @@ Shut down teammates via `SendMessage(type="shutdown_request")` and clean up team
 > pass `team_name` or `name` parameters. Agent teams are for debate (Steps 3A.1-3A.5);
 > sub-agents are for parallel generation (this step). Mixing these patterns causes
 > coordination overhead and delivery problems.
+
+**Agent delivery resilience**: Subagents may go idle without delivering results (known Claude Code issue). If an agent sends an `idle_notification` without content: (1) prompt it via SendMessage using its agent ID (not name), (2) if still no delivery, respawn once, (3) if respawn fails, generate its assigned slides yourself. Never self-evaluate as a substitute for an independent agent.
 
 Spawn 2-3 parallel sub-agents using a single message with multiple Agent tool calls,
 each with `run_in_background: true` and `subagent_type: "general-purpose"`.
@@ -643,6 +514,7 @@ Load when the presentation includes images, video, diagrams, or animated widgets
 - **CSS charts**: Bar and pie charts (3-5 data points max)
 - **GSAP playback controls**: Timeline scrubbing for animated slides
 - **SVG widget library**: 5 widget patterns (process flow, comparison, build-up, data transform, math function)
+- **Lightbox**: Click-to-expand overlay for images, video, and Mermaid diagrams
 - **Optional CDN dependencies**: GSAP, Mermaid, Rough.js — include only when needed
 
 ### Presenter Features -> [references/presenter-features.md](references/presenter-features.md)
@@ -653,6 +525,7 @@ Load when the presentation needs presenter/audience tools.
 - **Cross-tab sync**: P key for audience follow-along
 - **Blackout/whiteout**: B/W keys to pause presentation
 - **Theme toggle**: T key cycles light/dark variants
+- **Screen wake lock**: Prevents screen dimming in fullscreen (acquired/released automatically)
 - **Print stylesheet**: One slide per page, hidden UI
 - **Scroll-driven animations**: Progressive enhancement for CSS-only entrance animations
 - **Code copy button**: Hover-to-show copy button on code blocks
@@ -669,9 +542,19 @@ Load when finalizing any presentation.
 
 - Code comment standards, semantic HTML, ARIA, inert slides, reduced motion, high contrast
 
+### Brainstorming Phase -> [references/brainstorming-phase.md](references/brainstorming-phase.md)
+
+Load when running Phase 2 (Collaborative Brainstorming).
+
+- 3-wave interview structure (narrative, slide-level, visual+style)
+- HTML mockup generation specs (storyboard, wireframes, mood board)
+- Crit preview integration and dual-channel feedback
+- brainstorm-notes.md contract for Phase 1 dedup and Phase 3 consumption
+- Content-based routing and session resume logic
+
 ### Style Presets -> [references/style-presets.md](references/style-presets.md)
 
-Load when generating style previews or applying a preset in Phase 2/3.
+Load when generating style previews in Phase 2 (brainstorming Wave 3) or applying a preset in Phase 3.
 
 - 20 curated presets with colors, fonts, and signature elements
 - Font pairing quick reference
@@ -765,7 +648,7 @@ Present the extracted content to the user and confirm before proceeding to style
 
 ### Step 4.3: Style Selection
 
-Proceed to Phase 2 (Style Discovery) with the extracted content in mind.
+Proceed to Phase 2 (Collaborative Brainstorming) with the extracted content in mind.
 
 ### Step 4.4: Generate HTML
 
@@ -778,7 +661,27 @@ Convert the extracted content into the chosen style, preserving:
 
 ---
 
-## Phase 5: Delivery
+## Phase 5: Visual QA Review
+
+Read [`${CLAUDE_PLUGIN_ROOT}/skills/shared/references/visual-qa-review.md`](${CLAUDE_PLUGIN_ROOT}/skills/shared/references/visual-qa-review.md) for the full review process.
+
+1. Run the QA script (starts/stops HTTP server automatically for `frontend-slides`):
+
+   ```bash
+   python3 ${CLAUDE_PLUGIN_ROOT}/skills/shared/scripts/visual_qa.py ~/.claude/presentations/<name>/index.html --skill frontend-slides --output-dir /tmp/slides-qa
+   ```
+
+2. Follow the review process defined in the shared reference:
+   - Spawn review agents (adaptive — skip Interaction Reviewer if zero interactive elements)
+   - Synthesize findings into Must Fix / Should Fix / Minor / Advisory
+   - If Must Fix items exist: spawn fix agent, re-run QA, re-review (max 3 iterations)
+   - Present brief summary to user before proceeding
+
+3. Proceed to Phase 6 (Delivery) only after review approves or iteration ceiling reached.
+
+---
+
+## Phase 6: Delivery
 
 ### Final Output
 
@@ -841,18 +744,21 @@ This file can be opened directly in any browser without a server.
 
 ---
 
-## Phase 6: Export (Optional)
+## Phase 7: Export (Optional)
 
 After delivering the presentation, offer to export it to Google Slides or PDF.
 
 ### When to Offer
 
-Always mention export availability at the end of Phase 5 delivery. Add this to the summary:
+Always mention export availability at the end of Phase 6 delivery. Add this to the summary:
 
 ```
 **To export:**
-- Google Slides: Just ask "export to Google Slides"
+- Google Slides (shareable within your organisation): Just ask "export to Google Slides"
 - PDF: Just ask "export to PDF"
+
+**To share internally:**
+- Say "publish" or "share this" to deploy to your internal static host (SSO-protected)
 ```
 
 ### Prerequisites
@@ -889,7 +795,7 @@ When the user asks to export to Google Slides:
    Google Slides: [URL]
    PDF: ~/.claude/presentations/[name]/[name].pdf
 
-   The presentation is shared via Google Slides (view-only).
+   The presentation is shared with everyone (view-only).
 
    Note: Animations and transitions are not preserved in Google Slides —
    each fragment step becomes a separate slide. For the full animated
@@ -949,10 +855,14 @@ For viewport troubleshooting (content overflow, text scaling, short screens), se
 
 ## Example Session Flows
 
-**New presentation:** User asks for pitch deck -> Phase 1 (purpose, content, images) -> Evaluate images -> Confirm outline -> Phase 2 (style path selection -> theme explorer -> pick style) -> Phase 3 (agent team generates multi-file presentation to ~/.claude/presentations/) -> Phase 5 (serve and open) -> Tweaks -> Done.
+**New presentation (content ready):** User asks for pitch deck -> Phase 1 (purpose, content, images) -> Evaluate images -> Confirm outline -> Phase 2 (brainstorming: narrative → slides → visual+style) -> Phase 3 (generation) -> Phase 5 (QA) -> Phase 6 (delivery) -> Tweaks -> Done.
 
-**Single-file presentation:** Same as above, but user requests --single-file -> Phase 3 generates multi-file first, then post-processes into one HTML file -> Open directly in browser -> Done.
+**New presentation (topic only):** User has a topic -> Phase 1 Step 1.1 (detect "topic only") -> Phase 2 (brainstorming with content discovery) -> Phase 1 (remaining steps, smart dedup from brainstorm-notes.md) -> Phase 3 (generation) -> Phase 5 (QA) -> Phase 6 (delivery) -> Done.
 
-**PPT conversion:** User provides .pptx -> Extract content/images -> Confirm structure -> Phase 2 (style selection) -> Generate HTML with preserved assets -> Done.
+**Brainstorming skipped:** User asks for pitch deck -> Phase 1 -> Phase 2 skip prompt -> "Skip to generation" -> Phase 3 (generation with no brainstorm-notes.md) -> Phase 5 (QA) -> Phase 6 (delivery) -> Done.
+
+**Single-file presentation:** Same as "content ready" above, but user requests --single-file -> Phase 3 generates multi-file first, then post-processes into one HTML file -> Open directly in browser -> Done.
+
+**PPT conversion:** User provides .pptx -> Extract content/images -> Confirm structure -> Phase 2 (brainstorming/style) -> Generate HTML with preserved assets -> Done.
 
 **Export to Google Slides:** User asks to export -> Check prerequisites -> Run export-to-gslides.py with --format gslides -> Report Google Slides URL and PDF path -> Done.

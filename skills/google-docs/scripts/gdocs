@@ -1,0 +1,170 @@
+#!/bin/bash
+# Google Docs API helper script for Claude Code
+# Usage: gdocs <command> <document_id> [options]
+
+set -e
+
+DOCS_API="https://docs.googleapis.com/v1/documents"
+
+get_token() {
+    gcloud auth print-access-token
+}
+
+case "$1" in
+    get)
+        # gdocs get <doc_id> [--tabs]
+        DOC_ID="$2"
+        if [[ "$3" == "--tabs" ]]; then
+            curl -s "$DOCS_API/$DOC_ID?includeTabsContent=true" \
+                -H "Authorization: Bearer $(get_token)"
+        else
+            curl -s "$DOCS_API/$DOC_ID" \
+                -H "Authorization: Bearer $(get_token)"
+        fi
+        ;;
+
+    create)
+        # gdocs create <title>
+        TITLE="$2"
+        TITLE_ESCAPED=$(printf '%s' "$TITLE" | jq -Rs .)
+        jq -n --argjson title "$TITLE_ESCAPED" '{"title": $title}' | \
+            curl -s -X POST "$DOCS_API" \
+                -H "Authorization: Bearer $(get_token)" \
+                -H "Content-Type: application/json" \
+                -d @-
+        ;;
+
+    update)
+        # gdocs update <doc_id> <json_file>
+        DOC_ID="$2"
+        JSON_FILE="$3"
+        curl -s -X POST "$DOCS_API/$DOC_ID:batchUpdate" \
+            -H "Authorization: Bearer $(get_token)" \
+            -H "Content-Type: application/json" \
+            -d @"$JSON_FILE"
+        ;;
+
+    insert-text)
+        # gdocs insert-text <doc_id> <text> [--end | --index <n>] [--tab <tab_id>]
+        DOC_ID="$2"
+        TEXT="$3"
+        shift 3
+
+        LOCATION='{"endOfSegmentLocation": {"segmentId": ""}}'
+        TAB_ID=""
+
+        while [[ $# -gt 0 ]]; do
+            case "$1" in
+                --end)
+                    LOCATION='{"endOfSegmentLocation": {"segmentId": ""}}'
+                    shift
+                    ;;
+                --index)
+                    LOCATION="{\"location\": {\"index\": $2}}"
+                    shift 2
+                    ;;
+                --tab)
+                    TAB_ID="$2"
+                    shift 2
+                    ;;
+                *)
+                    shift
+                    ;;
+            esac
+        done
+
+        # Escape text for JSON
+        TEXT_ESCAPED=$(printf '%s' "$TEXT" | jq -Rs .)
+
+        if [[ -n "$TAB_ID" ]]; then
+            LOCATION=$(echo "$LOCATION" | jq ". + {\"tabId\": \"$TAB_ID\"}")
+        fi
+
+        REQUEST=$(cat <<EOF
+{
+  "requests": [
+    {
+      "insertText": {
+        $(echo "$LOCATION" | jq -r 'to_entries | map("\(.key): \(.value | tojson)") | join(", ")'),
+        "text": $TEXT_ESCAPED
+      }
+    }
+  ]
+}
+EOF
+)
+        echo "$REQUEST" | curl -s -X POST "$DOCS_API/$DOC_ID:batchUpdate" \
+            -H "Authorization: Bearer $(get_token)" \
+            -H "Content-Type: application/json" \
+            -d @-
+        ;;
+
+    replace)
+        # gdocs replace <doc_id> <find> <replace> [--tab <tab_id>]
+        DOC_ID="$2"
+        FIND="$3"
+        REPLACE="$4"
+        TAB_ID=""
+
+        shift 4
+        while [[ $# -gt 0 ]]; do
+            case "$1" in
+                --tab)
+                    TAB_ID="$2"
+                    shift 2
+                    ;;
+                *)
+                    shift
+                    ;;
+            esac
+        done
+
+        FIND_ESCAPED=$(printf '%s' "$FIND" | jq -Rs .)
+        REPLACE_ESCAPED=$(printf '%s' "$REPLACE" | jq -Rs .)
+
+        if [[ -n "$TAB_ID" ]]; then
+            TABS_CRITERIA=", \"tabsCriteria\": {\"tabIds\": [\"$TAB_ID\"]}"
+        else
+            TABS_CRITERIA=""
+        fi
+
+        REQUEST=$(cat <<EOF
+{
+  "requests": [
+    {
+      "replaceAllText": {
+        "containsText": {
+          "text": $FIND_ESCAPED,
+          "matchCase": true
+        },
+        "replaceText": $REPLACE_ESCAPED
+        $TABS_CRITERIA
+      }
+    }
+  ]
+}
+EOF
+)
+        echo "$REQUEST" | curl -s -X POST "$DOCS_API/$DOC_ID:batchUpdate" \
+            -H "Authorization: Bearer $(get_token)" \
+            -H "Content-Type: application/json" \
+            -d @-
+        ;;
+
+    *)
+        echo "Usage: gdocs <command> [options]"
+        echo ""
+        echo "Commands:"
+        echo "  get <doc_id> [--tabs]              Get document (optionally with tabs)"
+        echo "  create <title>                      Create new document"
+        echo "  update <doc_id> <json_file>         Apply batchUpdate from JSON file"
+        echo "  insert-text <doc_id> <text> [opts]  Insert text"
+        echo "  replace <doc_id> <find> <replace>   Replace all occurrences"
+        echo ""
+        echo "Options:"
+        echo "  --tab <tab_id>    Target specific tab"
+        echo "  --index <n>       Insert at specific index"
+        echo "  --end             Insert at end of document (default)"
+        exit 1
+        ;;
+esac

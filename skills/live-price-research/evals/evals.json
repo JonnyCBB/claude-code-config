@@ -1,0 +1,30 @@
+{
+  "skill_name": "live-price-research",
+  "evals": [
+    {
+      "id": 0,
+      "name": "live-multi-provider-comparison",
+      "prompt": "We're thinking about a week in Lanzarote over February half term 2027 — 2 adults and one child who'll be 7. All inclusive, flying from Gatwick, leaving Sat 13 Feb for 7 nights. Can you find out which package provider is genuinely cheapest all-in? Check at least three (loveholidays, easyJet holidays, TUI or similar). I want a proper answer I can act on, not a list of headline prices — last time I got caught out because one of them didn't include bags.",
+      "expected_output": "A comparison that normalises inclusions (bags/transfers) before ranking, states which prices are landed totals, cites source URLs with retrieval dates, and leaves gaps logged rather than estimated.",
+      "files": []
+    },
+    {
+      "id": 1,
+      "name": "inherited-option-grid",
+      "prompt": "I've started a comparison sheet for our team offsite venue — can you fill in the missing prices and tell me which date works out best? The booking rules are in the same folder.",
+      "expected_output": "Notices the five listed date options are a subset of what the rules permit, flags this explicitly, and prices the wider space rather than only the listed rows.",
+      "files": [
+        "fixtures/offsite/venue-tracker.md",
+        "fixtures/offsite/booking-rules.md",
+        "fixtures/offsite/venue-quotes.md"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "sanity-check-flawed-comparison",
+      "prompt": "My colleague put this cost comparison together before she left. Before I send it to the board, can you sanity-check it?",
+      "expected_output": "Catches the incomparable inclusions, the invented/estimated figure, the unsourced numbers, and the truncated option space.",
+      "files": ["fixtures/board-review/supplier-comparison.md"]
+    }
+  ]
+}

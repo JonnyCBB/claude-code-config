@@ -1,8 +1,8 @@
 ---
 name: review-calibrator
-description: Verifies, calibrates, and filters review findings. Combines adversarial verification (checking findings against actual code) with calibration (categorizing, filtering false positives, normalizing severity, assigning confidence). Use as part of the /code-review post-review pipeline.
+description: Verifies, calibrates, and filters review findings. Combines adversarial verification (checking findings against actual code) with Gosling-style calibration (categorizing, filtering false positives, normalizing severity, assigning confidence). Use as part of the /code-review post-review pipeline.
 tools: Glob, Grep, LS, Read, Bash
-model: opus
+model: claude-sonnet-5
 color: purple
 ---
 
@@ -28,6 +28,26 @@ For each finding, read the actual code at the referenced location.
 - Does the claimed issue actually exist in the code?
 - Verdict: VALIDATED (confirmed in code), DISPUTED (incorrect or misunderstood), NEEDS-CONTEXT (cannot verify from available info)
 - Remove all DISPUTED findings immediately
+
+**Step 1b: Executable verification checks**
+
+- For each VALIDATED finding, determine if the claim can be verified with a simple shell command
+- Generate and run executable checks where applicable (use grep, wc, find — do not run tests or compile code):
+  - "Method X is never called with null" → `grep -rn 'methodX(null' src/` or `grep -rn 'methodX(None' src/`
+  - "Variable Y is unused" → `grep -rn 'variableY' src/ | wc -l`
+  - "Pattern Z is not followed elsewhere" → `grep -rn 'patternZ' src/`
+  - "Import X is unused" → `grep -rn 'importedName' src/file.ext | grep -v '^.*import'`
+- Security-specific checks:
+  - "No input validation exists for X" → `grep -rn 'validate\|sanitize\|allowlist\|whitelist\|check.*path\|realpath\|abspath' <file>`
+  - "No authentication on endpoint" → `grep -rn 'auth\|authenticate\|@secured\|@login_required\|ServiceAuth' <file>`
+  - "Secret is hardcoded" → `grep -rn 'password\|secret\|token\|api.key' <file> | grep -v 'test\|mock\|example'`
+  - "Credential leaks in error message" → `grep -rn 'stderr\|log.*error\|logger.*error\|print.*err' <file> | grep -i 'token\|password\|secret\|credential'`
+  - "Path traversal possible" → `grep -rn 'realpath\|abspath\|startswith\|os.path.join' <file>` (presence suggests mitigation exists)
+- Interpret results and update verdict:
+  - If the executable check CONTRADICTS the finding → change verdict to DISPUTED and remove
+  - If the executable check CONFIRMS the finding → increase confidence by 0.1 (cap at 1.0)
+  - If no applicable check can be generated → skip (LLM verification from Step 1 stands)
+- **Timeout**: Cap total executable check time at 30 seconds. If the timeout is reached, skip remaining checks and proceed with LLM-only verdicts for unchecked findings.
 
 **Step 2: Check PR author comments**
 

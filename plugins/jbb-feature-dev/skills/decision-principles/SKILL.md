@@ -5,7 +5,8 @@ description: >
   Use when resolving open questions, choosing between approaches, making design
   decisions, gathering requirements, or reviewing technical documents. Provides
   14 ranked principles with defaults, override conditions, and priority ordering
-  for conflict resolution.
+  for conflict resolution. Trigger phrases (1) "help me decide" (2) "which approach"
+  (3) "resolve this tradeoff" (4) "decision framework".
 ---
 
 # Decision-Making Principles
@@ -65,7 +66,7 @@ When principles conflict:
 | 5   | Evidence Over Opinion             | Back decisions with data                               | Decision is low-stakes and aesthetic                    |
 | 6   | Consolidate Over Proliferate      | Merge similar components                               | Components have different failure modes                 |
 | 7   | Learn From Incidents              | Inform designs from production incidents               | (Always check — no clean override)                      |
-| 8   | Check Internal Tools First        | Check internal tools before external                   | No internal tool exists or it's deprecated              |
+| 8   | Internal Tools First              | Check internal tools before external                   | No internal tool exists or it's deprecated              |
 | 9   | Delegate Aesthetic Decisions      | Let implementer decide low-stakes choices              | Choice creates structural dependencies                  |
 | 10  | Document Rejected Approaches      | Always document alternatives with rationale            | (No override — always do this)                          |
 | 11  | Optimize Request Flow Efficiency  | Run new operations concurrently                        | Operation depends on another's output                   |

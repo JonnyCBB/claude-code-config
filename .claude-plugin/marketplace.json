@@ -12,17 +12,17 @@
     {
       "name": "jiffy-toolkit",
       "source": "./plugins/jiffy-toolkit",
-      "description": "Creative tools: /teach-me for interactive scrollytelling explanations, /frontend-slides for HTML presentations, plus editorial, diagram, and skills-authoring standards with companion review agents."
+      "description": "Creative tools: /teach-me for interactive scrollytelling explanations, /frontend-slides for HTML presentations, /explain for HTML explainers, /sound-like-me and /reflect, plus editorial, diagram, and skills-authoring standards with companion review agents."
     },
     {
       "name": "jbb-feature-dev",
       "source": "./plugins/jbb-feature-dev",
-      "description": "Complete feature development workflow: /interview for requirements gathering, /research-problem for codebase research, /create-plan-tdd and /implement-plan-tdd for test-driven planning and execution, /code-review for multi-agent review, /verify-implementation for evidence generation, /commit and /pr-description for git workflows."
+      "description": "Complete feature development workflow: /elicit-requirements for requirements gathering, /research-problem for codebase research, /create-plan-tdd and /implement-plan-tdd for test-driven planning and execution, /code-review for multi-agent review, /verify-implementation for evidence generation, /commit and /submit-pr for git workflows."
     },
     {
       "name": "eng-utils",
       "source": "./plugins/eng-utils",
-      "description": "Engineering utilities: /assess-incident for severity classification, /incident-investigation for root cause analysis across backend/data/indexing domains, /refactor-architecture for codebase friction analysis and proposals, /system-architecture-doc for C4 architecture documentation, plus service diagnostics and operational skills."
+      "description": "Engineering utilities: /improve-codebase-architecture for codebase friction analysis and proposals, /system-architecture-doc and /c4-architecture for C4 architecture documentation, and /bug-hunter-3000 for multi-candidate bug investigation."
     }
   ]
 }

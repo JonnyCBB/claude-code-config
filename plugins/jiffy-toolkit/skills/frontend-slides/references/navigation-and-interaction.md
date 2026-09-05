@@ -37,19 +37,23 @@ Fragments integrate with the existing scroll-snap model. When a slide has fragme
 Use fragments for 2-4 slides per presentation maximum — typically for building an argument, step-by-step processes, or revealing a punchline. Never fragment every slide. MAX 3-4 fragment steps per slide — if more would be needed, split into multiple slides instead. Group related elements (e.g., a DAG node and its edges, a title and subtitle) into a single fragment step using shared `data-fragment-index` values.
 
 **HTML pattern:**
+
 ```html
 <section class="slide">
-    <h2 class="reveal">Building Our Platform</h2>
-    <ul>
-        <li class="reveal fragment">First, we built the foundation</li>
-        <li class="reveal fragment">Then, we added the API layer</li>
-        <li class="reveal fragment fade-in-then-semi-out">Next, the UI components</li>
-        <li class="reveal fragment">Finally, the monitoring</li>
-    </ul>
+  <h2 class="reveal">Building Our Platform</h2>
+  <ul>
+    <li class="reveal fragment">First, we built the foundation</li>
+    <li class="reveal fragment">Then, we added the API layer</li>
+    <li class="reveal fragment fade-in-then-semi-out">
+      Next, the UI components
+    </li>
+    <li class="reveal fragment">Finally, the monitoring</li>
+  </ul>
 </section>
 ```
 
 **CSS additions:**
+
 ```css
 /* ===========================================
    FRAGMENTS: Step-by-step content reveal
@@ -57,28 +61,30 @@ Use fragments for 2-4 slides per presentation maximum — typically for building
    Press arrow-right/space to reveal one at a time.
    =========================================== */
 .fragment {
-    opacity: 0;
-    transform: translateY(10px);
-    transition: opacity 0.4s var(--ease-out-expo),
-                transform 0.4s var(--ease-out-expo);
-    pointer-events: none;
+  opacity: 0;
+  transform: translateY(10px);
+  transition:
+    opacity 0.4s var(--ease-out-expo),
+    transform 0.4s var(--ease-out-expo);
+  pointer-events: none;
 }
 .fragment.visible {
-    opacity: 1;
-    transform: none;
-    pointer-events: auto;
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
 }
 /* fade-in-then-semi-out: dims after the next fragment appears */
 .fragment.visible.semi-out {
-    opacity: 0.35;
+  opacity: 0.35;
 }
 /* highlight-current: only the active fragment is fully opaque */
 .fragment.visible.highlight-dimmed {
-    opacity: 0.3;
+  opacity: 0.3;
 }
 ```
 
 **JS additions to SlidePresentation class:**
+
 ```javascript
 // In constructor:
 this.fragmentIndex = {}; // { slideIndex: currentFragmentIndex }
@@ -155,9 +161,15 @@ Integrates with the fragment system to walk through code step by step.
    CODE HIGHLIGHTING: Walk through code step by step
    Integrates with fragment system.
    =========================================== */
-pre code .line { transition: opacity 0.3s; }
-pre code.highlighting .line { opacity: 0.3; }
-pre code.highlighting .line.highlighted { opacity: 1; }
+pre code .line {
+  transition: opacity 0.3s;
+}
+pre code.highlighting .line {
+  opacity: 0.3;
+}
+pre code.highlighting .line.highlighted {
+  opacity: 1;
+}
 ```
 
 ```html
@@ -180,20 +192,28 @@ Use auto-animate for 2-3 slide transitions per presentation maximum — typicall
 ```html
 <!-- Slide 1: Elements with data-auto-animate-id are tracked -->
 <section class="slide" data-auto-animate>
-    <h2 class="reveal" data-auto-animate-id="title">Our Architecture</h2>
-    <div class="reveal" data-auto-animate-id="box1"
-         style="width: 200px; height: 100px; background: var(--accent);">
-        API Layer
-    </div>
+  <h2 class="reveal" data-auto-animate-id="title">Our Architecture</h2>
+  <div
+    class="reveal"
+    data-auto-animate-id="box1"
+    style="width: 200px; height: 100px; background: var(--accent);"
+  >
+    API Layer
+  </div>
 </section>
 
 <!-- Slide 2: Same IDs in different positions — FLIP animates the transition -->
 <section class="slide" data-auto-animate>
-    <h2 class="reveal" data-auto-animate-id="title">Our Architecture (Expanded)</h2>
-    <div class="reveal" data-auto-animate-id="box1"
-         style="width: 300px; height: 150px; background: var(--accent); margin-left: 200px;">
-        API Layer
-    </div>
+  <h2 class="reveal" data-auto-animate-id="title">
+    Our Architecture (Expanded)
+  </h2>
+  <div
+    class="reveal"
+    data-auto-animate-id="box1"
+    style="width: 300px; height: 150px; background: var(--accent); margin-left: 200px;"
+  >
+    API Layer
+  </div>
 </section>
 ```
 
@@ -294,27 +314,27 @@ Press ESC or O to toggle overview mode, showing a thumbnail grid of all slides. 
    Press ESC or O to toggle. Click any slide to jump to it.
    =========================================== */
 body.overview-mode {
-    overflow: auto;
-    scroll-snap-type: none;
+  overflow: auto;
+  scroll-snap-type: none;
 }
 body.overview-mode .slide {
-    height: auto;
-    aspect-ratio: 16 / 9;
-    scroll-snap-align: none;
-    transform: scale(0.25);
-    transform-origin: top left;
-    cursor: pointer;
-    border: 2px solid transparent;
-    transition: border-color 0.2s;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  scroll-snap-align: none;
+  transform: scale(0.25);
+  transform-origin: top left;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: border-color 0.2s;
 }
 body.overview-mode .slide:hover {
-    border-color: var(--accent, #4361ee);
+  border-color: var(--accent, #4361ee);
 }
 .overview-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1rem;
-    padding: 2rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+  padding: 2rem;
 }
 ```
 
@@ -370,32 +390,54 @@ When slides are thumbnailed in overview mode, container queries adapt content fo
 
 /* Slides already have container-type: inline-size on .slide-content */
 body.overview-mode .slide .slide-content {
-    container-type: inline-size;
+  container-type: inline-size;
 }
 
 @container (max-width: 400px) {
-    /* In thumbnail view, simplify content */
-    .bullet-list li,
-    .feature-list li { display: none; }
-    .bullet-list li:first-child,
-    .feature-list li:first-child { display: list-item; }
-    .bullet-list li:first-child::after,
-    .feature-list li:first-child::after {
-        content: ' ...';
-        color: var(--text-secondary);
-    }
+  /* In thumbnail view, simplify content */
+  .bullet-list li,
+  .feature-list li {
+    display: none;
+  }
+  .bullet-list li:first-child,
+  .feature-list li:first-child {
+    display: list-item;
+  }
+  .bullet-list li:first-child::after,
+  .feature-list li:first-child::after {
+    content: " ...";
+    color: var(--text-secondary);
+  }
 
-    /* Hide secondary elements */
-    .slide-image { max-height: 30%; }
-    .playback-controls { display: none; }
-    .nav-dots { display: none; }
-    pre code { font-size: 0.6rem; max-height: 40%; overflow: hidden; }
+  /* Hide secondary elements */
+  .slide-image {
+    max-height: 30%;
+  }
+  .playback-controls {
+    display: none;
+  }
+  .nav-dots {
+    display: none;
+  }
+  pre code {
+    font-size: 0.6rem;
+    max-height: 40%;
+    overflow: hidden;
+  }
 }
 
 @container (max-width: 250px) {
-    /* Very small thumbnails — show heading only */
-    p, ul, ol, pre, .video-container, .mermaid-container,
-    .animation-container, .chart-container { display: none; }
+  /* Very small thumbnails — show heading only */
+  p,
+  ul,
+  ol,
+  pre,
+  .video-container,
+  .mermaid-container,
+  .animation-container,
+  .chart-container {
+    display: none;
+  }
 }
 ```
 
@@ -408,10 +450,10 @@ Each slide gets a URL fragment (`#slide-1`, or a custom `data-hash` attribute li
 ```html
 <!-- Slides can have optional custom hash names -->
 <section class="slide" data-hash="problem">
-    <h2 class="reveal">The Problem</h2>
+  <h2 class="reveal">The Problem</h2>
 </section>
 <section class="slide" data-hash="solution">
-    <h2 class="reveal">Our Solution</h2>
+  <h2 class="reveal">Our Solution</h2>
 </section>
 ```
 
@@ -498,17 +540,17 @@ case 'End':
 
 ## Keyboard Shortcut Reference
 
-| Key | Action |
-|-----|--------|
-| Right / Space / Down | Next slide / fragment |
-| Left / Up | Previous slide / fragment |
-| ESC / O | Toggle overview mode |
-| S | Open speaker view |
-| B | Toggle blackout |
-| W | Toggle whiteout |
-| E | Toggle edit mode (if enabled) |
-| F | Toggle fullscreen |
-| T | Cycle theme variant (light/dark) |
-| P | Toggle presenter mode (cross-tab sync) |
-| Home | Jump to first slide |
-| End | Jump to last slide |
+| Key                  | Action                                             |
+| -------------------- | -------------------------------------------------- |
+| Right / Space / Down | Next slide / fragment                              |
+| Left / Up            | Previous slide / fragment                          |
+| ESC / O              | Close lightbox (if open) or toggle overview mode   |
+| S                    | Open speaker view                                  |
+| B                    | Toggle blackout                                    |
+| W                    | Toggle whiteout                                    |
+| E                    | Toggle edit mode (if enabled)                      |
+| F                    | Toggle fullscreen (also acquires screen wake lock) |
+| T                    | Cycle theme variant (light/dark)                   |
+| P                    | Toggle presenter mode (cross-tab sync)             |
+| Home                 | Jump to first slide                                |
+| End                  | Jump to last slide                                 |

@@ -11,12 +11,9 @@ Read this file when Phase 3 begins.
 
 Scan the Phase 2 `inventory.md` for domain patterns. For each domain, check whether any component in the inventory matches the detection signals:
 
-| Domain           | Detection Signal                        | Expert Agent            | Detected? | Evidence              |
-| ---------------- | --------------------------------------- | ----------------------- | --------- | --------------------- |
-| ml-training      | ray, TorchTrainer, training config      | ml-training-expert      | ✓/✗       | [component or "none"] |
-| experimentation  | experiment, A/B test, feature flag      | experimentation-expert  | ✓/✗       |                       |
-| ml-serving       | model serving, feature store, inference | ml-serving-expert       | ✓/✗       |                       |
-| event-processing | @produces, @consumes, event handler     | event-processing-expert | ✓/✗       |                       |
+| Domain | Detection Signal | Expert Agent | Detected? | Evidence |
+|--------|-----------------|--------------|-----------|----------|
+| ml-pipelines | torch.nn, DataLoader, transformers, sklearn, lightning | jbb-feature-dev:ml-pipeline-reviewer | ✓/✗ | [component or "none"] |
 
 **GATE**: Do not proceed to Step 3b until this table has been output to the user.
 
@@ -26,7 +23,7 @@ Scan the Phase 2 `inventory.md` for domain patterns. For each domain, check whet
 
 **MANDATORY OUTPUT**: Output the agent contract to the user before proceeding to Step 3c.
 
-Follow the agent contract pattern from `${CLAUDE_PLUGIN_ROOT}/commands/shared/agent-verification-pattern.md`.
+Follow the agent contract pattern from `${CLAUDE_PLUGIN_ROOT}/skills/shared-references/agent-verification-pattern.md`.
 Create the contract using the inventory from Phase 2 and the domain detection from Step 3a:
 
 - **Codebase agents**: One per repo or group of 2-3 related repos
@@ -40,7 +37,7 @@ Create the contract using the inventory from Phase 2 and the domain detection fr
 
 **MANDATORY OUTPUT**: Output the pre-spawn verification table before spawning any agents.
 
-Follow the pre-spawn verification pattern from `${CLAUDE_PLUGIN_ROOT}/commands/shared/agent-verification-pattern.md`.
+Follow the pre-spawn verification pattern from `${CLAUDE_PLUGIN_ROOT}/skills/shared-references/agent-verification-pattern.md`.
 Every row must show "Yes" or have a concrete reason for skipping (only "repo not accessible"
 or "agent type not available" are valid).
 
@@ -62,7 +59,7 @@ One per repo (or group of 2-3 related repos). Each investigates:
 Explore the codebase at [repo-path] for architecture documentation.
 
 Investigate and document:
-1. Service identity: What is this service? (check README, config files)
+1. Service identity: What is this service? (check catalog-info.yaml, README)
 2. Technology stack: What frameworks/languages/build tools? (check build files, imports)
 3. API surface: What APIs does it expose? (check proto files, OpenAPI, route definitions)
 4. Internal architecture: Key packages, main entry points, important classes
@@ -100,10 +97,9 @@ a service with its shared library, or batch two closely related microservices).
 
 **MANDATORY OUTPUT**: After all agents complete, output this verification before proceeding to Phase 4.
 
-Follow the pre-synthesis verification pattern from `${CLAUDE_PLUGIN_ROOT}/commands/shared/agent-verification-pattern.md`.
+Follow the pre-synthesis verification pattern from `${CLAUDE_PLUGIN_ROOT}/skills/shared-references/agent-verification-pattern.md`.
 
 Verify that:
-
 - Every contracted codebase agent returned results
 - Every contracted domain specialist agent returned results
 - No agent returned empty or error-only output

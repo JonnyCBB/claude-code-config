@@ -6,7 +6,6 @@ control, and sequence diagram patterns.
 ## Section 1 — Structurizr DSL (Primary Format)
 
 Key concepts:
-
 - `workspace` block contains `model` (elements + relationships) and `views` (diagram configs)
 - Define each element ONCE; all diagram views are generated from the single model
 - `!include other-repo/architecture.dsl` for multi-repo composition
@@ -17,7 +16,7 @@ Key concepts:
 ```
 workspace "Playlist Service" {
     model {
-        user = person "User" "Listens to music and creates playlists"
+        user = person "End User" "Listens to music and creates playlists"
 
         playlistSystem = softwareSystem "Playlist System" {
             webApi = container "Playlist API" "REST API for playlist CRUD" "Java/Spring Boot"
@@ -55,7 +54,7 @@ workspace "Playlist Service" {
 ### Multi-Repo `!include` Pattern
 
 ```
-workspace "Music Platform" {
+workspace "Example Platform" {
     model {
         !include playlist-service/docs/architecture/model.dsl
         !include track-service/docs/architecture/model.dsl
@@ -86,24 +85,24 @@ Use the PlantUML stdlib (bundled with PlantUML, no URL needed):
 
 ### Element Reference
 
-| Element             | Syntax                                                      | Used in    |
-| ------------------- | ----------------------------------------------------------- | ---------- |
-| Person              | `Person(alias, label, $descr="")`                           | All levels |
-| External Person     | `Person_Ext(alias, label, $descr="")`                       | All levels |
-| System              | `System(alias, label, $descr="")`                           | Context    |
-| External System     | `System_Ext(alias, label, $descr="")`                       | Context    |
-| Database System     | `SystemDb(alias, label, $descr="")`                         | Context    |
-| Queue System        | `SystemQueue(alias, label, $descr="")`                      | Context    |
-| Container           | `Container(alias, label, $techn="", $descr="")`             | Container+ |
-| DB Container        | `ContainerDb(alias, label, $techn="", $descr="")`           | Container+ |
-| Queue Container     | `ContainerQueue(alias, label, $techn="", $descr="")`        | Container+ |
-| Component           | `Component(alias, label, $techn="", $descr="")`             | Component  |
-| System Boundary     | `System_Boundary(alias, label) { ... }`                     | All        |
-| Container Boundary  | `Container_Boundary(alias, label) { ... }`                  | All        |
-| Enterprise Boundary | `Enterprise_Boundary(alias, label) { ... }`                 | Context    |
-| Relationship        | `Rel(from, to, label, $techn="")`                           | All        |
-| Bidirectional       | `BiRel(from, to, label)`                                    | All        |
-| Directional         | `Rel_U / Rel_D / Rel_L / Rel_R(from, to, label, $techn="")` | All        |
+| Element | Syntax | Used in |
+|---------|--------|---------|
+| Person | `Person(alias, label, $descr="")` | All levels |
+| External Person | `Person_Ext(alias, label, $descr="")` | All levels |
+| System | `System(alias, label, $descr="")` | Context |
+| External System | `System_Ext(alias, label, $descr="")` | Context |
+| Database System | `SystemDb(alias, label, $descr="")` | Context |
+| Queue System | `SystemQueue(alias, label, $descr="")` | Context |
+| Container | `Container(alias, label, $techn="", $descr="")` | Container+ |
+| DB Container | `ContainerDb(alias, label, $techn="", $descr="")` | Container+ |
+| Queue Container | `ContainerQueue(alias, label, $techn="", $descr="")` | Container+ |
+| Component | `Component(alias, label, $techn="", $descr="")` | Component |
+| System Boundary | `System_Boundary(alias, label) { ... }` | All |
+| Container Boundary | `Container_Boundary(alias, label) { ... }` | All |
+| Enterprise Boundary | `Enterprise_Boundary(alias, label) { ... }` | Context |
+| Relationship | `Rel(from, to, label, $techn="")` | All |
+| Bidirectional | `BiRel(from, to, label)` | All |
+| Directional | `Rel_U / Rel_D / Rel_L / Rel_R(from, to, label, $techn="")` | All |
 
 ### Working C4Context Example (Level 1)
 
@@ -116,7 +115,7 @@ left to right direction
 !include <C4/C4>
 !include <C4/C4_Context>
 
-Person(user, "User", $descr="Listens to music and creates playlists")
+Person(user, "End User", $descr="Listens to music and creates playlists")
 System(playlist, "Playlist System", $descr="Manages playlists and track ordering")
 System_Ext(track, "Track Metadata System", $descr="Provides track metadata")
 System_Ext(identity, "Identity Service", $descr="Authenticates users")
@@ -142,7 +141,7 @@ top to bottom direction
 !include <C4/C4_Context>
 !include <C4/C4_Container>
 
-Person(user, "User", $descr="Listens to music and creates playlists")
+Person(user, "End User", $descr="Listens to music and creates playlists")
 
 System_Boundary("PlaylistSystem_boundary", "Playlist System") {
   Container(PlaylistSystem.PlaylistAPI, "Playlist API", $techn="Java/Spring Boot", $descr="REST API for playlist CRUD")
@@ -171,32 +170,32 @@ and label placement automatically. For fine-tuning, use these controls:
 
 ### Global Layout Direction
 
-| Directive                 | Effect                                                         |
-| ------------------------- | -------------------------------------------------------------- |
-| `top to bottom direction` | Default. Elements flow top-to-bottom.                          |
+| Directive | Effect |
+|-----------|--------|
+| `top to bottom direction` | Default. Elements flow top-to-bottom. |
 | `left to right direction` | Elements flow left-to-right. Good for system context diagrams. |
 
 ### Directional Relationship Hints
 
 Directional `Rel` variants influence element positioning:
 
-| Variant                  | Effect                     |
-| ------------------------ | -------------------------- |
-| `Rel_D(from, to, label)` | Place `to` below `from`    |
-| `Rel_U(from, to, label)` | Place `to` above `from`    |
+| Variant | Effect |
+|---------|--------|
+| `Rel_D(from, to, label)` | Place `to` below `from` |
+| `Rel_U(from, to, label)` | Place `to` above `from` |
 | `Rel_R(from, to, label)` | Place `to` right of `from` |
-| `Rel_L(from, to, label)` | Place `to` left of `from`  |
+| `Rel_L(from, to, label)` | Place `to` left of `from` |
 
 ### Invisible Layout Helpers
 
 For positioning without visible arrows:
 
-| Helper        | Effect                                      |
-| ------------- | ------------------------------------------- |
+| Helper | Effect |
+|--------|--------|
 | `Lay_D(a, b)` | Place `b` below `a` (no visible connection) |
-| `Lay_R(a, b)` | Place `b` right of `a`                      |
-| `Lay_U(a, b)` | Place `b` above `a`                         |
-| `Lay_L(a, b)` | Place `b` left of `a`                       |
+| `Lay_R(a, b)` | Place `b` right of `a` |
+| `Lay_U(a, b)` | Place `b` above `a` |
+| `Lay_L(a, b)` | Place `b` left of `a` |
 
 ### Rendering from CLI
 

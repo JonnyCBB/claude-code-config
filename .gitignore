@@ -24,6 +24,10 @@
 !plugins/jiffy-toolkit/
 !plugins/jiffy-toolkit/**
 
+# Exclude plugin runtime lock files
+.in_use/
+.orphaned_at
+
 # Allow scripts directory
 !scripts/
 !scripts/**
@@ -47,6 +51,16 @@
 # Allow CLAUDE.md
 !CLAUDE.md
 
+# Allow docs directory (on-demand references linked from CLAUDE.md)
+!docs/
+!docs/**
+
 # Exclude Python cache directories
 __pycache__/
 *.pyc
+
+# skill-creator eval workspaces: run artifacts and skill snapshots, regenerated per run
+*-workspace/
+
+# Bug-hunt eval run artifacts (definitions in evals/*.json are tracked)
+**/evals/iteration-*/

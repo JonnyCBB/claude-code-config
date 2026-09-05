@@ -1,0 +1,15 @@
+{
+  "eval_id": 2,
+  "eval_name": "sanity-check-flawed-comparison",
+  "prompt": "My colleague put this cost comparison together before she left. Before I send it to the board, can you sanity-check it?",
+  "assertions": [
+    "Identifies that the three supplier prices are not like-for-like",
+    "Specifies that Vantage excludes consumables, installation and end-of-term disposal which the others include",
+    "States that the cheapest-headline ranking is therefore unsafe and the recommendation is not yet supported",
+    "Flags that Castleford's figure is an estimate and should not sit in a ranked table as if it were a quote",
+    "Flags that only three of the six approved framework suppliers were approached",
+    "Notes the absence of dates or sources on the figures",
+    "Does NOT simply endorse the existing recommendation to proceed with Vantage",
+    "Recommends obtaining the missing information before the comparison goes to the board"
+  ]
+}

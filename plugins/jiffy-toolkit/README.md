@@ -2,15 +2,22 @@
 
 Creative and standards tools for Claude Code.
 
+## Installation
+
+```bash
+claude plugins add github.com/JonnyCBB/claude-code-config/plugins/jiffy-toolkit
+```
+
 ## Skills
 
-| Skill                        | Command                         | Description                                                                                                                              |
-| ---------------------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| teach-me                     | `/teach-me [concept]`           | Generate interactive scrollytelling HTML pages that progressively explain any concept using GSAP animations and optional Manim for math. |
-| frontend-slides              | `/frontend-slides`              | Create animation-rich HTML presentations from scratch or by converting PowerPoint files.                                                 |
-| context-and-skills-standards | `/context-and-skills-standards` | Evidence-based standards for writing CLAUDE.md, AGENTS.md, and skill files                                                               |
-| editorial-standards          | `/editorial-standards`          | Editorial standards and technical writing best practices for document review                                                             |
-| diagram-standards            | `/diagram-standards`            | Diagram standards including type selection, color palettes, WCAG 2.2 accessibility                                                       |
+| Skill                        | Command                         | Description                                                                                                                                                                                |
+| ---------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| teach-me                     | `/teach-me [concept]`           | Generate interactive scrollytelling HTML pages that progressively explain any concept using GSAP animations and optional Manim for math. [Docs](https://your-internal-docs.example/) |
+| frontend-slides              | `/frontend-slides`              | Create animation-rich HTML presentations from scratch or by converting PowerPoint files. [Docs](https://your-internal-docs.example/)                                         |
+| context-and-skills-standards | `/context-and-skills-standards` | Evidence-based standards for writing CLAUDE.md, AGENTS.md, and skill files                                                                                                                 |
+| sound-like-me                | `/sound-like-me`                | Remove signs of AI-generated writing from text, optionally rewriting in a named voice. Detects 33 patterns. Per-register personas in `references/`, one per destination surface            |
+| editorial-standards          | `/editorial-standards`          | Editorial standards and technical writing best practices for document review                                                                                                               |
+| diagram-standards            | `/diagram-standards`            | Diagram standards including type selection, color palettes, WCAG 2.2 accessibility                                                                                                         |
 
 ## Notable skills
 
@@ -28,8 +35,11 @@ Generate interactive scrollytelling HTML pages that progressively explain any co
 - Optional Manim integration for mathematical content
 - Agent team debate mode for visualization choices (when `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`)
 - Visual QA with Playwright screenshots to catch rendering issues
+- Publish to Snow for SSO-protected sharing
 
 **Output:** `~/.claude/teach-me/[slug]/index.html`
+
+For a full walkthrough with examples, see the [teach-me documentation](https://your-internal-docs.example/).
 
 ### /frontend-slides
 
@@ -49,17 +59,35 @@ Create zero-dependency, animation-rich HTML presentations that run entirely in t
 
 **Output:** `~/.claude/presentations/[name]/` (multi-file) or single HTML file
 
-## Agents (5)
+For a full walkthrough with examples, see the [frontend-slides guide](https://your-internal-docs.example/).
 
-| Agent                       | Purpose                                                  |
-| --------------------------- | -------------------------------------------------------- |
-| web-search-researcher       | External documentation and web research                  |
-| codebase-explorer           | Find files and understand code across repos              |
-| context-and-skills-reviewer | Review CLAUDE.md/AGENTS.md/skill files against standards |
-| document-editor-reviewer    | Editorial review of technical documents                  |
-| visual-aid-recommender      | Recommend diagrams and visualizations for documentation  |
+## Agents (6)
+
+| Agent                        | Purpose                                                  |
+| ---------------------------- | -------------------------------------------------------- |
+| web-search-researcher        | External documentation and web research                  |
+| web-search-researcher | internal tools, docs, live Slack, people/teams   |
+| codebase-explorer            | Find files and understand code across repos              |
+| context-and-skills-reviewer  | Review CLAUDE.md/AGENTS.md/skill files against standards |
+| document-editor-reviewer     | Editorial review of technical documents                  |
+| visual-aid-recommender       | Recommend diagrams and visualizations for documentation  |
 
 ## Prerequisites
+
+### MCP Servers (bundled)
+
+- `atlassian-mcp` — Jira integration
+- `slack-mcp` — Slack search and reading
+- `bandmanager-mcp` — people, groups and memberships
+- `mcp-explorer-mcp` — MCP server discovery
+
+
+
+`mcp-explorer-mcp` is a further exception: it resolves under neither plugin prefix, and its two tools are declared as bare `mcp__mcp-explorer-mcp__*` names. Both agent files carry an inline note explaining why; read that before changing them.
+
+### Org-Managed Connectors (enable in claude.ai settings)
+
+- GDrive MCP — Google Drive access
 
 ### Optional
 
@@ -67,3 +95,6 @@ Create zero-dependency, animation-rich HTML presentations that run entirely in t
 - Python 3, Playwright (for teach-me visual QA)
 - Manim (for teach-me mathematical content)
 - python-pptx, decktape (for frontend-slides export)
+
+**This plugin is self-sufficient.** It declares the MCP servers its agents use and references
+only `mcp__plugin_jiffy-toolkit_*` names. Do not repoint them at another plugin's prefix.

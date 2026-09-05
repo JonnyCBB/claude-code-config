@@ -402,7 +402,7 @@ def main():
     )
     parser.add_argument('presentation_dir', help='Path to the presentation directory')
     parser.add_argument('--title', help='Presentation title (defaults to directory name)')
-    parser.add_argument('--domain', default='', help='Domain for sharing restriction (e.g. example.com)')
+    parser.add_argument('--domain', default='example.com', help='Domain for sharing restriction')
     parser.add_argument('--format', choices=['gslides', 'pdf'], default='gslides',
                         dest='output_format', help='Output format (default: gslides)')
     parser.add_argument('--pause', type=int, default=2000,

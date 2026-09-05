@@ -7,79 +7,43 @@ Read this file when Step 8 instructs you to `Read references/live-testing-guide.
 
 Pre-flight auth checks before starting the service.
 
-### Standard gRPC Auth
-
-1. Verify application default credentials are configured:
-
-   ```bash
-   gcloud auth application-default print-access-token >/dev/null 2>&1
-   ```
-
-   If this fails, the developer needs to run `gcloud auth application-default login`.
-
-2. Check for `<service>-user.conf` with service account configuration:
-
-   ```hocon
-   serviceauth.serviceAccountEmail: "local-development@<project>.iam.gserviceaccount.com"
-   ```
-
-   Look for this file in the project root or `src/main/resources/`.
-
-### Key Environment Variables
-
-| Variable                         | Purpose                         | Required?                     |
-| -------------------------------- | ------------------------------- | ----------------------------- |
-| `SERVICE_DOMAIN`                 | Service discovery domain        | If applicable                 |
-| `GOOGLE_APPLICATION_CREDENTIALS` | Path to SA key JSON or ADC file | If not using ADC default path |
-
 ### Auth Failure Handling
 
 If any auth check fails:
 
 1. Report which check failed and the exact error
-2. Suggest the remediation command (e.g., `gcloud auth application-default login`)
-3. Abort live testing and proceed to Step 9
-4. Record the auth failure as a FAIL in the evidence document
+2. **Investigate common fixes first** — try the remediation command (e.g.,
+   `gcloud auth application-default login`), check for integration test configs
+   that bypass auth, or write an in-process integration test with a fake gRPC
+   stub. Setting `serviceauth.enabled: false` in `-user.conf` requires explicit
+   user permission in auto-mode (classified as auth-weakening)
+3. **Re-run the failed check** after attempting fixes
+4. Only if ALL remediation attempts fail: abort live testing and proceed to Step 9
+5. Record the auth failure as a FAIL in the evidence document, listing each
+   remediation attempted and why it failed
 
 ## Service Startup Procedures
 
 ### Build System Detection
 
-Scan the project root for build files:
+Detect the project's build system from its manifest, then use its own documented run command:
 
-| File                    | Build System | Build Command               | Startup Command                                           |
-| ----------------------- | ------------ | --------------------------- | --------------------------------------------------------- |
-| `pom.xml`               | Maven        | `mvn clean compile -U`      | `mvn exec:java -Dexec.mainClass="<fully.qualified.Main>"` |
-| `BUILD` / `BUILD.bazel` | Bazel        | `bazel build //path:target` | `bazel run //path:target`                                 |
-| `build.sbt`             | SBT          | Not yet supported           | Not yet supported — skip live testing                     |
+| Marker                        | Build system | Build                    | Run locally                |
+| ----------------------------- | ------------ | ------------------------ | -------------------------- |
+| `package.json`                | Node/npm     | `npm ci`                 | `npm start` / `npm run dev` |
+| `pyproject.toml` / `setup.py` | Python       | `uv sync` / `pip install -e .` | the project's entry point or `uvicorn`/`flask` command |
+| `Makefile`                    | make         | `make build`             | `make run`                 |
+| `docker-compose.yml`          | compose      | `docker compose build`   | `docker compose up`        |
 
-### Main Class Discovery
-
-Search for the service entry point:
-
-```bash
-find . -name "Main.java" -path "*/main/java/*" | head -5
-```
-
-Extract the fully qualified class name from the package declaration.
+Read the project's own README or `scripts` block before inventing a command.
 
 ### Standard Ports
 
-| Port | Protocol | Purpose                |
-| ---- | -------- | ---------------------- |
-| 5990 | gRPC     | Primary gRPC server    |
-| 8080 | HTTP     | HTTP server / REST API |
-| 5700 | HTTP     | Health/metrics         |
-
-### Starting the Service
-
-Launch as a background process and capture the PID:
-
-```bash
-mvn exec:java \
-  -Dexec.mainClass="<fully.qualified.Main>" > /tmp/service-stdout.log 2>&1 &
-SERVICE_PID=$!
-```
+| Port | Protocol | Purpose                 |
+| ---- | -------- | ----------------------- |
+| 5990 | gRPC     | Primary gRPC server     |
+| 8080 | HTTP     | HTTP server / REST API  |
+| 5700 | HTTP     | Health/metrics |
 
 ### Readiness Polling
 
@@ -98,29 +62,36 @@ done
 Fallback checks if gRPC health check is not available:
 
 - HTTP: `curl -s -o /dev/null -w '%{http_code}' localhost:8080/_meta/0/info` returns `200`
-- Health: `curl -s -o /dev/null -w '%{http_code}' localhost:5700/readiness` returns `200`
+- HTTP health endpoint: `curl -s -o /dev/null -w '%{http_code}' localhost:5700/readiness` returns `200`
 
 ### Startup Failure Handling
 
 If the service fails to start within 60 seconds:
 
 1. Capture stderr from `/tmp/service-stdout.log`
-2. Include the error in the evidence document as a FAIL result
-3. Proceed to Step 9 (skip live testing scenarios)
+2. **Consult the Common Local Startup Blockers table below** — check each row
+   against the error output and attempt any matching fixes
+3. **Retry startup** after applying fixes (allow another 60 seconds)
+4. Only if startup still fails after consulting the blockers table and retrying:
+   proceed to Step 9
+5. Include the error in the evidence document as a FAIL result, listing each
+   blocker checked and fix attempted
 
 ### Common Local Startup Blockers
 
 Before falling back to workarounds, try these solutions for common issues:
 
-| Blocker           | Symptom                             | Solution                                                                                                                                 |
-| ----------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| PubSub connection | Publisher creation fails            | Run `gcloud beta emulators pubsub start --project=<project> --host-port=localhost:8085` and set `pubsub.use-emulator: true` in user conf |
-| Service auth      | Auth enforcement blocks local calls | Set `serviceauth.enabled: false` in user conf                                                                                            |
-| Event sender      | EventSender initialization fails    | Set `event-sender.enabled: false` in user conf                                                                                           |
-| Remote config     | RemoteConfig resolution fails       | Set `remoteconfig.enabled: false` in user conf                                                                                           |
+| Blocker                 | Symptom                                     | Solution                                                                                                                                   |
+| ----------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Secret-store lookup failure | `MissingSecretException`             | Point the client at a local secret override in the service config, and set a local namespace |
+| PubSub connection       | Publisher creation fails                    | Run `gcloud beta emulators pubsub start --project=<project> --host-port=localhost:8085` and set `pubsub.use-emulator: true` in user conf   |
+| Service discovery resolution | Channel creation fails for internal service targets | Point the client at the right discovery domain in the service config, or via its documented env var |
+| Service auth            | Auth enforcement blocks local calls         | *Primary:* write an in-process integration test wiring the real handler with a hand-rolled fake gRPC stub — this avoids the auth layer entirely and is the most robust local verification. *Manual fallback:* set `serviceauth.enabled: false` in `-user.conf` — ⚠️ auto-mode classifies this as auth-weakening and will deny it; the agent must ask the user for explicit permission before applying this fix. |
+| Event sender            | EventSender initialization fails            | Set `event-sender.enabled: false` in user conf                                                                                             |
+| Remote config           | RemoteConfig resolution fails               | Set `remoteconfig.enabled: false` in user conf                                                                                             |
 
 Look for patterns in the project's integration test (often `ContainerIT.java` or
-similar) -- it typically contains all the config overrides needed for local execution.
+similar) — it typically contains all the config overrides needed for local execution.
 Also check if a `-user.conf` file exists (often `.gitignored`) or look at other
 services in the monorepo for examples.
 
@@ -216,11 +187,6 @@ curl -s -X POST http://localhost:8080/api/path \
 | enum             | Use first and last enum values                | Cover range                                  |
 | repeated         | `[]` (empty) and `[item1, item2]` (populated) | Test empty and populated                     |
 | message (nested) | Full sub-message or omit entirely             | Test present and absent                      |
-
-### Authenticated Requests
-
-If the service requires authentication, use grpcurl with appropriate auth headers or
-a wrapper tool that handles token generation for your environment.
 
 ## Response Validation Rules
 

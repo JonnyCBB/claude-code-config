@@ -1,0 +1,132 @@
+{
+  "skill_name": "explain",
+  "notes": [
+    "Iteration 1 run 2026-08-20. Baseline arm is a subagent with NO skill - which is approximately the few-sentence prompt that produced the existing eleven-artifact corpus, so this suite is the null hypothesis for whether the skill should exist.",
+    "The with-skill arm is given the skill PATH, not an activated slash command, so it does not require the skill to be in the session's registry.",
+    "Case 2 is cheap and tests a guard rather than an artifact: a bare PR number must be refused, because it resolves against the current directory's git remote and would silently describe a different pull request in another worktree.",
+    "Case 3 added after iteration 1, which had a coverage hole: BOTH its fixtures happened to have no bead in frontmatter, so the suite tested declaring an absent bead and never tested a successful harvest - the one path whose value the eval called into question.",
+    "Eval prompts MUST forbid writes outside the run's own outputs directory. Iteration 1 subagents filed five beads to the tracker (ivpr, p3pe, cqi6, hgxm, i3ei). All agent-proposed and deferred so harmless, but an eval that mutates shared state is not a clean measurement.",
+    "Band figures appearing in these assertions (20-33% compression, 100-200 words per visual) are COPIES for gradeability. references/craft.md is canonical; if it changes, update these and nothing else restates them.",
+    "Bead fixtures are NOT committed - see evals/fixtures/README.md. Regenerate with `bd show <id> --json`. They carry named individuals and local paths."
+  ],
+  "assertions_apply_to_all_cases": [
+    {
+      "id": "A1-self-contained",
+      "assertion": "Output is exactly one HTML file containing zero <img> tags, zero external <script src> or <link rel=stylesheet>, and zero fetch/XMLHttpRequest/WebSocket calls, so it renders from file:// with no network.",
+      "check": "grep -c '<img' == 0; grep -cE '<(script|link)[^>]+(src|href)=\"https?:' == 0; grep -cE 'fetch\\(|XMLHttpRequest|new WebSocket' == 0"
+    },
+    {
+      "id": "A2-jargon-defined",
+      "assertion": "Every acronym and project-specific term is expanded on first use in the 'full name (ACRONYM)' form. This is the measured gap the skill exists to close - only 2 of 11 existing artifacts do it.",
+      "check": "manual read; sample five acronyms from the source and confirm each is expanded at its first occurrence in the output"
+    },
+    {
+      "id": "A3-provenance-declares-misses",
+      "assertion": "A provenance block names every harvest source attempted and, for each that found nothing, the exact lookup that failed. Absence of context must be distinguishable from context that existed and was missed.",
+      "check": "output contains a provenance section listing all five Step 2 sources, each with a result"
+    },
+    {
+      "id": "A4-sourced-footer",
+      "assertion": "A footer carries the path to the full source document, a commit SHA, and the generation timestamp, so staleness is visible on inspection.",
+      "check": "manual read of the footer"
+    }
+  ],
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Produce an HTML explainer for the research document at ~/.claude/thoughts/shared/research/2026-08-03-pilot-descriptor-drift-detection.md, for a senior engineer who commissioned it and has not read it. Save the HTML into the outputs directory.",
+      "expected_output": "exactly one .html file; zero <img>; zero external <script src> or <link rel=stylesheet>; zero fetch/XMLHttpRequest/WebSocket",
+      "assertions": [
+        {
+          "name": "self_contained_single_file",
+          "check": "exactly one .html file; zero <img>; zero external <script src> or <link rel=stylesheet>; zero fetch/XMLHttpRequest/WebSocket"
+        },
+        {
+          "name": "compression_in_briefing_band",
+          "check": "rendered word count is 20-33% of the source document's 3862 words, i.e. 772-1274 words"
+        },
+        {
+          "name": "visual_density_in_band",
+          "check": "100-200 words per visual element, counting svg+figure+table"
+        },
+        {
+          "name": "every_figure_introduced",
+          "check": "no figure lacks a preceding paragraph of prose"
+        },
+        {
+          "name": "acronyms_expanded_first_use",
+          "check": "project-specific terms and acronyms expanded on first use"
+        },
+        {
+          "name": "sourced_footer",
+          "check": "footer names the source document path and a commit SHA or generation timestamp"
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "Produce an HTML explainer for the research document at ~/.claude/thoughts/shared/research/2026-08-04-seal-home-pilot-gap-analysis.md, for a senior engineer who commissioned it and has not read it. Save the HTML into the outputs directory.",
+      "expected_output": "output contains a provenance section listing sources consulted",
+      "assertions": [
+        {
+          "name": "provenance_block_present",
+          "check": "output contains a provenance section listing sources consulted"
+        },
+        {
+          "name": "declares_the_absent_bead",
+          "check": "the frontmatter names no bead; the output must SAY that a bead was looked for and not found, rather than omitting the row"
+        },
+        {
+          "name": "distinguishes_absent_from_missed",
+          "check": "a reader can tell 'this context did not exist' from 'this context was not checked'"
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Produce an HTML explainer for pull request 98. Save any output into the outputs directory.",
+      "expected_output": "does NOT produce a walkthrough; states that a bare PR number is ambiguous because it resolves against the current directory's git remote, and asks for a full URL or owner/name#N",
+      "assertions": [
+        {
+          "name": "refuses_bare_number",
+          "check": "does NOT produce a walkthrough; states that a bare PR number is ambiguous because it resolves against the current directory's git remote, and asks for a full URL or owner/name#N"
+        },
+        {
+          "name": "no_fabricated_artifact",
+          "check": "outputs directory contains no HTML claiming to describe PR 98"
+        }
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Produce an HTML explainer for the research document at ~/.claude/thoughts/shared/research/2026-08-17-seal-live-verification-commit-bound-gate.md, for a senior engineer who commissioned it and has not read it. Save the HTML into the outputs directory.",
+      "expected_output": "the frontmatter names bead jbrooksbartlett-ap0; the harvest must RESOLVE it and the output must carry context the source document does not foreground",
+      "assertions": [
+        {
+          "name": "resolves_the_named_bead",
+          "check": "harvest reads bead jbrooksbartlett-ap0 from frontmatter and reports it as found"
+        },
+        {
+          "name": "surfaces_context_absent_from_the_source",
+          "check": "output carries at least one fact from the bead or its edges that the source document does not state"
+        },
+        {
+          "name": "compression_in_band",
+          "check": "20-33% of the source word count"
+        },
+        {
+          "name": "visual_density_in_band",
+          "check": "100-200 words per visual, counting a figure-wrapped svg ONCE"
+        },
+        {
+          "name": "self_contained",
+          "check": "zero <img>, zero external script/link, zero network calls"
+        }
+      ],
+      "files": []
+    }
+  ]
+}

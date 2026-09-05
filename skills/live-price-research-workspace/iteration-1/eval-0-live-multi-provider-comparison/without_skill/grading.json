@@ -1,0 +1,59 @@
+{
+  "expectations": [
+    {
+      "text": "Prices at least three different package providers",
+      "passed": true,
+      "evidence": "Priced easyJet, loveholidays and TUI - three providers."
+    },
+    {
+      "text": "Builds an explicit inclusions comparison (bags, transfers) before ranking anything",
+      "passed": true,
+      "evidence": "Landed table with Hold bags / Transfers columns."
+    },
+    {
+      "text": "Distinguishes headline price from landed total in the output itself",
+      "passed": true,
+      "evidence": "Headline vs landed total columns; 'that whole swing is bags and coach'."
+    },
+    {
+      "text": "Verifies loveholidays' exclusions from the site rather than assuming them",
+      "passed": true,
+      "evidence": "Confirmed GBP 2,633.94 on loveholidays' own checkout price breakdown."
+    },
+    {
+      "text": "Uses a same-hotel comparison across providers for a true like-for-like",
+      "passed": true,
+      "evidence": "BlueBay Lanzarote compared across easyJet and loveholidays."
+    },
+    {
+      "text": "Reaches Jet2holidays and obtains an actual price",
+      "passed": false,
+      "evidence": "FAILED. Own words: 'Jet2holidays not reached at all - no figure. It bundles 22kg plus transfers, so it's the one real remaining chance of beating easyJet. Worth 10 minutes.' Correctly identified the risk, ran out of budget before closing it."
+    },
+    {
+      "text": "Recommends the genuinely cheapest landed option (Jet2, \u00a32,028)",
+      "passed": false,
+      "evidence": "Recommended easyJet at GBP 2,247. Jet2 was GBP 2,028 - the recommendation is GBP 219 more expensive than the true cheapest."
+    },
+    {
+      "text": "Sweeps dates beyond the one given and finds a cheaper permitted alternative",
+      "passed": true,
+      "evidence": "Swept the month; found Sun 14 Feb saves GBP 720 and noted the date beats the provider choice."
+    },
+    {
+      "text": "States gaps explicitly with retry information rather than guessing",
+      "passed": true,
+      "evidence": "Gaps stated with retry URLs; explicitly flagged Jet2 as unreached."
+    },
+    {
+      "text": "Provides source URLs and a retrieval date",
+      "passed": true,
+      "evidence": "Retrieval date stated; retry URLs in the saved file."
+    },
+    {
+      "text": "Notes that prices are volatile snapshots rather than firm quotes",
+      "passed": false,
+      "evidence": "Gives a retrieval date but does not frame prices as volatile snapshots."
+    }
+  ]
+}

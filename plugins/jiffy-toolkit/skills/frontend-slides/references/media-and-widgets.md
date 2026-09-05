@@ -15,6 +15,7 @@ If the user provided images, execute these steps **before** generating HTML.
 For each curated image, determine what processing it needs based on the chosen style (e.g., circular crop for logos, resize for large files) and what CSS framing will bridge any color gaps between the image and the style's palette. Then process accordingly.
 
 **Rules:**
+
 - **Never repeat** the same image on multiple slides (except logos which may bookend title + closing)
 - **Always add CSS framing** (border, glow, shadow) for images whose colors clash with the style's palette
 
@@ -66,11 +67,11 @@ def add_padding(input_path, output_path, padding=40, bg_color=(0, 0, 0, 0)):
 
 **When to apply each operation:**
 
-| Situation | Operation |
-|-----------|-----------|
-| Square logo on a style with rounded aesthetics | `crop_circle()` |
-| Image > 1MB (slow to load) | `resize_max(max_dim=1200)` |
-| Screenshot needs breathing room in layout | `add_padding()` |
+| Situation                                       | Operation                                               |
+| ----------------------------------------------- | ------------------------------------------------------- |
+| Square logo on a style with rounded aesthetics  | `crop_circle()`                                         |
+| Image > 1MB (slow to load)                      | `resize_max(max_dim=1200)`                              |
+| Screenshot needs breathing room in layout       | `add_padding()`                                         |
 | Image has wrong aspect ratio for its slide slot | Manual crop with `img.crop((left, top, right, bottom))` |
 
 **Save processed images** alongside originals with a `_processed` suffix (e.g., `logo_round.png`). Never overwrite the user's original files.
@@ -80,40 +81,47 @@ def add_padding(input_path, output_path, padding=40, bg_color=(0, 0, 0, 0)):
 **Use direct file paths** — do NOT convert images to base64 data URIs. Since presentations are viewed locally, reference images with relative paths from the HTML file:
 
 ```html
-<img src="assets/logo_round.png" alt="Logo" class="slide-image logo">
-<img src="assets/screenshot.png" alt="Screenshot" class="slide-image screenshot">
+<img src="assets/logo_round.png" alt="Logo" class="slide-image logo" />
+<img
+  src="assets/screenshot.png"
+  alt="Screenshot"
+  class="slide-image screenshot"
+/>
 ```
 
 This keeps the HTML file small and images easy to swap. Only use base64 encoding if the user explicitly requests a fully self-contained single-file presentation.
 
 **Image CSS classes (adapt border/glow colors to match the chosen style):**
+
 ```css
 /* Base image constraint — CRITICAL for viewport fitting */
 .slide-image {
-    max-width: 100%;
-    max-height: min(50vh, 400px);
-    object-fit: contain;
-    border-radius: 8px;
+  max-width: 100%;
+  max-height: min(50vh, 400px);
+  object-fit: contain;
+  border-radius: 8px;
 }
 
 /* Screenshots: add framing to bridge color gaps with the style */
 .slide-image.screenshot {
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 /* Logos: smaller, no frame */
 .slide-image.logo {
-    max-height: min(30vh, 200px);
+  max-height: min(30vh, 200px);
 }
 ```
 
 **IMPORTANT:** Adapt the `.screenshot` border and shadow colors to match the chosen style's accent color. For example:
+
 - Dark Botanical (gold accent): `border: 1px solid rgba(197, 160, 89, 0.2); box-shadow: 0 0 20px rgba(197, 160, 89, 0.08);`
 - Creative Voltage (neon yellow): `border: 2px solid rgba(212, 255, 0, 0.25); box-shadow: 0 0 20px rgba(212, 255, 0, 0.08);`
 
 **Placement patterns:**
+
 - **Title slide:** Logo centered above or beside the title
 - **Feature slides:** Screenshot on one side, text on the other (two-column layout)
 - **Full-bleed:** Image as slide background with text overlay (use with caution)
@@ -129,13 +137,13 @@ This keeps the HTML file small and images easy to swap. Only use base64 encoding
      Embedded video with play/pause on Space, auto-pause on nav.
      =========================================== -->
 <section class="slide layout-video" data-has-video>
-    <h2 class="reveal">Demo Video</h2>
-    <div class="video-container">
-        <video class="slide-video" preload="metadata" playsinline>
-            <source src="assets/demo.mp4" type="video/mp4">
-        </video>
-        <button class="video-play-btn" aria-label="Play video">&#9654;</button>
-    </div>
+  <h2 class="reveal">Demo Video</h2>
+  <div class="video-container">
+    <video class="slide-video" preload="metadata" playsinline>
+      <source src="assets/demo.mp4" type="video/mp4" />
+    </video>
+    <button class="video-play-btn" aria-label="Play video">&#9654;</button>
+  </div>
 </section>
 ```
 
@@ -145,34 +153,42 @@ This keeps the HTML file small and images easy to swap. Only use base64 encoding
    Embedded video with overlay play button.
    =========================================== */
 .slide.layout-video .video-container {
-    position: relative;
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    max-height: min(65vh, 500px);
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-height: min(65vh, 500px);
 }
 
 .slide-video {
-    width: 100%;
-    max-height: min(60vh, 480px);
-    object-fit: contain;
-    border-radius: 8px;
+  width: 100%;
+  max-height: min(60vh, 480px);
+  object-fit: contain;
+  border-radius: 8px;
 }
 
 .video-play-btn {
-    position: absolute;
-    width: 64px; height: 64px;
-    border-radius: 50%;
-    border: none;
-    background: color-mix(in oklch, var(--bg-primary), transparent 30%);
-    color: var(--text-primary);
-    font-size: 1.5rem;
-    cursor: pointer;
-    transition: transform 0.2s, opacity 0.2s;
+  position: absolute;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: none;
+  background: color-mix(in oklch, var(--bg-primary), transparent 30%);
+  color: var(--text-primary);
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition:
+    transform 0.2s,
+    opacity 0.2s;
 }
-.video-play-btn:hover { transform: scale(1.1); }
-.video-play-btn.hidden { opacity: 0; pointer-events: none; }
+.video-play-btn:hover {
+  transform: scale(1.1);
+}
+.video-play-btn.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
 ```
 
 ```javascript
@@ -246,20 +262,23 @@ case ' ':
 ```html
 <!-- Include Mermaid CDN at end of body (only if presentation uses diagrams) -->
 <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
-<script>mermaid.initialize({ startOnLoad: true, theme: 'dark' });</script>
+<script>
+  mermaid.initialize({ startOnLoad: true, theme: "dark" });
+</script>
 
 <!-- Mermaid diagram slide -->
 <section class="slide">
-    <h2 class="reveal">System Architecture</h2>
-    <div class="mermaid-container reveal">
-        <pre class="mermaid">
+  <h2 class="reveal">System Architecture</h2>
+  <div class="mermaid-container reveal">
+    <pre class="mermaid">
 graph LR
     A[Client] --> B[API Gateway]
     B --> C[Auth Service]
     B --> D[Data Service]
     D --> E[(Database)]
-        </pre>
-    </div>
+        </pre
+    >
+  </div>
 </section>
 ```
 
@@ -270,20 +289,20 @@ graph LR
    to viewport. Use theme matching the preset.
    =========================================== */
 .mermaid-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    max-height: min(60vh, 500px);
-    overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-height: min(60vh, 500px);
+  overflow: hidden;
 }
 
 .mermaid-container .mermaid {
-    max-width: 90%;
+  max-width: 90%;
 }
 
 .mermaid-container svg {
-    max-height: min(55vh, 450px);
-    width: auto;
+  max-height: min(55vh, 450px);
+  width: auto;
 }
 ```
 
@@ -296,27 +315,30 @@ graph LR
 
 // Before mermaid.initialize():
 const bgColor = getComputedStyle(document.documentElement)
-    .getPropertyValue('--bg-primary').trim();
+  .getPropertyValue("--bg-primary")
+  .trim();
 const isDark = isDarkColor(bgColor);
 
 mermaid.initialize({
-    startOnLoad: true,
-    theme: isDark ? 'dark' : 'default',
-    themeVariables: {
-        primaryColor: getComputedStyle(document.documentElement)
-            .getPropertyValue('--accent').trim() || '#4a9eff',
-    }
+  startOnLoad: true,
+  theme: isDark ? "dark" : "default",
+  themeVariables: {
+    primaryColor:
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--accent")
+        .trim() || "#4a9eff",
+  },
 });
 
 function isDarkColor(color) {
-    // Simple luminance check — works for hex and rgb
-    const div = document.createElement('div');
-    div.style.color = color;
-    document.body.appendChild(div);
-    const rgb = getComputedStyle(div).color.match(/\d+/g).map(Number);
-    document.body.removeChild(div);
-    const luminance = (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) / 255;
-    return luminance < 0.5;
+  // Simple luminance check — works for hex and rgb
+  const div = document.createElement("div");
+  div.style.color = color;
+  document.body.appendChild(div);
+  const rgb = getComputedStyle(div).color.match(/\d+/g).map(Number);
+  document.body.removeChild(div);
+  const luminance = (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) / 255;
+  return luminance < 0.5;
 }
 ```
 
@@ -332,47 +354,52 @@ Use with `layout-fact` slides for hero metrics. Browser support: Chrome, Edge, S
    Use with layout-fact slides for hero metrics.
    =========================================== */
 @property --num {
-    syntax: "<integer>";
-    initial-value: 0;
-    inherits: false;
+  syntax: "<integer>";
+  initial-value: 0;
+  inherits: false;
 }
 .counter {
-    animation: count-up 2s ease-out forwards;
-    animation-play-state: paused; /* Triggered when slide becomes visible */
-    counter-reset: num var(--num);
-    font-variant-numeric: tabular-nums;
+  animation: count-up 2s ease-out forwards;
+  animation-play-state: paused; /* Triggered when slide becomes visible */
+  counter-reset: num var(--num);
+  font-variant-numeric: tabular-nums;
 }
 .counter::after {
-    content: counter(num);
+  content: counter(num);
 }
 .slide.visible .counter {
-    animation-play-state: running;
+  animation-play-state: running;
 }
 ```
 
 ```html
 <!-- Usage: set target via custom property in style attribute -->
 <div class="big-number counter" style="--target: 4200000">
-    <!-- CSS counter displays the animating number -->
+  <!-- CSS counter displays the animating number -->
 </div>
 ```
 
 ```css
-@keyframes count-up { to { --num: var(--target); } }
+@keyframes count-up {
+  to {
+    --num: var(--target);
+  }
+}
 ```
 
 **JS fallback** for broader support (recommended):
+
 ```javascript
 // JS-driven counter for broader browser support
 function animateCounter(el, target, duration = 2000) {
-    const start = performance.now();
-    function step(now) {
-        const progress = Math.min((now - start) / duration, 1);
-        const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
-        el.textContent = Math.floor(eased * target).toLocaleString();
-        if (progress < 1) requestAnimationFrame(step);
-    }
-    requestAnimationFrame(step);
+  const start = performance.now();
+  function step(now) {
+    const progress = Math.min((now - start) / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+    el.textContent = Math.floor(eased * target).toLocaleString();
+    if (progress < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
 }
 ```
 
@@ -387,31 +414,41 @@ CSS charts are for simple data storytelling (3-5 bars, 2-4 pie segments). For an
    Suitable for 3-5 bars. Not for complex datasets.
    =========================================== */
 .bar-chart {
-    display: flex;
-    align-items: flex-end;
-    gap: clamp(0.5rem, 2vw, 1.5rem);
-    height: clamp(150px, 30vh, 300px);
-    padding-top: 2rem;
+  display: flex;
+  align-items: flex-end;
+  gap: clamp(0.5rem, 2vw, 1.5rem);
+  height: clamp(150px, 30vh, 300px);
+  padding-top: 2rem;
 }
 .bar {
-    flex: 1;
-    border-radius: 4px 4px 0 0;
-    transform-origin: bottom;
-    transform: scaleY(0);
-    transition: transform 0.8s var(--ease-out-expo);
+  flex: 1;
+  border-radius: 4px 4px 0 0;
+  transform-origin: bottom;
+  transform: scaleY(0);
+  transition: transform 0.8s var(--ease-out-expo);
 }
 .slide.visible .bar {
-    transform: scaleY(1);
+  transform: scaleY(1);
 }
-.bar:nth-child(1) { transition-delay: 0.1s; }
-.bar:nth-child(2) { transition-delay: 0.2s; }
-.bar:nth-child(3) { transition-delay: 0.3s; }
-.bar:nth-child(4) { transition-delay: 0.4s; }
-.bar:nth-child(5) { transition-delay: 0.5s; }
+.bar:nth-child(1) {
+  transition-delay: 0.1s;
+}
+.bar:nth-child(2) {
+  transition-delay: 0.2s;
+}
+.bar:nth-child(3) {
+  transition-delay: 0.3s;
+}
+.bar:nth-child(4) {
+  transition-delay: 0.4s;
+}
+.bar:nth-child(5) {
+  transition-delay: 0.5s;
+}
 .bar-label {
-    text-align: center;
-    font-size: var(--small-size);
-    margin-top: 0.5rem;
+  text-align: center;
+  font-size: var(--small-size);
+  margin-top: 0.5rem;
 }
 ```
 
@@ -421,33 +458,261 @@ CSS charts are for simple data storytelling (3-5 bars, 2-4 pie segments). For an
    Uses @property for smooth animation.
    Suitable for 2-4 segments.
    =========================================== */
-@property --p1 { syntax: "<percentage>"; initial-value: 0%; inherits: false; }
-@property --p2 { syntax: "<percentage>"; initial-value: 0%; inherits: false; }
+@property --p1 {
+  syntax: "<percentage>";
+  initial-value: 0%;
+  inherits: false;
+}
+@property --p2 {
+  syntax: "<percentage>";
+  initial-value: 0%;
+  inherits: false;
+}
 .pie-chart {
-    width: clamp(120px, 20vw, 250px);
-    height: clamp(120px, 20vw, 250px);
-    border-radius: 50%;
-    background: conic-gradient(
-        var(--chart-color-1, #4f46e5) var(--p1),
-        var(--chart-color-2, #e5e7eb) var(--p1)
-    );
+  width: clamp(120px, 20vw, 250px);
+  height: clamp(120px, 20vw, 250px);
+  border-radius: 50%;
+  background: conic-gradient(
+    var(--chart-color-1, #4f46e5) var(--p1),
+    var(--chart-color-2, #e5e7eb) var(--p1)
+  );
 }
 .slide.visible .pie-chart {
-    animation: fill-pie 1.5s ease-out forwards;
+  animation: fill-pie 1.5s ease-out forwards;
 }
-@keyframes fill-pie { to { --p1: 72%; } }
+@keyframes fill-pie {
+  to {
+    --p1: 72%;
+  }
+}
 ```
+
+## Lightbox (Click-to-Expand)
+
+Full-viewport overlay for expanding images, videos, and Mermaid diagrams. Click any supported element to open; ESC or click outside to close. Based on the reveal.js 5.2 lightbox pattern, adapted for the scroll-snap architecture.
+
+Use on data-heavy presentations where the audience needs to see details — charts, architecture diagrams, screenshots with small text. Don't add lightbox support to every presentation; it's most useful when slides contain images the audience might want to zoom into.
+
+```html
+<!-- Elements with these classes automatically get lightbox behavior -->
+<img src="assets/chart.png" alt="Revenue chart" class="slide-image" />
+<div class="mermaid-container">
+  <pre class="mermaid">graph LR ...</pre>
+</div>
+
+<!-- Opt out individual elements with data-no-lightbox -->
+<img
+  src="assets/logo.png"
+  alt="Logo"
+  class="slide-image logo"
+  data-no-lightbox
+/>
+```
+
+```css
+/* ===========================================
+   LIGHTBOX OVERLAY
+   Full-viewport expansion for images, video, and diagrams.
+   Click to open, ESC or click-outside to close.
+   Blocks slide navigation while open.
+   =========================================== */
+.lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in oklch, var(--bg-primary), transparent 10%);
+  backdrop-filter: blur(8px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  cursor: zoom-out;
+}
+
+.lightbox-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.lightbox-overlay .lightbox-content {
+  max-width: 92vw;
+  max-height: 92vh;
+  object-fit: contain;
+  border-radius: 8px;
+  cursor: default;
+  transform: scale(0.95);
+  transition: transform 0.3s var(--ease-out-expo);
+}
+
+.lightbox-overlay.active .lightbox-content {
+  transform: scale(1);
+}
+
+/* Video in lightbox */
+.lightbox-overlay video {
+  max-width: 92vw;
+  max-height: 92vh;
+  border-radius: 8px;
+}
+
+/* Mermaid SVG in lightbox */
+.lightbox-overlay svg {
+  max-width: 92vw;
+  max-height: 92vh;
+  background: var(--bg-primary);
+  border-radius: 8px;
+  padding: clamp(1rem, 2vw, 2rem);
+}
+
+/* Close hint */
+.lightbox-overlay::after {
+  content: "ESC to close";
+  position: absolute;
+  top: clamp(0.5rem, 2vw, 1.5rem);
+  right: clamp(0.5rem, 2vw, 1.5rem);
+  font-size: var(--small-size, 0.75rem);
+  color: var(--text-secondary);
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Clickable elements get zoom cursor */
+.slide-image:not([data-no-lightbox]),
+.mermaid-container svg,
+.slide-video {
+  cursor: zoom-in;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lightbox-overlay,
+  .lightbox-overlay .lightbox-content {
+    transition: none;
+  }
+}
+```
+
+```javascript
+/* ===========================================
+   LIGHTBOX CONTROLLER
+   Opens a full-viewport overlay when clicking
+   images, videos, or Mermaid diagrams.
+
+   - Blocks slide navigation while open
+   - ESC or click-outside closes
+   - Video gets play/pause controls in lightbox
+   - Mermaid SVGs are cloned at full size
+   =========================================== */
+
+// In SlidePresentation class:
+
+initLightbox() {
+    // Create overlay (once)
+    this.lightboxOverlay = document.createElement('div');
+    this.lightboxOverlay.className = 'lightbox-overlay';
+    document.body.appendChild(this.lightboxOverlay);
+
+    // Close on overlay click (but not content click)
+    this.lightboxOverlay.addEventListener('click', (e) => {
+        if (e.target === this.lightboxOverlay) this.closeLightbox();
+    });
+
+    // Attach click handlers to supported elements
+    document.querySelectorAll(
+        '.slide-image:not([data-no-lightbox]), .mermaid-container svg, .slide-video'
+    ).forEach(el => {
+        el.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.openLightbox(el);
+        });
+    });
+}
+
+openLightbox(sourceEl) {
+    this.lightboxOpen = true;
+    this.lightboxOverlay.innerHTML = ''; // Clear previous content
+
+    let content;
+
+    if (sourceEl.tagName === 'IMG') {
+        content = document.createElement('img');
+        content.src = sourceEl.src;
+        content.alt = sourceEl.alt;
+        content.className = 'lightbox-content';
+    } else if (sourceEl.tagName === 'VIDEO' || sourceEl.classList.contains('slide-video')) {
+        const video = sourceEl.tagName === 'VIDEO' ? sourceEl : sourceEl.querySelector('video');
+        video.pause(); // Pause original before opening clone
+        content = video.cloneNode(true);
+        content.className = 'lightbox-content';
+        content.controls = true;
+        content.removeAttribute('preload');
+        content.currentTime = video.currentTime; // Continue from same position
+    } else if (sourceEl.tagName === 'svg' || sourceEl.closest('.mermaid-container')) {
+        const svg = sourceEl.tagName === 'svg' ? sourceEl : sourceEl.querySelector('svg');
+        content = svg.cloneNode(true);
+        content.classList.add('lightbox-content');
+        content.removeAttribute('width');
+        content.removeAttribute('height');
+        content.style.width = 'auto';
+        content.style.height = 'auto';
+    }
+
+    if (content) {
+        this.lightboxOverlay.appendChild(content);
+        this.lightboxOverlay.classList.add('active');
+    }
+}
+
+closeLightbox() {
+    this.lightboxOpen = false;
+    this.lightboxOverlay.classList.remove('active');
+    // Pause any video in lightbox
+    const video = this.lightboxOverlay.querySelector('video');
+    if (video) video.pause();
+    // Clear after transition
+    setTimeout(() => {
+        if (!this.lightboxOpen) this.lightboxOverlay.innerHTML = '';
+    }, 300);
+}
+
+// In keyboard handler — add before the default navigation cases:
+case 'Escape':
+    if (this.lightboxOpen) {
+        this.closeLightbox();
+        return; // Don't toggle overview when closing lightbox
+    }
+    this.toggleOverview();
+    break;
+
+// Block navigation while lightbox is open:
+// At the top of the keyboard handler:
+if (this.lightboxOpen && !['Escape'].includes(e.key)) {
+    e.preventDefault();
+    return;
+}
+
+// In constructor:
+this.lightboxOpen = false;
+this.initLightbox();
+```
+
+**Anti-slop note**: The lightbox clones the source element rather than moving it — this avoids breaking the slide layout when the lightbox opens. For Mermaid SVGs, it removes fixed width/height attributes so the SVG scales to the viewport. The `cursor: zoom-in` style is applied to all supported elements to signal interactivity. Navigation keys are blocked while the lightbox is open to prevent accidentally advancing slides.
+
+**Anti-slop note (video lightbox)**: Key edge cases: (1) The original slide video is **paused** when the lightbox clone opens — add `video.pause()` on the original before opening the clone. (2) The clone's `currentTime` is set to the original's position so the viewer continues where they left off. (3) The clone has `controls = true` even if the original video has custom play/pause UI. (4) Browser autoplay policies apply — the clone will not autoplay; the viewer must click play. (5) When the lightbox closes, the original video is NOT automatically resumed — the viewer must manually resume on the slide.
+
+**Anti-slop note (data-no-lightbox)**: The opt-out attribute exists because presentations commonly mix expandable content (charts, screenshots, architecture diagrams) with decorative images (logos, icons, divider graphics) on the same slide. Logos and icons are small by design — expanding them to full viewport is never useful. Rather than requiring a container-based approach (which would need new wrapper classes), `data-no-lightbox` is a single attribute on the element itself, consistent with the existing `data-auto-animate`, `data-hash`, and `data-has-video` attribute patterns in the skill.
 
 ## Optional CDN Dependencies
 
 The skill is zero-dependency by default. These CDN includes are added only when specific features are used. Always include them at the end of `<body>`, before the `SlidePresentation` script.
 
-| Feature | CDN | When to Include |
-|---------|-----|-----------------|
-| GSAP animations | `<script src="https://cdn.jsdelivr.net/npm/gsap@3.12/dist/gsap.min.js"></script>` | Slide has `data-animation` attribute |
-| GSAP MotionPath | `<script src="https://cdn.jsdelivr.net/npm/gsap@3.12/dist/MotionPathPlugin.min.js"></script>` | Using the math-function widget |
-| Mermaid diagrams | `<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>` | Slide contains `<pre class="mermaid">` |
-| Rough.js | `<script src="https://cdn.jsdelivr.net/npm/roughjs@4.6.6/bundled/rough.cjs.min.js"></script>` | Using the Whiteboard preset |
+| Feature          | CDN                                                                                           | When to Include                        |
+| ---------------- | --------------------------------------------------------------------------------------------- | -------------------------------------- |
+| GSAP animations  | `<script src="https://cdn.jsdelivr.net/npm/gsap@3.12/dist/gsap.min.js"></script>`             | Slide has `data-animation` attribute   |
+| GSAP MotionPath  | `<script src="https://cdn.jsdelivr.net/npm/gsap@3.12/dist/MotionPathPlugin.min.js"></script>` | Using the math-function widget         |
+| Mermaid diagrams | `<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>`            | Slide contains `<pre class="mermaid">` |
+| Rough.js         | `<script src="https://cdn.jsdelivr.net/npm/roughjs@4.6.6/bundled/rough.cjs.min.js"></script>` | Using the Whiteboard preset            |
 
 ## GSAP Playback Controls
 
@@ -456,27 +721,52 @@ When a slide has `data-animation`, it gets a playback control bar at the bottom.
 ```html
 <!-- GSAP-animated slide with playback controls -->
 <section class="slide" data-animation="process-flow">
-    <h2 class="reveal">How Our Pipeline Works</h2>
-    <div class="animation-container" id="anim-process-flow">
-        <!-- SVG content from widget (see SVG Widget Library below) -->
+  <h2 class="reveal">How Our Pipeline Works</h2>
+  <div class="animation-container" id="anim-process-flow">
+    <!-- SVG content from widget (see SVG Widget Library below) -->
+  </div>
+  <div class="playback-controls">
+    <div class="playback-row">
+      <button class="pb-btn" data-action="play" aria-label="Play">
+        &#9654;
+      </button>
+      <button
+        class="pb-btn"
+        data-action="step-back"
+        aria-label="Step back"
+        disabled
+      >
+        &#9664;&#9664;
+      </button>
+      <button
+        class="pb-btn"
+        data-action="step-fwd"
+        aria-label="Step forward"
+        disabled
+      >
+        &#9654;&#9654;
+      </button>
+      <button class="pb-btn" data-action="replay" aria-label="Replay">
+        &#8634;
+      </button>
+      <div class="pb-speed">
+        <button class="pb-speed-btn" data-speed="0.5">0.5x</button>
+        <button class="pb-speed-btn is-active" data-speed="1">1x</button>
+        <button class="pb-speed-btn" data-speed="2">2x</button>
+      </div>
     </div>
-    <div class="playback-controls">
-        <div class="playback-row">
-            <button class="pb-btn" data-action="play" aria-label="Play">&#9654;</button>
-            <button class="pb-btn" data-action="step-back" aria-label="Step back" disabled>&#9664;&#9664;</button>
-            <button class="pb-btn" data-action="step-fwd" aria-label="Step forward" disabled>&#9654;&#9654;</button>
-            <button class="pb-btn" data-action="replay" aria-label="Replay">&#8634;</button>
-            <div class="pb-speed">
-                <button class="pb-speed-btn" data-speed="0.5">0.5x</button>
-                <button class="pb-speed-btn is-active" data-speed="1">1x</button>
-                <button class="pb-speed-btn" data-speed="2">2x</button>
-            </div>
-        </div>
-        <div class="playback-row">
-            <input type="range" class="pb-scrubber" min="0" max="1" step="0.001" value="0">
-            <span class="pb-status"></span>
-        </div>
+    <div class="playback-row">
+      <input
+        type="range"
+        class="pb-scrubber"
+        min="0"
+        max="1"
+        step="0.001"
+        value="0"
+      />
+      <span class="pb-status"></span>
     </div>
+  </div>
 </section>
 ```
 
@@ -487,75 +777,99 @@ When a slide has `data-animation`, it gets a playback control bar at the bottom.
    Controls play/pause, step, speed, and scrubbing.
    =========================================== */
 .playback-controls {
-    position: absolute;
-    bottom: var(--slide-padding);
-    left: 50%;
-    transform: translateX(-50%);
-    width: min(520px, calc(100% - 2 * var(--slide-padding)));
-    padding: 0.5rem 1rem;
-    background: color-mix(in oklch, var(--bg-primary), transparent 20%);
-    border: 1px solid color-mix(in oklch, var(--text-primary), transparent 80%);
-    border-radius: 8px;
-    z-index: 10;
+  position: absolute;
+  bottom: var(--slide-padding);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(520px, calc(100% - 2 * var(--slide-padding)));
+  padding: 0.5rem 1rem;
+  background: color-mix(in oklch, var(--bg-primary), transparent 20%);
+  border: 1px solid color-mix(in oklch, var(--text-primary), transparent 80%);
+  border-radius: 8px;
+  z-index: 10;
 }
 
 .playback-row {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex-wrap: wrap;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
-.playback-row + .playback-row { margin-top: 0.25rem; }
+.playback-row + .playback-row {
+  margin-top: 0.25rem;
+}
 
 .pb-btn {
-    width: 32px; height: 32px;
-    border-radius: 50%;
-    border: 1px solid color-mix(in oklch, var(--text-primary), transparent 70%);
-    background: transparent;
-    color: var(--text-primary);
-    font-size: 0.85rem;
-    display: flex; align-items: center; justify-content: center;
-    padding: 0; cursor: pointer;
-    transition: border-color 0.2s, background 0.2s;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in oklch, var(--text-primary), transparent 70%);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
 }
 .pb-btn:hover:not(:disabled) {
-    border-color: var(--accent, var(--text-primary));
-    background: color-mix(in oklch, var(--accent, var(--text-primary)), transparent 85%);
+  border-color: var(--accent, var(--text-primary));
+  background: color-mix(
+    in oklch,
+    var(--accent, var(--text-primary)),
+    transparent 85%
+  );
 }
-.pb-btn:disabled { opacity: 0.3; cursor: default; }
+.pb-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
 
-.pb-speed { display: flex; gap: 2px; margin-left: auto; }
+.pb-speed {
+  display: flex;
+  gap: 2px;
+  margin-left: auto;
+}
 .pb-speed-btn {
-    padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;
-    border: 1px solid color-mix(in oklch, var(--text-primary), transparent 70%);
-    background: transparent;
-    color: var(--text-primary);
-    font-family: var(--font-mono, monospace);
-    cursor: pointer;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  border: 1px solid color-mix(in oklch, var(--text-primary), transparent 70%);
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-mono, monospace);
+  cursor: pointer;
 }
 .pb-speed-btn.is-active {
-    background: var(--accent, var(--text-primary));
-    color: var(--bg-primary, #000);
-    border-color: var(--accent, var(--text-primary));
+  background: var(--accent, var(--text-primary));
+  color: var(--bg-primary, #000);
+  border-color: var(--accent, var(--text-primary));
 }
 
 .pb-scrubber {
-    flex: 1; height: 4px;
-    accent-color: var(--accent, var(--text-primary));
-    cursor: pointer;
+  flex: 1;
+  height: 4px;
+  accent-color: var(--accent, var(--text-primary));
+  cursor: pointer;
 }
 
 .pb-status {
-    font-family: var(--font-mono, monospace);
-    font-size: 0.75rem;
-    color: color-mix(in oklch, var(--text-primary), transparent 40%);
-    white-space: nowrap;
-    min-width: 80px;
-    text-align: right;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.75rem;
+  color: color-mix(in oklch, var(--text-primary), transparent 40%);
+  white-space: nowrap;
+  min-width: 80px;
+  text-align: right;
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .playback-controls { display: none; }
+  .playback-controls {
+    display: none;
+  }
 }
 ```
 
@@ -572,119 +886,135 @@ When a slide has `data-animation`, it gets a playback control bar at the bottom.
    =========================================== */
 
 class PlaybackController {
-    constructor(slideEl) {
-        this.slideEl = slideEl;
-        this.tl = null;
+  constructor(slideEl) {
+    this.slideEl = slideEl;
+    this.tl = null;
+    this.isPlaying = false;
+    this.labels = [];
+    this.rafId = null;
+
+    // Bind to controls within this slide only
+    const q = (sel) => slideEl.querySelector(sel);
+    const qa = (sel) => slideEl.querySelectorAll(sel);
+
+    this.playBtn = q('[data-action="play"]');
+    this.stepBack = q('[data-action="step-back"]');
+    this.stepFwd = q('[data-action="step-fwd"]');
+    this.replayBtn = q('[data-action="replay"]');
+    this.scrubber = q(".pb-scrubber");
+    this.statusEl = q(".pb-status");
+    this.speedBtns = qa(".pb-speed-btn");
+
+    this.playBtn.addEventListener("click", () => this.togglePlay());
+    this.stepBack.addEventListener("click", () => this.step(-0.02));
+    this.stepFwd.addEventListener("click", () => this.step(0.02));
+    this.replayBtn.addEventListener("click", () => this.replay());
+    this.scrubber.addEventListener("input", () =>
+      this.scrub(this.scrubber.value),
+    );
+    this.speedBtns.forEach((btn) => {
+      btn.addEventListener("click", () =>
+        this.setSpeed(parseFloat(btn.dataset.speed)),
+      );
+    });
+  }
+
+  setTimeline(tl, labels) {
+    if (this.rafId) cancelAnimationFrame(this.rafId);
+    if (this.tl) this.tl.pause();
+    this.tl = tl;
+    this.labels = labels || [];
+    this.isPlaying = false;
+    this.scrubber.value = 0;
+    this.updateUI();
+  }
+
+  togglePlay() {
+    this.isPlaying ? this.pause() : this.play();
+  }
+
+  play() {
+    if (!this.tl) return;
+    if (this.tl.progress() >= 1) this.tl.restart();
+    else this.tl.play();
+    this.isPlaying = true;
+    this.updateUI();
+    this.startSync();
+  }
+
+  pause() {
+    if (!this.tl) return;
+    this.tl.pause();
+    this.isPlaying = false;
+    this.updateUI();
+    if (this.rafId) {
+      cancelAnimationFrame(this.rafId);
+      this.rafId = null;
+    }
+  }
+
+  step(delta) {
+    if (!this.tl) return;
+    this.tl.pause();
+    this.isPlaying = false;
+    this.tl.progress(Math.max(0, Math.min(1, this.tl.progress() + delta)));
+    this.updateUI();
+    this.scrubber.value = this.tl.progress();
+  }
+
+  setSpeed(speed) {
+    if (this.tl) this.tl.timeScale(speed);
+    this.speedBtns.forEach((btn) => {
+      btn.classList.toggle(
+        "is-active",
+        parseFloat(btn.dataset.speed) === speed,
+      );
+    });
+  }
+
+  scrub(progress) {
+    if (!this.tl) return;
+    this.tl.pause();
+    this.isPlaying = false;
+    this.tl.progress(parseFloat(progress));
+    this.updateUI();
+  }
+
+  replay() {
+    if (!this.tl) return;
+    this.tl.restart();
+    this.isPlaying = true;
+    this.updateUI();
+    this.startSync();
+  }
+
+  updateUI() {
+    this.playBtn.innerHTML = this.isPlaying ? "&#9646;&#9646;" : "&#9654;";
+    this.playBtn.setAttribute("aria-label", this.isPlaying ? "Pause" : "Play");
+    this.stepBack.disabled = this.isPlaying;
+    this.stepFwd.disabled = this.isPlaying;
+    if (this.tl && this.labels.length) {
+      const i = Math.min(
+        Math.floor(this.tl.progress() * this.labels.length),
+        this.labels.length - 1,
+      );
+      this.statusEl.textContent = this.labels[i] || "";
+    }
+  }
+
+  startSync() {
+    const tick = () => {
+      this.scrubber.value = this.tl.progress();
+      this.updateUI();
+      if (this.tl.progress() >= 1) {
         this.isPlaying = false;
-        this.labels = [];
-        this.rafId = null;
-
-        // Bind to controls within this slide only
-        const q = (sel) => slideEl.querySelector(sel);
-        const qa = (sel) => slideEl.querySelectorAll(sel);
-
-        this.playBtn = q('[data-action="play"]');
-        this.stepBack = q('[data-action="step-back"]');
-        this.stepFwd = q('[data-action="step-fwd"]');
-        this.replayBtn = q('[data-action="replay"]');
-        this.scrubber = q('.pb-scrubber');
-        this.statusEl = q('.pb-status');
-        this.speedBtns = qa('.pb-speed-btn');
-
-        this.playBtn.addEventListener('click', () => this.togglePlay());
-        this.stepBack.addEventListener('click', () => this.step(-0.02));
-        this.stepFwd.addEventListener('click', () => this.step(0.02));
-        this.replayBtn.addEventListener('click', () => this.replay());
-        this.scrubber.addEventListener('input', () => this.scrub(this.scrubber.value));
-        this.speedBtns.forEach(btn => {
-            btn.addEventListener('click', () => this.setSpeed(parseFloat(btn.dataset.speed)));
-        });
-    }
-
-    setTimeline(tl, labels) {
-        if (this.rafId) cancelAnimationFrame(this.rafId);
-        if (this.tl) this.tl.pause();
-        this.tl = tl;
-        this.labels = labels || [];
-        this.isPlaying = false;
-        this.scrubber.value = 0;
         this.updateUI();
-    }
-
-    togglePlay() { this.isPlaying ? this.pause() : this.play(); }
-
-    play() {
-        if (!this.tl) return;
-        if (this.tl.progress() >= 1) this.tl.restart();
-        else this.tl.play();
-        this.isPlaying = true;
-        this.updateUI();
-        this.startSync();
-    }
-
-    pause() {
-        if (!this.tl) return;
-        this.tl.pause();
-        this.isPlaying = false;
-        this.updateUI();
-        if (this.rafId) { cancelAnimationFrame(this.rafId); this.rafId = null; }
-    }
-
-    step(delta) {
-        if (!this.tl) return;
-        this.tl.pause();
-        this.isPlaying = false;
-        this.tl.progress(Math.max(0, Math.min(1, this.tl.progress() + delta)));
-        this.updateUI();
-        this.scrubber.value = this.tl.progress();
-    }
-
-    setSpeed(speed) {
-        if (this.tl) this.tl.timeScale(speed);
-        this.speedBtns.forEach(btn => {
-            btn.classList.toggle('is-active', parseFloat(btn.dataset.speed) === speed);
-        });
-    }
-
-    scrub(progress) {
-        if (!this.tl) return;
-        this.tl.pause();
-        this.isPlaying = false;
-        this.tl.progress(parseFloat(progress));
-        this.updateUI();
-    }
-
-    replay() {
-        if (!this.tl) return;
-        this.tl.restart();
-        this.isPlaying = true;
-        this.updateUI();
-        this.startSync();
-    }
-
-    updateUI() {
-        this.playBtn.innerHTML = this.isPlaying ? '&#9646;&#9646;' : '&#9654;';
-        this.playBtn.setAttribute('aria-label', this.isPlaying ? 'Pause' : 'Play');
-        this.stepBack.disabled = this.isPlaying;
-        this.stepFwd.disabled = this.isPlaying;
-        if (this.tl && this.labels.length) {
-            const i = Math.min(
-                Math.floor(this.tl.progress() * this.labels.length),
-                this.labels.length - 1
-            );
-            this.statusEl.textContent = this.labels[i] || '';
-        }
-    }
-
-    startSync() {
-        const tick = () => {
-            this.scrubber.value = this.tl.progress();
-            this.updateUI();
-            if (this.tl.progress() >= 1) { this.isPlaying = false; this.updateUI(); return; }
-            if (this.isPlaying) this.rafId = requestAnimationFrame(tick);
-        };
-        this.rafId = requestAnimationFrame(tick);
-    }
+        return;
+      }
+      if (this.isPlaying) this.rafId = requestAnimationFrame(tick);
+    };
+    this.rafId = requestAnimationFrame(tick);
+  }
 }
 ```
 
@@ -694,13 +1024,13 @@ class PlaybackController {
 
 Use these 5 widget patterns for animated diagram slides. Each creates a GSAP timeline. Pick the widget that matches your content type.
 
-| Widget | Pattern | Best For |
-|--------|---------|----------|
-| Process Flow | Step-by-step boxes with arrows | Architecture, workflows, pipelines |
-| Comparison | Side-by-side with highlight | Before/after, option analysis |
-| Build-Up | Layered stacking diagram | "How it works", layer explanations |
-| Data Transform | Input -> Process -> Output | Data pipelines, API flows |
-| Math Function | Animated graph with moving point | Data/ML talks, metrics |
+| Widget         | Pattern                          | Best For                           |
+| -------------- | -------------------------------- | ---------------------------------- |
+| Process Flow   | Step-by-step boxes with arrows   | Architecture, workflows, pipelines |
+| Comparison     | Side-by-side with highlight      | Before/after, option analysis      |
+| Build-Up       | Layered stacking diagram         | "How it works", layer explanations |
+| Data Transform | Input -> Process -> Output       | Data pipelines, API flows          |
+| Math Function  | Animated graph with moving point | Data/ML talks, metrics             |
 
 **Usage**: Mark a slide with `data-animation="process-flow"` (or any widget name). Include the corresponding SVG in the slide. The `SlidePresentation` class initializes the matching widget timeline and wires it to the playback controls when the slide becomes visible.
 
@@ -717,27 +1047,27 @@ Use `var(--accent)` and `var(--text-primary)` instead of `var(--color-primary)` 
 
 // Widget factory — maps data-animation values to timeline creators
 const widgetFactory = {
-    'process-flow': createProcessFlowTimeline,
-    'comparison': createComparisonTimeline,
-    'build-up': createBuildUpTimeline,
-    'data-transform': createDataTransformTimeline,
-    'math-function': createMathFunctionTimeline,
+  "process-flow": createProcessFlowTimeline,
+  comparison: createComparisonTimeline,
+  "build-up": createBuildUpTimeline,
+  "data-transform": createDataTransformTimeline,
+  "math-function": createMathFunctionTimeline,
 };
 
 // In constructor:
 this.animatedSlides = new Map();
 this.slides.forEach((slide, i) => {
-    const type = slide.dataset.animation;
-    if (type && widgetFactory[type]) {
-        const { timeline, labels } = widgetFactory[type](slide);
-        const pc = new PlaybackController(slide);
-        pc.setTimeline(timeline, labels);
-        this.animatedSlides.set(i, pc);
-    }
+  const type = slide.dataset.animation;
+  if (type && widgetFactory[type]) {
+    const { timeline, labels } = widgetFactory[type](slide);
+    const pc = new PlaybackController(slide);
+    pc.setTimeline(timeline, labels);
+    this.animatedSlides.set(i, pc);
+  }
 });
 
 // In goToSlide() — pause previous, optionally auto-play new:
 if (this.animatedSlides.has(prevIndex)) {
-    this.animatedSlides.get(prevIndex).pause();
+  this.animatedSlides.get(prevIndex).pause();
 }
 ```
