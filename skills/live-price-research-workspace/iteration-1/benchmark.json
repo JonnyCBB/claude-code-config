@@ -1,0 +1,457 @@
+{
+  "metadata": {
+    "skill_name": "live-price-research",
+    "skill_path": "/Users/bethphipps/.claude/skills/live-price-research",
+    "executor_model": "claude-opus-5",
+    "analyzer_model": "claude-opus-5",
+    "timestamp": "2026-07-28T21:10:00Z",
+    "evals_run": [
+      0,
+      1,
+      2
+    ],
+    "runs_per_configuration": 1
+  },
+  "runs": [
+    {
+      "eval_id": 0,
+      "eval_name": "live-multi-provider-comparison",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 11,
+        "failed": 0,
+        "total": 11,
+        "time_seconds": 2174.8,
+        "tokens": 172459,
+        "tool_calls": 183,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Prices at least three different package providers",
+          "passed": true,
+          "evidence": "Priced Jet2, easyJet, loveholidays and TUI - four providers."
+        },
+        {
+          "text": "Builds an explicit inclusions comparison (bags, transfers) before ranking anything",
+          "passed": true,
+          "evidence": "Landed-cost table with explicit Hold bags / Transfers columns before the ranking."
+        },
+        {
+          "text": "Distinguishes headline price from landed total in the output itself",
+          "passed": true,
+          "evidence": "'Headline is what the site shouts at you; landed is what you'd pay'; separate columns."
+        },
+        {
+          "text": "Verifies loveholidays' exclusions from the site rather than assuming them",
+          "passed": true,
+          "evidence": "Entered checkout and quoted verbatim: '1 underseat bag per person (45x36x20cm)'; applied extras and watched total move 2277 -> 2582.94 -> 2633.94."
+        },
+        {
+          "text": "Uses a same-hotel comparison across providers for a true like-for-like",
+          "passed": true,
+          "evidence": "BlueBay Lanzarote priced across Jet2 2028 / easyJet 2247 / TUI 3343; LIVVO Morromar across loveholidays and TUI."
+        },
+        {
+          "text": "Reaches Jet2holidays and obtains an actual price",
+          "passed": true,
+          "evidence": "Jet2holidays Bluebay Lanzarote GBP 2,028 - independently corroborated by two separate peer sessions."
+        },
+        {
+          "text": "Recommends the genuinely cheapest landed option (Jet2, \u00a32,028)",
+          "passed": true,
+          "evidence": "Recommended Jet2 at GBP 2,028, the cheapest verified landed total."
+        },
+        {
+          "text": "Sweeps dates beyond the one given and finds a cheaper permitted alternative",
+          "passed": true,
+          "evidence": "Pulled the whole February calendar; identified Sun 14 Feb as GBP 720 cheaper on loveholidays with zero school days lost."
+        },
+        {
+          "text": "States gaps explicitly with retry information rather than guessing",
+          "passed": true,
+          "evidence": "Five gaps listed with specific retry steps (TUI sort order, TUI baggage kg, loveholidays BlueBay price, easyJet per-person wording, 14 Feb extras)."
+        },
+        {
+          "text": "Provides source URLs and a retrieval date",
+          "passed": true,
+          "evidence": "All four search URLs saved to the output file; retrieval date stated as 28 July 2026."
+        },
+        {
+          "text": "Notes that prices are volatile snapshots rather than firm quotes",
+          "passed": true,
+          "evidence": "'live snapshots taken on 28 July 2026. They move, sometimes within hours.'"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 0,
+      "eval_name": "live-multi-provider-comparison",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.7273,
+        "passed": 8,
+        "failed": 3,
+        "total": 11,
+        "time_seconds": 1116.2,
+        "tokens": 157743,
+        "tool_calls": 100,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Prices at least three different package providers",
+          "passed": true,
+          "evidence": "Priced easyJet, loveholidays and TUI - three providers."
+        },
+        {
+          "text": "Builds an explicit inclusions comparison (bags, transfers) before ranking anything",
+          "passed": true,
+          "evidence": "Landed table with Hold bags / Transfers columns."
+        },
+        {
+          "text": "Distinguishes headline price from landed total in the output itself",
+          "passed": true,
+          "evidence": "Headline vs landed total columns; 'that whole swing is bags and coach'."
+        },
+        {
+          "text": "Verifies loveholidays' exclusions from the site rather than assuming them",
+          "passed": true,
+          "evidence": "Confirmed GBP 2,633.94 on loveholidays' own checkout price breakdown."
+        },
+        {
+          "text": "Uses a same-hotel comparison across providers for a true like-for-like",
+          "passed": true,
+          "evidence": "BlueBay Lanzarote compared across easyJet and loveholidays."
+        },
+        {
+          "text": "Reaches Jet2holidays and obtains an actual price",
+          "passed": false,
+          "evidence": "FAILED. Own words: 'Jet2holidays not reached at all - no figure. It bundles 22kg plus transfers, so it's the one real remaining chance of beating easyJet. Worth 10 minutes.' Correctly identified the risk, ran out of budget before closing it."
+        },
+        {
+          "text": "Recommends the genuinely cheapest landed option (Jet2, \u00a32,028)",
+          "passed": false,
+          "evidence": "Recommended easyJet at GBP 2,247. Jet2 was GBP 2,028 - the recommendation is GBP 219 more expensive than the true cheapest."
+        },
+        {
+          "text": "Sweeps dates beyond the one given and finds a cheaper permitted alternative",
+          "passed": true,
+          "evidence": "Swept the month; found Sun 14 Feb saves GBP 720 and noted the date beats the provider choice."
+        },
+        {
+          "text": "States gaps explicitly with retry information rather than guessing",
+          "passed": true,
+          "evidence": "Gaps stated with retry URLs; explicitly flagged Jet2 as unreached."
+        },
+        {
+          "text": "Provides source URLs and a retrieval date",
+          "passed": true,
+          "evidence": "Retrieval date stated; retry URLs in the saved file."
+        },
+        {
+          "text": "Notes that prices are volatile snapshots rather than firm quotes",
+          "passed": false,
+          "evidence": "Gives a retrieval date but does not frame prices as volatile snapshots."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "eval_name": "inherited-option-grid",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 11,
+        "failed": 0,
+        "total": 11,
+        "time_seconds": 238.0,
+        "tokens": 52225,
+        "tool_calls": 11,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Identifies that the five dates in the tracker are only a subset of what the booking rules permit",
+          "passed": true,
+          "evidence": "'Your rules permit 16 single days... 32 single-day options, plus 24 two-day options. The grid priced 5.'"
+        },
+        {
+          "text": "Notes that Wednesday and Thursday dates are permitted by the rules but absent from the tracker",
+          "passed": true,
+          "evidence": "'There is not a single Kingsgate Tue/Wed/Thu row in the grid.'"
+        },
+        {
+          "text": "Notes that a two-day offsite is permitted by the rules but has no row in the tracker",
+          "passed": true,
+          "evidence": "Two-day options costed and tabled."
+        },
+        {
+          "text": "Identifies the 5% two-day discount at Kingsgate House as a saving the tracker cannot express",
+          "passed": true,
+          "evidence": "Kingsgate two-day GBP 2,644.80 with the 5% discount applied."
+        },
+        {
+          "text": "Computes Kingsgate at \u00a31,392 per day for 24 delegates (24 x \u00a358)",
+          "passed": true,
+          "evidence": "GBP 1,392 stated for Tue/Wed/Thu."
+        },
+        {
+          "text": "Applies the +\u00a36pp Monday surcharge, giving \u00a31,536 for the three listed Monday options",
+          "passed": true,
+          "evidence": "GBP 1,536 for the three listed Mondays."
+        },
+        {
+          "text": "Computes The Wharf Rooms fully loaded at roughly \u00a32,017 per day, not the \u00a3950 headline",
+          "passed": true,
+          "evidence": "GBP 2,017/day broken down: 950 + 275 AV + 576 lunch + 216 refreshments."
+        },
+        {
+          "text": "States explicitly that Wharf's \u00a3950 room-hire headline is not comparable to Kingsgate's inclusive day rate",
+          "passed": true,
+          "evidence": "'the cheapest headline and the cheapest real price point at different venues'."
+        },
+        {
+          "text": "Does NOT invent or estimate a firm price for Alderman's Court; treats it as an open gap",
+          "passed": true,
+          "evidence": "Left Alderman's Court blank; 'I've left its row blank rather than guess'."
+        },
+        {
+          "text": "Recommends a Tuesday/Wednesday/Thursday Kingsgate date over any of the listed Mondays",
+          "passed": true,
+          "evidence": "Recommended Wed 10 March at GBP 1,392."
+        },
+        {
+          "text": "Mentions the \u00a34,000 director sign-off threshold in the context of the recommended option",
+          "passed": true,
+          "evidence": "Noted only a two-day Wharf booking breaches the GBP 4,000 threshold."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "eval_name": "inherited-option-grid",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 11,
+        "failed": 0,
+        "total": 11,
+        "time_seconds": 182.9,
+        "tokens": 43593,
+        "tool_calls": 9,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Identifies that the five dates in the tracker are only a subset of what the booking rules permit",
+          "passed": true,
+          "evidence": "'the grid only samples Mondays and Tuesdays, while the rules allow any Mon-Thu'."
+        },
+        {
+          "text": "Notes that Wednesday and Thursday dates are permitted by the rules but absent from the tracker",
+          "passed": true,
+          "evidence": "Recommends any Tue/Wed/Thu, noting none are in the grid."
+        },
+        {
+          "text": "Notes that a two-day offsite is permitted by the rules but has no row in the tracker",
+          "passed": true,
+          "evidence": "Two-day option presented."
+        },
+        {
+          "text": "Identifies the 5% two-day discount at Kingsgate House as a saving the tracker cannot express",
+          "passed": true,
+          "evidence": "GBP 2,644.80 two-day with 5% off."
+        },
+        {
+          "text": "Computes Kingsgate at \u00a31,392 per day for 24 delegates (24 x \u00a358)",
+          "passed": true,
+          "evidence": "GBP 1,392."
+        },
+        {
+          "text": "Applies the +\u00a36pp Monday surcharge, giving \u00a31,536 for the three listed Monday options",
+          "passed": true,
+          "evidence": "GBP 1,536 Mondays."
+        },
+        {
+          "text": "Computes The Wharf Rooms fully loaded at roughly \u00a32,017 per day, not the \u00a3950 headline",
+          "passed": true,
+          "evidence": "GBP 2,017 with full breakdown."
+        },
+        {
+          "text": "States explicitly that Wharf's \u00a3950 room-hire headline is not comparable to Kingsgate's inclusive day rate",
+          "passed": true,
+          "evidence": "'Wharf bundles nothing' with itemised comparison."
+        },
+        {
+          "text": "Does NOT invent or estimate a firm price for Alderman's Court; treats it as an open gap",
+          "passed": true,
+          "evidence": "'I could not price Alderman's Court, and I haven't guessed.'"
+        },
+        {
+          "text": "Recommends a Tuesday/Wednesday/Thursday Kingsgate date over any of the listed Mondays",
+          "passed": true,
+          "evidence": "Recommended Kingsgate any Tue/Wed/Thu."
+        },
+        {
+          "text": "Mentions the \u00a34,000 director sign-off threshold in the context of the recommended option",
+          "passed": true,
+          "evidence": "Two-day Wharf flagged as breaching GBP 4,000 by GBP 34."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "eval_name": "sanity-check-flawed-comparison",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 8,
+        "failed": 0,
+        "total": 8,
+        "time_seconds": 190.9,
+        "tokens": 49631,
+        "tool_calls": 9,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Identifies that the three supplier prices are not like-for-like",
+          "passed": true,
+          "evidence": "'the three numbers don't measure the same thing'."
+        },
+        {
+          "text": "Specifies that Vantage excludes consumables, installation and end-of-term disposal which the others include",
+          "passed": true,
+          "evidence": "Table with 'Is this a landed total?' row; Vantage marked No."
+        },
+        {
+          "text": "States that the cheapest-headline ranking is therefore unsafe and the recommendation is not yet supported",
+          "passed": true,
+          "evidence": "'My expectation is that equalising scope flips the recommendation to Norbury'."
+        },
+        {
+          "text": "Flags that Castleford's figure is an estimate and should not sit in a ranked table as if it were a quote",
+          "passed": true,
+          "evidence": "'sitting in a price column with a rank beside it while the caveat sits eight lines below'."
+        },
+        {
+          "text": "Flags that only three of the six approved framework suppliers were approached",
+          "passed": true,
+          "evidence": "'Six approved suppliers, three approached'; 17% observed spread."
+        },
+        {
+          "text": "Notes the absence of dates or sources on the figures",
+          "passed": true,
+          "evidence": "'No quote reference, date, or contact on any figure'."
+        },
+        {
+          "text": "Does NOT simply endorse the existing recommendation to proceed with Vantage",
+          "passed": true,
+          "evidence": "'I wouldn't send this to the board as it stands.'"
+        },
+        {
+          "text": "Recommends obtaining the missing information before the comparison goes to the board",
+          "passed": true,
+          "evidence": "Gates-first next actions listed before price work."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "eval_name": "sanity-check-flawed-comparison",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 8,
+        "failed": 0,
+        "total": 8,
+        "time_seconds": 151.1,
+        "tokens": 40871,
+        "tool_calls": 5,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Identifies that the three supplier prices are not like-for-like",
+          "passed": true,
+          "evidence": "'the table ranks three different products by price'."
+        },
+        {
+          "text": "Specifies that Vantage excludes consumables, installation and end-of-term disposal which the others include",
+          "passed": true,
+          "evidence": "Full inclusions table; consumables/installation/disposal marked No for Vantage."
+        },
+        {
+          "text": "States that the cheapest-headline ranking is therefore unsafe and the recommendation is not yet supported",
+          "passed": true,
+          "evidence": "'Norbury is very likely the cheaper option, and the comparison says the opposite'."
+        },
+        {
+          "text": "Flags that Castleford's figure is an estimate and should not sit in a ranked table as if it were a quote",
+          "passed": true,
+          "evidence": "'The direction of error is one-way'; 14.5% discount would flip the ranking."
+        },
+        {
+          "text": "Flags that only three of the six approved framework suppliers were approached",
+          "passed": true,
+          "evidence": "'Three were contacted... 50% of the permitted field'."
+        },
+        {
+          "text": "Notes the absence of dates or sources on the figures",
+          "passed": true,
+          "evidence": "'No dates anywhere. Quotes expire'."
+        },
+        {
+          "text": "Does NOT simply endorse the existing recommendation to proceed with Vantage",
+          "passed": true,
+          "evidence": "'I wouldn't send this to the board as it stands.'"
+        },
+        {
+          "text": "Recommends obtaining the missing information before the comparison goes to the board",
+          "passed": true,
+          "evidence": "Seven-step 'what I'd do before this goes to the board'."
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": 1.0,
+      "pass_rate_stddev": 0.0,
+      "time_seconds": 867.9,
+      "tokens": 91438
+    },
+    "without_skill": {
+      "pass_rate": 0.9091,
+      "pass_rate_stddev": 0.1574,
+      "time_seconds": 483.4,
+      "tokens": 80735
+    },
+    "delta": {
+      "pass_rate": "+0.09",
+      "time_seconds": "+384.5",
+      "tokens": "+10702"
+    }
+  },
+  "notes": [
+    "Only the LIVE eval discriminated. Both fixture evals scored identically (11/11 and 8/8) in both configurations - the traps are visible when all the evidence sits in three tidy files, so they test reasoning rather than research discipline.",
+    "The live eval discriminated decisively and on the assertion that mattered: the baseline never reached Jet2holidays and recommended easyJet at GBP 2,247. Jet2 was GBP 2,028. The skill's 'one recon pass across ALL providers before depth' is the instruction that produced the difference.",
+    "The baseline correctly predicted its own failure: 'Jet2holidays not reached at all... it's the one real remaining chance of beating easyJet. Worth 10 minutes.' It identified the risk and ran out of budget before closing it.",
+    "Jet2 = GBP 2,028 was independently corroborated by two separate peer Claude sessions, so the with-skill answer is externally verified rather than self-reported.",
+    "Cost of the win: +9% tokens and roughly double the wall-clock on the live task (36 min vs 19 min). On a low-stakes purchase that ratio would not be worth it - the skill should probably say so."
+  ]
+}

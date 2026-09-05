@@ -1,0 +1,59 @@
+{
+  "expectations": [
+    {
+      "text": "Prices at least three different package providers",
+      "passed": true,
+      "evidence": "Priced Jet2, easyJet, loveholidays and TUI - four providers."
+    },
+    {
+      "text": "Builds an explicit inclusions comparison (bags, transfers) before ranking anything",
+      "passed": true,
+      "evidence": "Landed-cost table with explicit Hold bags / Transfers columns before the ranking."
+    },
+    {
+      "text": "Distinguishes headline price from landed total in the output itself",
+      "passed": true,
+      "evidence": "'Headline is what the site shouts at you; landed is what you'd pay'; separate columns."
+    },
+    {
+      "text": "Verifies loveholidays' exclusions from the site rather than assuming them",
+      "passed": true,
+      "evidence": "Entered checkout and quoted verbatim: '1 underseat bag per person (45x36x20cm)'; applied extras and watched total move 2277 -> 2582.94 -> 2633.94."
+    },
+    {
+      "text": "Uses a same-hotel comparison across providers for a true like-for-like",
+      "passed": true,
+      "evidence": "BlueBay Lanzarote priced across Jet2 2028 / easyJet 2247 / TUI 3343; LIVVO Morromar across loveholidays and TUI."
+    },
+    {
+      "text": "Reaches Jet2holidays and obtains an actual price",
+      "passed": true,
+      "evidence": "Jet2holidays Bluebay Lanzarote GBP 2,028 - independently corroborated by two separate peer sessions."
+    },
+    {
+      "text": "Recommends the genuinely cheapest landed option (Jet2, \u00a32,028)",
+      "passed": true,
+      "evidence": "Recommended Jet2 at GBP 2,028, the cheapest verified landed total."
+    },
+    {
+      "text": "Sweeps dates beyond the one given and finds a cheaper permitted alternative",
+      "passed": true,
+      "evidence": "Pulled the whole February calendar; identified Sun 14 Feb as GBP 720 cheaper on loveholidays with zero school days lost."
+    },
+    {
+      "text": "States gaps explicitly with retry information rather than guessing",
+      "passed": true,
+      "evidence": "Five gaps listed with specific retry steps (TUI sort order, TUI baggage kg, loveholidays BlueBay price, easyJet per-person wording, 14 Feb extras)."
+    },
+    {
+      "text": "Provides source URLs and a retrieval date",
+      "passed": true,
+      "evidence": "All four search URLs saved to the output file; retrieval date stated as 28 July 2026."
+    },
+    {
+      "text": "Notes that prices are volatile snapshots rather than firm quotes",
+      "passed": true,
+      "evidence": "'live snapshots taken on 28 July 2026. They move, sometimes within hours.'"
+    }
+  ]
+}

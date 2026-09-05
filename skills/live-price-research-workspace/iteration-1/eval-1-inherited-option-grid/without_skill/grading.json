@@ -1,0 +1,59 @@
+{
+  "expectations": [
+    {
+      "text": "Identifies that the five dates in the tracker are only a subset of what the booking rules permit",
+      "passed": true,
+      "evidence": "'the grid only samples Mondays and Tuesdays, while the rules allow any Mon-Thu'."
+    },
+    {
+      "text": "Notes that Wednesday and Thursday dates are permitted by the rules but absent from the tracker",
+      "passed": true,
+      "evidence": "Recommends any Tue/Wed/Thu, noting none are in the grid."
+    },
+    {
+      "text": "Notes that a two-day offsite is permitted by the rules but has no row in the tracker",
+      "passed": true,
+      "evidence": "Two-day option presented."
+    },
+    {
+      "text": "Identifies the 5% two-day discount at Kingsgate House as a saving the tracker cannot express",
+      "passed": true,
+      "evidence": "GBP 2,644.80 two-day with 5% off."
+    },
+    {
+      "text": "Computes Kingsgate at \u00a31,392 per day for 24 delegates (24 x \u00a358)",
+      "passed": true,
+      "evidence": "GBP 1,392."
+    },
+    {
+      "text": "Applies the +\u00a36pp Monday surcharge, giving \u00a31,536 for the three listed Monday options",
+      "passed": true,
+      "evidence": "GBP 1,536 Mondays."
+    },
+    {
+      "text": "Computes The Wharf Rooms fully loaded at roughly \u00a32,017 per day, not the \u00a3950 headline",
+      "passed": true,
+      "evidence": "GBP 2,017 with full breakdown."
+    },
+    {
+      "text": "States explicitly that Wharf's \u00a3950 room-hire headline is not comparable to Kingsgate's inclusive day rate",
+      "passed": true,
+      "evidence": "'Wharf bundles nothing' with itemised comparison."
+    },
+    {
+      "text": "Does NOT invent or estimate a firm price for Alderman's Court; treats it as an open gap",
+      "passed": true,
+      "evidence": "'I could not price Alderman's Court, and I haven't guessed.'"
+    },
+    {
+      "text": "Recommends a Tuesday/Wednesday/Thursday Kingsgate date over any of the listed Mondays",
+      "passed": true,
+      "evidence": "Recommended Kingsgate any Tue/Wed/Thu."
+    },
+    {
+      "text": "Mentions the \u00a34,000 director sign-off threshold in the context of the recommended option",
+      "passed": true,
+      "evidence": "Two-day Wharf flagged as breaching GBP 4,000 by GBP 34."
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "eval_id": 0,
+  "eval_name": "live-multi-provider-comparison",
+  "prompt": "We're thinking about a week in Lanzarote over February half term 2027 - 2 adults and one child who'll be 7. All inclusive, flying from Gatwick, leaving Sat 13 Feb for 7 nights. Can you find out which package provider is genuinely cheapest all-in? Check at least three. I want a proper answer I can act on, not a list of headline prices - last time I got caught out because one of them didn't include bags.",
+  "assertions": [
+    "Prices at least three different package providers",
+    "Builds an explicit inclusions comparison (bags, transfers) before ranking anything",
+    "Distinguishes headline price from landed total in the output itself",
+    "Verifies loveholidays' exclusions from the site rather than assuming them",
+    "Uses a same-hotel comparison across providers for a true like-for-like",
+    "Reaches Jet2holidays and obtains an actual price",
+    "Recommends the genuinely cheapest landed option (Jet2, \u00a32,028)",
+    "Sweeps dates beyond the one given and finds a cheaper permitted alternative",
+    "States gaps explicitly with retry information rather than guessing",
+    "Provides source URLs and a retrieval date",
+    "Notes that prices are volatile snapshots rather than firm quotes"
+  ]
+}

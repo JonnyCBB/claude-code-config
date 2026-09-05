@@ -1,0 +1,18 @@
+{
+  "eval_id": 1,
+  "eval_name": "inherited-option-grid",
+  "prompt": "I've started a comparison sheet for our team offsite venue \u2014 can you fill in the missing prices and tell me which date works out best? The booking rules are in the same folder.",
+  "assertions": [
+    "Identifies that the five dates in the tracker are only a subset of what the booking rules permit",
+    "Notes that Wednesday and Thursday dates are permitted by the rules but absent from the tracker",
+    "Notes that a two-day offsite is permitted by the rules but has no row in the tracker",
+    "Identifies the 5% two-day discount at Kingsgate House as a saving the tracker cannot express",
+    "Computes Kingsgate at \u00a31,392 per day for 24 delegates (24 x \u00a358)",
+    "Applies the +\u00a36pp Monday surcharge, giving \u00a31,536 for the three listed Monday options",
+    "Computes The Wharf Rooms fully loaded at roughly \u00a32,017 per day, not the \u00a3950 headline",
+    "States explicitly that Wharf's \u00a3950 room-hire headline is not comparable to Kingsgate's inclusive day rate",
+    "Does NOT invent or estimate a firm price for Alderman's Court; treats it as an open gap",
+    "Recommends a Tuesday/Wednesday/Thursday Kingsgate date over any of the listed Mondays",
+    "Mentions the \u00a34,000 director sign-off threshold in the context of the recommended option"
+  ]
+}

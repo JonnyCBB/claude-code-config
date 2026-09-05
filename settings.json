@@ -1,7 +1,172 @@
 {
+  "alwaysThinkingEnabled": true,
+  "effortLevel": "high",
+  "enabledPlugins": {
+    "pyright-lsp@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": false,
+    "context7@claude-plugins-official": true,
+    "skill-creator@claude-plugins-official": true,
+    "frontend-design@claude-plugins-official": true,
+    "crit@crit": true,
+    "feature-dev@claude-plugins-official": true,
+    "eng-utils@jbb-claude-code-plugins": true,
+    "jiffy-toolkit@jbb-claude-code-plugins": true,
+    "jbb-feature-dev@jbb-claude-code-plugins": true,
+    "weaviate@weaviate-plugins": true
+  },
   "env": {
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   },
+  "extraKnownMarketplaces": {
+    "crit": {
+      "source": {
+        "source": "github",
+        "repo": "tomasz-tomczyk/crit"
+      }
+    },
+    "jbb-claude-code-plugins": {
+      "source": {
+        "source": "git",
+        "url": "https://github.com/JonnyCBB/claude-code-config.git"
+      },
+      "autoUpdate": true
+    },
+    "weaviate-plugins": {
+      "source": {
+        "source": "github",
+        "repo": "weaviate/agent-skills"
+      }
+    }
+  },
+  "hooks": {
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/notify.sh 'Claude Code is waiting for your input'"
+          }
+        ]
+      },
+      {
+        "matcher": "permission_prompt|elicitation_dialog",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "agent-deck hook-handler",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "agent-deck hook-handler"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/auto-format.sh"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "agent-deck hook-handler"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/security-block.py"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'CMD=$(jq -r \".tool_input.command\" \u003c /dev/stdin); if echo \"$CMD\" | grep -q \"git commit\"; then echo \"{\\\"additionalContext\\\": \\\"Before committing, ensure tests pass and code is formatted.\\\"}\"; fi'"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "agent-deck hook-handler",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/session-context.sh"
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/sync-plugins.sh"
+          },
+          {
+            "type": "command",
+            "command": "agent-deck hook-handler",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/notify.sh 'Claude Code has stopped'"
+          },
+          {
+            "type": "command",
+            "command": "agent-deck hook-handler"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "agent-deck hook-handler",
+            "async": true
+          }
+        ]
+      }
+    ]
+  },
+  "model": "opus[1m]",
   "permissions": {
     "allow": [
       "Write",
@@ -58,113 +223,9 @@
     "deny": [],
     "ask": []
   },
-  "model": "opus[1m]",
-  "hooks": {
-    "Notification": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/hooks/notify.sh 'Claude Code is waiting for your input'"
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/hooks/auto-format.sh"
-          }
-        ]
-      }
-    ],
-    "PreToolUse": [
-      {
-        "matcher": "Bash|Edit|Write|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 ~/.claude/hooks/security-block.py"
-          }
-        ]
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash -c 'CMD=$(jq -r \".tool_input.command\" < /dev/stdin); if echo \"$CMD\" | grep -q \"git commit\"; then echo \"{\\\"additionalContext\\\": \\\"Before committing, ensure tests pass and code is formatted.\\\"}\"; fi'"
-          }
-        ]
-      }
-    ],
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/hooks/session-context.sh"
-          },
-          {
-            "type": "command",
-            "command": "~/.claude/hooks/sync-plugins.sh"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/hooks/notify.sh 'Claude Code has stopped'"
-          }
-        ]
-      }
-    ]
-  },
+  "skipDangerousModePermissionPrompt": true,
   "statusLine": {
     "type": "command",
     "command": "~/.claude/statusline.sh"
-  },
-  "enabledPlugins": {
-    "pyright-lsp@claude-plugins-official": true,
-    "typescript-lsp@claude-plugins-official": false,
-    "context7@claude-plugins-official": true,
-    "skill-creator@claude-plugins-official": true,
-    "frontend-design@claude-plugins-official": true,
-    "crit@crit": true,
-    "feature-dev@claude-plugins-official": true,
-    "eng-utils@jbb-claude-code-plugins": true,
-    "jiffy-toolkit@jbb-claude-code-plugins": true,
-    "jbb-feature-dev@jbb-claude-code-plugins": true,
-    "weaviate@weaviate-plugins": true
-  },
-  "extraKnownMarketplaces": {
-    "crit": {
-      "source": {
-        "source": "github",
-        "repo": "tomasz-tomczyk/crit"
-      }
-    },
-    "jbb-claude-code-plugins": {
-      "source": {
-        "source": "git",
-        "url": "https://github.com/JonnyCBB/claude-code-config.git"
-      },
-      "autoUpdate": true
-    },
-    "weaviate-plugins": {
-      "source": {
-        "source": "github",
-        "repo": "weaviate/agent-skills"
-      }
-    }
-  },
-  "alwaysThinkingEnabled": true,
-  "effortLevel": "high",
-  "skipDangerousModePermissionPrompt": true
+  }
 }
