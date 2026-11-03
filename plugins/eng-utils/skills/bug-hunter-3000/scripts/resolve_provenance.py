@@ -18,8 +18,8 @@ from "the agent forgot".
 a name and an email for free, and a report that prints them next to the word
 "bug" reads as an accusation however it is worded. The pull request link reaches
 the same person in one click for a reader who genuinely needs them, without the
-artifact itself attributing fault. Squad ownership was considered and dropped for
-the same reason, plus a second one: ownership moves, so a squad resolved today is
+artifact itself attributing fault. Team ownership was considered and dropped for
+the same reason, plus a second one: ownership moves, so a team resolved today is
 a claim about now attached to a commit from two years ago.
 
 **Blame is pinned to `repo.ref`, not to HEAD.** The record's line numbers were
@@ -47,8 +47,8 @@ from typing import Final
 _SITE: Final[re.Pattern[str]] = re.compile(r"^(?P<path>.+):(?P<start>\d+)(?:-\d+)?$")
 
 # Two pull-request reference forms appear in this monorepo's history and both
-# resolve on the enterprise host. `(#141416)` is a same-repo reference written by
-# the monorepo's own merge tooling. `(search-platform/search-influence#319)` is a
+# resolve on the repository host. `(#141416)` is a same-repo reference written by
+# the monorepo's own merge tooling. `(feed-platform/feed-ranker#319)` is a
 # cross-repo reference preserved from before that component migrated in, and it
 # points at a repository that still exists. Handling only the first form silently
 # drops the older half of the history, which is exactly the half where a reader

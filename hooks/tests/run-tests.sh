@@ -14,7 +14,7 @@
 #      vacuous while still looking green.
 #   2. EXPECT_BOOTSTRAP_RED=1 makes the bootstrap module fail on purpose, which
 #      must produce a non-zero exit. That proves this runner can report a
-#      failure at all. Precedent: elicit-requirements-friendly/tests/verify-skill.sh.
+#      failure at all.
 
 set -uo pipefail
 TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

@@ -3,7 +3,7 @@
 # When plugins are installed via marketplace, Claude Code copies them to cache.
 # This hook replaces cache dirs with symlinks so edits are reflected immediately.
 #
-# FIXED 2026-08-20 (jbrooksbartlett-dbzg). The previous version picked ONE version
+# FIXED 2026-08-20 (hq-dbzg). The previous version picked ONE version
 # directory per plugin with `find ... | head -1` and only converted it when it was
 # not already a symlink. On this machine that returned the stale `0.3.0` symlink,
 # which satisfied the guard, so the hook exited having done nothing -- and the

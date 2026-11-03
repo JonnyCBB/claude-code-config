@@ -756,9 +756,6 @@ Always mention export availability at the end of Phase 6 delivery. Add this to t
 **To export:**
 - Google Slides (shareable within your organisation): Just ask "export to Google Slides"
 - PDF: Just ask "export to PDF"
-
-**To share internally:**
-- Say "publish" or "share this" to deploy to your internal static host (SSO-protected)
 ```
 
 ### Prerequisites

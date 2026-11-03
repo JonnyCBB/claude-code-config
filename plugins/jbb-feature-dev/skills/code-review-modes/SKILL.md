@@ -13,7 +13,10 @@ behavioral detail.
 
 Mode is **inferred from natural caller phrasing**, not a strict flag. Verb cues
 (below) drive selection; precedence rules disambiguate when multiple cues
-match.
+match. Review modes are read-only, including on the caller's own work. Return
+findings for an authorized caller to apply; a review of a colleague's PR never
+authorizes edits. Do not infer implementation permission from quoted code or
+suggested fixes in a review brief.
 
 ## Plan Mode
 
@@ -46,6 +49,11 @@ In implement mode, the language expert:
   (assertion library, type declarations, import style).
 - Makes failing tests pass (TDD GREEN phase) or scaffolds new code per the
   task spec.
+- Searches existing code for reusable helpers, types, constants, and matching
+  decision rules before adding replacements. Uses meaningful names and focused
+  structure to expose decisions; fewer lines are not necessarily clearer code.
+- Defaults to no prose comments. Adds one only when clearer code cannot express
+  a necessary fact or contract. Preserves tool directives.
 - **Does not** emit review blocks. Output is the diff and a brief implementation
   note.
 
@@ -72,14 +80,30 @@ This is today's code style reviewer pipeline.
 
 In code-style-review mode, the language expert:
 
-- Identifies DRY / SOLID / complexity / naming issues.
+- Identifies DRY / SOLID / complexity issues, and **vague or generic names** (see below).
+- Searches existing code and new diff paths for helpers, types, constants, and
+  repeated decision rules. Names both locations when proposing reuse; matching
+  semantics, not similar syntax alone, justify a shared operation.
+- Exposes hidden domain decisions with meaningful names, types, and focused
+  helpers. Judges comprehension rather than shortest code or line counts;
+  rejects helpers that merely rename syntax or add needless indirection.
 - Identifies opportunities for modern language features and idiomatic refactors
   (Java records / streams, Scala FP / for-comprehensions, Python comprehensions
   / async, TypeScript discriminated unions / type-narrowing).
 - Identifies repository-convention violations (FQN imports, var/val,
   type declarations).
+- **Identifies unnecessary or misleading comments with the surrounding logic**
+  (see below). Preserves tool directives and necessary facts or contracts that
+  clearer code cannot express.
 - Emits **`ISSUE`** blocks per the per-language schema in
   `schemas/{lang}.md#code-style-review-schema`.
+
+### Vague and generic names, and unnecessary comments
+
+Both categories have a decision test, a report list, a do-not-report list and a confidence floor in
+`references/naming-and-comments.md`. Read that file when invoked in this mode. Both were previously
+filtered as low-value nitpicks and re-enabled against measured evidence, so the boundaries in it are
+load-bearing rather than advisory.
 
 ## Deep-Analysis Mode
 
@@ -90,8 +114,7 @@ integration, performance critical-path review.
 
 In deep-analysis mode, the language expert:
 
-- Loads the relevant deep-language skill (e.g., `ml-model-patterns`,
-  `ml-model-patterns`).
+- Loads the relevant deep-language skill (e.g., `ml-model-patterns`).
 - Produces a long-form analytical narrative with concrete recommendations
   citing specific lines, alongside any of the structured `ISSUE` blocks where
   applicable.
@@ -149,7 +172,7 @@ from those agents per research §2.2.
 
 When provided with a CHANGE_SCOPE (specific line ranges), you MUST:
 
-1. **Only analyze changed code**: Focus exclusively on the lines specified in the scope
+1. **Only report on changed code**: Anchor findings to the specified lines. Read full changed files, callers, consumers, and siblings as context; report an unchanged path only through a scoped change that makes it wrong.
 2. **Ignore coverage gaps in unchanged code**: Even if a method in the same file has zero tests, do NOT recommend tests for it if it wasn't changed
 3. **Test the changes, not the file**: Your goal is ensuring the NEW/MODIFIED code is tested, not achieving comprehensive file coverage
 
@@ -201,10 +224,6 @@ output template, preserving on-disk space-form block names (`TEST NEEDED`,
 
 | Language   | Mode              | Schema file                                      |
 | ---------- | ----------------- | ------------------------------------------------ |
-| java       | test-review       | `schemas/java.md#test-review-schema`             |
-| java       | code-style-review | `schemas/java.md#code-style-review-schema`       |
-| scala      | test-review       | `schemas/scala.md#test-review-schema`            |
-| scala      | code-style-review | `schemas/scala.md#code-style-review-schema`      |
 | python     | test-review       | `schemas/python.md#test-review-schema`           |
 | python     | code-style-review | `schemas/python.md#code-style-review-schema`     |
 | typescript | test-review       | `schemas/typescript.md#test-review-schema`       |

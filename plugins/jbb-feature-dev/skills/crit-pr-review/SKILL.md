@@ -151,7 +151,7 @@ Build a JSON array for `crit comment --json`. Group root comments and their repl
   comments are injected (need the crit ID of the parent first)
 
 For review-level comments from `/pulls/{pr}/reviews` where `body` is non-empty and
-`user.login` is not a bot (bot accounts end with `[bot]`, e.g., `gosling[bot]`):
+`user.login` is not a bot (bot accounts end with `[bot]`, e.g., `dependabot[bot]`):
 
 ```json
 { "body": "<review body>", "scope": "review", "author": "<user.login>" }
@@ -261,7 +261,7 @@ Read and apply `${CLAUDE_PLUGIN_ROOT}/skills/code-review/references/comment-form
 for severity-to-label mapping and tone rules. Key points:
 
 - CRITICAL/HIGH -> `issue (blocking):`, MEDIUM -> `suggestion (non-blocking):`, LOW/ENHANCEMENT -> `nit (non-blocking):`
-- repo-rules-reviewer findings: preserve rule attribution ("Per your GOSLING.md: ...")
+- repo-rules-reviewer findings: preserve rule attribution ("Per your CLAUDE.md: ...")
 - Include at least one `praise:` comment from the review doc's Highlights section
 
 ### Inject Claude's comments

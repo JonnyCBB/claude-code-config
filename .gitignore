@@ -64,3 +64,8 @@ __pycache__/
 
 # Bug-hunt eval run artifacts (definitions in evals/*.json are tracked)
 **/evals/iteration-*/
+
+# Runtime, synced, and log artifacts
+skills/.trash/
+skills/synced/
+*.log

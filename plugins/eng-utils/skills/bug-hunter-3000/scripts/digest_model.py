@@ -10,8 +10,8 @@ well-formed.
 
 The verdict vocabulary here is the reader-facing one. The ten internal
 dispositions never reach the digest -- see
-references/behavior-dossier-and-verdict-schema.md section 5 for the schema this
-translates from, and references/run-record-schema.md for the input contract.
+references/verdicts-and-bands.md section 3 for the schema this
+translates from, and references/run-record.md for the input contract.
 
 Usage:
     python3 digest_model.py < run_record.json      # normalised JSON on stdout
@@ -27,12 +27,14 @@ only the last command's status, so a partial payload here would be rendered and
 written as though the run had succeeded.
 """
 
+import hashlib
 import json
 import re
 import sys
 from dataclasses import asdict, dataclass
 from enum import Enum
-from typing import Callable, Final
+from types import MappingProxyType
+from typing import Callable, Final, Mapping
 
 
 class FindingState(Enum):
@@ -72,12 +74,17 @@ class Verdict(Enum):
 
 
 class Band(Enum):
-    """Urgency, and the digest's primary grouping. Rendered in this order."""
+    """How closely to read a finding. The digest's primary grouping, in this order.
 
-    ACT_NOW = "Act Now"
-    IMPORTANT = "Important"
-    LOW = "Low"
-    NOT_CHECKED = "Not checked"
+    These name the READER'S effort, not an action on the code. `Act Now / Important / Low` was measured training readers to ignore the top band: runs produced
+    several reports and very few fixes, and an "act now" nobody acts on devalues
+    the next one. The final judgement is a human's, so the band sizes the reading.
+    """
+
+    READ_CLOSELY = "Read closely"
+    WORTH_A_LOOK = "Worth a look"
+    SKIM = "Skim"
+    NOT_TRIAGED = "Not triaged"
 
 
 _VERDICT_BY_STATE: dict[FindingState, Verdict] = {
@@ -111,7 +118,7 @@ _SHA40 = re.compile(r"[0-9a-f]{40}")
 _EFFORTS = frozenset({"S", "M", "L"})
 
 # Tier is a closed set so that the fold rule is enforceable rather than
-# advisory. `scope-strategies.md` section 5 forbids folding `UNTIERED` into Tier 4
+# advisory. `scope-and-safety.md` section 5 forbids folding `UNTIERED` into Tier 4
 # -- but while this field validated as free text, nothing stopped a run doing
 # exactly that, and the schema could not tell. Now `4` and `UNTIERED` are distinct
 # values and anything else is rejected by name.
@@ -130,7 +137,7 @@ _TIERS = frozenset({"1", "2", "3", "4", "UNTIERED"})
 # rather than an incidental strictness: a branch-name link silently rots as the
 # branch moves, so the line it points at stops being the line the finding is
 # about. Measured on the run that prompted this field -- a local review branch
-# put the defect at InfluenceModule.java:164 while the pushed ref had the same
+# put the defect at FeedModule.java:164 while the pushed ref had the same
 # `@Provides` at :168, and :164 there was an unrelated `.build();`. A reader
 # following that link lands on the wrong code and correctly stops trusting the
 # report. Pinning to a SHA makes that class of link unrepresentable.
@@ -164,11 +171,157 @@ _SYMPTOM_MAX_CHARS = 120
 _EXPOSURE_FIGURE = re.compile(r"^[<>~]?\d+(?:\.\d+)?%")
 _DENOMINATOR_MAX_CHARS = 80
 
-# The four keys a percentage needs, and the bounds on the two prose ones.
-_SHARE_KEYS = ("numerator", "denominator", "unit", "of")
+# The four keys a percentage needs, plus the hash that binds it to the harm it
+# answers, and the bounds on the two prose ones.
+_SHARE_KEYS = ("numerator", "denominator", "unit", "of", "harm_hash", "figure_kind")
 _SHARE_UNIT_MAX_CHARS = 24
 _SHARE_OF_MAX_CHARS = 52
 _SHARE_DETAIL_MAX_CHARS = 72
+
+# What the number counts, which is a different question from how it was obtained.
+#
+# `basis` says where a figure came from; this says what population it is a share
+# OF, and the two are orthogonal. Before this field existed the column rendered
+# both kinds identically as a percentage with a bar, so a reader could not tell
+# "3% of requests are harmed" from "3% of requests reach this code, and nobody
+# checked whether they are harmed". On the character-pro run that was 52 figures
+# of the second kind in a column that reads as the first.
+#
+# HARM_SHARE   the share of the population the finding's CONFIRMED harm actually
+#              damages. Only reachable after a reconciler has settled the harm
+#              statement, which is why it is the re-resolve stage that produces
+#              it.
+# PATH_EXPOSURE how much traffic REACHES the defective code. Legitimate and
+#              useful, and not the same claim -- it is an upper bound on the harm
+#              rather than a measurement of it.
+_FIGURE_KIND_VALUES: Final[tuple[str, ...]] = ("HARM_SHARE", "PATH_EXPOSURE")
+
+# The reconciler's structured judgement on the figure it was handed, replacing a
+# hand-written fingerprint allowlist that a run wrote into its own assembler.
+#
+# Fingerprints are content-derived and run-scoped, so an allowlist of literal
+# fingerprints matches nothing on the next run and every figure is silently
+# blanked -- an empty allowlist intersection is not an error. Reaching a verifier
+# was what deleted the figure; `run-record.md`'s `figure_disposition`
+# section is canonical for the accounting and it is not restated here, because a
+# count in two files is a count that will drift.
+#
+# The replacement is a value the reconciler states, on the finding, in a closed
+# set -- checked by equality against that set and never by substring containment.
+# Deriving this from reconciler prose was tried in the same assembler ("downgrad"
+# anywhere in the note, or "estimated" within the first 60 characters) and is
+# what produced ESTIMATED over an absent figure on most of the findings it
+# touched; `run-record.md` has the count.
+# `NO_FIGURE` was added after checking the closed set against the real
+# reconciler verdicts on the 2026-09-05 run: a substantial minority had no
+# resolver figure to judge at all, and every one of the other three values
+# would have been a false claim about work nobody did. A closed set that forces
+# a lie on real cases is how a field starts being filled in arbitrarily.
+# `run-record.md`'s `figure_disposition` section has the counts.
+_FIGURE_DISPOSITION_VALUES: Final[tuple[str, ...]] = (
+    "ADOPTED",
+    "DOWNGRADED",
+    "REPLACED",
+    "NO_FIGURE",
+)
+
+# The two that send a figure back to be re-measured against the corrected harm.
+# Named once, because three call sites test for exactly this pair and a fourth
+# reader has to be able to see that they agree.
+_FIGURE_REJECTED: Final[frozenset[str]] = frozenset({"DOWNGRADED", "REPLACED"})
+
+# Whether a finding's harm is CONFIRMED, which is what a harm share is a share
+# OF. Keyed on the state rather than derived by excluding DEFERRED_UNVERIFIED,
+# because "a reconciler looked at it" and "the harm is real" are different
+# facts and only the second licenses the claim. Excluding by hand let
+# HARM_SHARE sit on DISCARDED_REFUTED -- a harm share for a harm that did not
+# reproduce, which is this change's own bug class -- and sent a re-resolve
+# agent off to measure the harm rate of a non-bug.
+#
+# Every member is listed, and a test fails if a new one is added without being
+# classified: a state that gets its answer by exclusion is a state nobody
+# decided about.
+_HARM_CONFIRMED_STATES: Final[frozenset[FindingState]] = frozenset(
+    {
+        # Mechanism CONFIRMED and intent VIOLATION_SUPPORTED: a real harm.
+        FindingState.READY_LOCAL_CANDIDATE,
+        FindingState.READY_CROSS_SYSTEM_DOSSIER,
+        FindingState.PRODUCT_EXPERIENCE_DOSSIER,
+        # Mechanism CONFIRMED, intent unclear. The behaviour reproduces, so the
+        # population it damages is measurable; whether anyone MEANT it is the
+        # open question, and that does not change the arithmetic.
+        FindingState.HOLD_INTENT_AMBIGUOUS,
+        # Human-assigned over a finding already judged real. Set aside
+        # administratively, not refuted.
+        FindingState.KNOWN_ACCEPTED_RISK,
+        FindingState.BACKLOGGED,
+    }
+)
+
+# The rest, spelled out rather than implied. DISCARDED_* did not reproduce or
+# was intended; HOLD_MECHANISM_INCONCLUSIVE never reproduced at all, so there is
+# no confirmed harm to be a share of; DUPLICATE's harm belongs to the finding it
+# duplicates; DEFERRED_UNVERIFIED nobody looked at.
+_HARM_UNCONFIRMED_STATES: Final[frozenset[FindingState]] = frozenset(
+    {
+        FindingState.DISCARDED_REFUTED,
+        FindingState.DISCARDED_INTENDED,
+        FindingState.HOLD_MECHANISM_INCONCLUSIVE,
+        FindingState.DUPLICATE,
+        FindingState.DEFERRED_UNVERIFIED,
+    }
+)
+
+
+def _is_count(value: object) -> bool:
+    """A non-negative integer that is not a bool.
+
+    `bool` is an `int` subclass, and `"attempted": true` is exactly the stand-in
+    a producer reaches for when it has no real count -- so every count check in
+    this file has to exclude it. The predicate is spelled out at nine older
+    sites; new ones call this.
+    """
+    return isinstance(value, int) and not isinstance(value, bool)
+
+
+def harm_hash(statement: str) -> str:
+    """The identity of a harm statement, so a figure can be bound to one.
+
+    A share answers a question. The pipeline's whole purpose is to CORRECT the
+    question -- a verifier that changes what the harm is has invalidated any
+    figure computed against the old wording -- and until this existed nothing
+    recorded which wording a figure answered. The stage that re-measures could
+    be added and then silently stop running, or a later change could mutate a
+    harm statement in place, and the digest would render a stale percentage with
+    no signal at all.
+
+    So the producer records this hash on the share at the moment it computes the
+    figure, and `validate_run_record` recomputes it from the finding's
+    `harm_statement` and REFUSES the record if the two differ. That turns a
+    process obligation into a machine-checked invariant.
+
+    Whitespace-insensitive and case-sensitive: re-wrapping a paragraph must not
+    invalidate a figure, but changing a word must. Truncated to 16 hex
+    characters, matching the fingerprint width this skill already uses.
+
+    The resolver holds no Bash and cannot hash anything, so it does not: it
+    echoes back the harm statement it measured against, verbatim, and the
+    orchestrator hashes THAT. The echo is the evidence; this is just its
+    identity. Hashing the finding's current statement instead of the echoed one
+    would satisfy the check while defeating it, and nothing inside a single
+    record can tell the two apart -- so the schema says that outright rather
+    than implying otherwise. What the check buys is that the stale-figure case
+    cannot ship by accident, and that the remaining bypass is a deliberate false
+    statement rather than an omission: the same bargain `resolver_agent_id`
+    already strikes.
+    """
+    return hashlib.sha256(" ".join(statement.split()).encode()).hexdigest()[:16]
+
+
+# A harm statement is a sentence, and both bounds are loose on purpose: they
+# reject a placeholder and a pasted evidence trail, not a wording choice.
+_HARM_STATEMENT_MIN_CHARS = 12
+_HARM_STATEMENT_MAX_CHARS = 400
 
 # The absence of a share is not one thing, and the three cases are not
 # interchangeable for a reader setting priority.
@@ -181,7 +334,7 @@ _SHARE_DETAIL_MAX_CHARS = 72
 # timer, whose `0` is therefore not a measured zero. That last distinction is
 # about the INSTRUMENT, not about whether the harm feels request-shaped; wording
 # it the other way sent a resolver to `NO_INSTRUMENT` for the very case this
-# value was added for. `run-record-schema.md`'s `share_absent` section is
+# value was added for. `run-record.md`'s `share_absent` section is
 # canonical for the counts and works all three through real findings.
 _SHARE_ABSENT_VALUES: Final[tuple[str, ...]] = (
     "NOT_QUERIED",
@@ -205,7 +358,7 @@ class Share:
     one, and a renderer that took the leading figure from each and divided would
     have been wrong more often than right on a real run -- sometimes because the
     two sides count different things, and twice by producing a confident figure
-    from no measurement at all. `run-record-schema.md`'s `share` section is
+    from no measurement at all. `run-record.md`'s `share` section is
     canonical for those counts and this docstring does not restate them, because
     a count in two files is a count that will drift.
 
@@ -233,6 +386,30 @@ class Share:
     denominator: float
     unit: str
     of: str
+    # The `harm_hash()` of the harm statement this figure was computed against,
+    # recorded by the stage that queried. `validate_run_record` recomputes it
+    # from the finding's `harm_statement` and refuses a mismatch, so a figure
+    # cannot outlive the question it answers.
+    harm_hash: str
+    # What this figure counts -- see `_FIGURE_KIND_VALUES`. It lives here rather
+    # than on `Exposure` because it describes a figure: inside `share` it cannot
+    # be stated without one or omitted with one, which is a stronger guarantee
+    # than a validator refusing both shapes.
+    figure_kind: str
+
+
+# The three phrases `exposure_block.py` writes when the resolver produced
+# nothing. WRITER AND READER MUST AGREE: the renderer drops a line by recognising
+# these phrases, so rewording a value here prints it to the reader as a finding.
+# A read-only view, not a dict -- two modules import it, and `Final` stops
+# rebinding but not `EXPOSURE_PLACEHOLDERS[k] = v`.
+EXPOSURE_PLACEHOLDERS: Final[Mapping[str, str]] = MappingProxyType(
+    {
+        "path_denominator": "not established",
+        "component_denominator": "not established for this problem",
+        "note": "No figure was resolved for this one.",
+    }
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -241,6 +418,10 @@ class Exposure:
     path_denominator: str
     component_denominator: str
     note: str
+    # The reconciler's verdict on the figure it was handed -- see
+    # `_FIGURE_DISPOSITION_VALUES`. Null exactly when no reconciler saw this
+    # finding, which is `DEFERRED_UNVERIFIED` and nothing else.
+    figure_disposition: str | None = None
     # Optional, and optional permanently. Most findings on a real run have no
     # numerator to divide, and forcing a figure there is what produces the
     # fabricated 100% above. At most one of `share` and `share_absent` carries a
@@ -279,7 +460,7 @@ class Provenance:
     `permalink` out of an agent's hands applies unchanged.
 
     There is no author field and there is not going to be one.
-    `run-record-schema.md` has why.
+    `run-record.md` has why.
     """
 
     commit: str
@@ -318,6 +499,14 @@ class Finding:
     band_reason: str | None
     title: str
     consequence: str
+    # The harm any exposure figure on this finding answers, in the wording that
+    # survived verification. Required, and required on every finding rather than
+    # only the ones carrying a figure: an optional field is one a producer omits,
+    # and the guard that compares it against `share.harm_hash` would then simply
+    # cease to exist rather than fail. It is not rendered as a field of its own --
+    # `consequence` is the reader's sentence -- it exists so a figure can be
+    # bound to a question.
+    harm_statement: str
     observed_symptom: str
     observed_full: str | None
     defect_site: str
@@ -468,7 +657,7 @@ def _complete_prose(value: object) -> str | None:
 
     Every rule this file enforces about prose was written down before it was
     enforced, and the ones that stayed written-down-only are the ones that got
-    violated. `run-record-schema.md` holds the measured counts from the run that
+    violated. `run-record.md` holds the measured counts from the run that
     prompted this check and is the only place they live; the short version is
     that most of one record's reader-facing prose was sliced out of another field.
 
@@ -536,10 +725,10 @@ def _band_reason(value: object) -> str | None:
     """The one sentence naming what decided the band. Null only where no band.
 
     The rubric has required this sentence since bands existed
-    (`references/behavior-dossier-and-verdict-schema.md` section 6) and there was
+    (`references/verdicts-and-bands.md` section 4) and there was
     no field for it, so what reached a reader was per-band boilerplate identical
     for every finding in the group -- "Ordered only where the order can be
-    justified in writing." on every Act-Now row alike.
+    justified in writing." on every top-band row alike.
 
     It stopped being cosmetic on 2026-08-28. A finding demoted to `Low` on a
     measured dormancy has to disclose the capability it still has, or the
@@ -640,9 +829,212 @@ def _objects_with(required: tuple[str, ...]) -> Callable[[object], str | None]:
     return check
 
 
-def _non_empty_list(value: object) -> str | None:
+def component_name(entry: object) -> str:
+    """A component's name, or "" when it has none. NEVER a repr.
+
+    Both real shapes resolve here: a bare `"character-pro"` and a
+    `{"name": ..., "tier": ...}`. `"id"` is not a third -- no producer writes it.
+    """
+    if isinstance(entry, str):
+        return entry.strip()
+    if isinstance(entry, dict) and isinstance(entry.get("name"), str):
+        return entry["name"].strip()
+    return ""
+
+
+# SKILL.md section 8's ceiling, and the ONLY number of candidates a run is
+# allowed to stop short at. Named here because the gate below does arithmetic
+# with it: a run claiming it hit the ceiling while verifying fewer than this
+# did not hit the ceiling, it stopped for something else.
+_VERIFICATION_CEILING: Final[int] = 20
+
+# The closed set of legitimate reasons a run verified fewer candidates than it
+# selected. ELAPSED TIME IS NOT IN IT AND MUST NOT BE ADDED: a run that judges
+# itself short of time has no value to write and must keep going.
+#
+# A THIRD VALUE FOR "stopped from outside" WAS CONSIDERED AND REFUSED. `CEILING`
+# is held honest by arithmetic and `ENDED_EXTERNALLY` by `selected`; a new value
+# would be checkable by nothing, which makes it the easiest thing to reach for
+# and hands back the banned excuse under a new name. Glosses live in
+# `references/run-record.md`; a second copy here would drift unrendered.
+_ENDED_EXTERNALLY: Final[str] = "ENDED_EXTERNALLY"
+_SHORTFALL_CAUSE_VALUES: Final[tuple[str, ...]] = ("CEILING", _ENDED_EXTERNALLY)
+
+# `reason` and `cause` are both REQUIRED. `selected` is required only alongside
+# `ENDED_EXTERNALLY` -- that pairing is in `_selected_errors`, because it needs
+# the findings count.
+_SHORTFALL_KEYS: Final[tuple[str, ...]] = ("reason", "cause")
+
+
+def _attempted_mismatch(field: str, attempted: int, found: int, why: str) -> ValidationError:
+    """A resolution counter disagreeing with the findings array. WHICH WAY matters.
+
+    OVER-COUNT is the laundering shape: a stage saw candidates that are now absent
+    from the record, so the repair is the findings and never the counter -- trimming
+    it lands on a record that renders a truncated run as a complete one.
+
+    UNDER-COUNT is a stage that did not run: `{attempted: 0}` beside 64 findings is
+    the shape this check was written for, and there the counter is not the lie, the
+    skipped work is. A single message for both directions gets one of them wrong --
+    it printed "-64 candidate(s)" and told a producer to LOWER `attempted`, when
+    the repair here raises it.
+    """
+    if attempted > found:
+        return ValidationError(
+            field,
+            f"is {attempted} but the record carries only {found} finding(s). "
+            "**The repair is the missing findings, not this number.** A stage "
+            f"attempted {attempted}, so {attempted - found} candidate(s) it saw are "
+            "absent from `findings`: write them in, every unstarted one as "
+            '`DEFERRED_UNVERIFIED` with `band: "Not triaged"`, and state a '
+            f"`shortfall`. Lowering `attempted` to {found} also silences this, and "
+            f"lands on a record that renders a truncated run as a complete one. {why}",
+        )
+    return ValidationError(
+        field,
+        f"is {attempted} but the record carries {found} finding(s), so "
+        f"{found - attempted} were never attempted. **The repair is the skipped "
+        "work, not the number**: run the stage over every finding and let the "
+        f"count follow. Raising `attempted` to {found} on its own reports work "
+        f"nobody did. {why}",
+    )
+
+
+def _shortfall(value: object) -> str | None:
+    """The shortfall object, and the closed vocabulary of its `cause`.
+
+    The VALUE check lives here beside the shape check: a vocabulary policed only
+    from a cross-field rule is not closed. Measured with the check inside that rule instead -- a
+    record carrying `cause: "WALL_CLOCK"` and no unchecked finding validated
+    clean, which is the one value this whole mechanism exists to make unwritable.
+    """
+    shape = _optional_mapping(_SHORTFALL_KEYS)(value)
+    if shape is not None or value is None:
+        return shape
+    cause = value["cause"]  # type: ignore[index]
+    if cause not in _SHORTFALL_CAUSE_VALUES:
+        return (
+            f"cause must be one of {list(_SHORTFALL_CAUSE_VALUES)}, not {cause!r}. "
+            "Elapsed time and agent count are not stopping conditions and have no "
+            "value here: run every selected candidate through every stage, however "
+            "long that takes"
+        )
+    selected = value.get("selected")  # type: ignore[union-attr]
+    if selected is not None and (not _is_count(selected) or selected < 0):
+        return (
+            f"selected must be a non-negative integer, not {selected!r}. It is how "
+            "many candidates went to verification -- the bound's fill AND the "
+            "controls, which is what `to_verify` holds"
+        )
+    return None
+
+
+def _ceiling_claim_errors(shortfall: object, verified: int) -> list[ValidationError]:
+    """`CEILING` is an arithmetic claim, not a label.
+
+    The bound fills to `_VERIFICATION_CEILING`, so a run that hit it verified at
+    least that many. This needs the findings list, which is why it cannot live in
+    `_shortfall`: moved there for tidiness, it stops being able to count.
+    """
+    cause = shortfall.get("cause") if isinstance(shortfall, dict) else None
+    if cause == "CEILING" and verified < _VERIFICATION_CEILING:
+        return [
+            ValidationError(
+                "shortfall.cause",
+                f"claims {cause}, but only {verified} candidate(s) completed the "
+                f"pipeline "
+                f"and the ceiling fills to {_VERIFICATION_CEILING}; a run that "
+                "stopped below it did not reach the bound. Finish the selected "
+                f"candidates, or say {_ENDED_EXTERNALLY} if the run was ended "
+                "rather than choosing to stop",
+            )
+        ]
+    return []
+
+
+def _selected_errors(
+    shortfall: object, verified: int, total: int
+) -> list[ValidationError]:
+    """The arithmetic that holds `ENDED_EXTERNALLY`, and which half `CEILING` skips.
+
+    **Controls are IN `selected`.** It is the band fill PLUS the controls, and
+    `verified` here counts every finding that is not
+    `DEFERRED_UNVERIFIED`, controls included. Count them on one side only and the
+    gap is under-reported, rejecting an honest record at the boundary.
+
+    - `verified < selected`, exempt only at `0` from `0` -- never on `selected: 0`
+      alone, which accepts a run that picked nothing and then completed candidates.
+    - `selected <= total` -- it cannot have picked what the record does not carry.
+
+    ONLY THE FIRST IS `CEILING`-EXEMPT -- a run that filled its bound has no gap of
+    that kind. The second sits ABOVE the cause gate deliberately and fires whatever
+    the cause: a count larger than the record is incoherent whoever wrote it.
+    """
+    if not isinstance(shortfall, dict):
+        return []
+    selected = shortfall.get("selected")
+    if selected is not None and selected > total:
+        return [
+            ValidationError(
+                "shortfall.selected",
+                f"is {selected} but the record carries {total} finding(s); the "
+                "bound cannot have picked candidates the record does not carry. "
+                "**The repair is the missing findings, not this number**: write "
+                f"the {selected - total} absent one(s) in, every unstarted one as "
+                '`DEFERRED_UNVERIFIED` with `band: "Not triaged"`. Lowering '
+                f"`selected` to {total} also silences this, and lands on a record "
+                "that renders a truncated run as a complete one",
+            )
+        ]
+    if shortfall.get("cause") != _ENDED_EXTERNALLY:
+        return []
+    if selected is None:
+        return [
+            ValidationError(
+                "shortfall.selected",
+                f"is required with `{_ENDED_EXTERNALLY}`: state how many "
+                "candidates went to verification, controls included, so the "
+                "digest can say how many of "
+                "them were never started. Without it the record says a run was "
+                "ended and gives the reader no way to see by how much it fell "
+                "short -- and the claim carries no arithmetic consequence",
+            )
+        ]
+    # THE EXEMPTION IS `0 AND 0`, NOT `selected == 0`. A run ended during the
+    # search selected nothing, so `selected: 0` is its honest record. Exempting
+    # on `selected` alone accepted `selected: 0` beside candidates that DID
+    # complete -- the bound picked nothing and then verified three of them.
+    if selected == 0 and verified == 0:
+        return []
+    if verified >= selected:
+        return [
+            ValidationError(
+                "shortfall.selected",
+                f"is {selected} and {verified} candidate(s) completed the "
+                f"pipeline, so every selected candidate was finished and "
+                f"`{_ENDED_EXTERNALLY}` claims a gap that is not there. Say "
+                "`CEILING` if the bound is what left the rest unchecked",
+            )
+        ]
+    return []
+
+
+def _components(value: object) -> str | None:
+    """Every entry must be nameable, because the `<h1>` is one of these names.
+
+    This checked only that the list was non-empty, leaving the ELEMENT shape
+    unchecked, so the 2026-09-12 run's `{"name": ...}` met a renderer looking up
+    `"id"` and `str(dict)` put a Python repr in the heading. Refusing it here is
+    what makes the renderer's fallback unreachable rather than merely unlikely.
+    """
     if not isinstance(value, list) or not value:
         return "must be a non-empty list"
+    for index, entry in enumerate(value):
+        if not component_name(entry):
+            return (
+                f"[{index}] cannot be named: every entry must be a non-empty "
+                "string, or an object carrying a non-empty 'name'"
+            )
     return None
 
 
@@ -672,7 +1064,23 @@ def _optional_mapping(required: tuple[str, ...]) -> Callable[[object], str | Non
     return lambda value: None if value is None else inner(value)
 
 
-_EXPOSURE_KEYS = ("basis", "path_denominator", "component_denominator", "note")
+# `figure_disposition` is a required KEY carrying a legitimately null VALUE,
+# which is the rule `method` already follows. An optional key is one a producer
+# leaves out, and this one decides what the column claims: left out, it would
+# restore exactly the silence the fingerprint allowlist created, and the check
+# below would pass by having nothing to check.
+#
+# `figure_kind` is NOT here -- it lives inside `share`, because it describes a
+# figure. That placement is what makes "a kind with no figure" and "a figure with
+# no kind" unrepresentable rather than rejected, and it deleted a two-directional
+# validator and two paragraphs of error prose.
+_EXPOSURE_KEYS = (
+    "basis",
+    "path_denominator",
+    "component_denominator",
+    "note",
+    "figure_disposition",
+)
 
 # Provenance, not magnitude. `UNKNOWN` is the legitimate value for a candidate the
 # impact stage attempted and could not resolve -- which is the majority case on a
@@ -741,6 +1149,55 @@ def _exposure(value: object) -> str | None:
                 f"{_SHARE_DETAIL_MAX_CHARS} is what the column fits without "
                 "pushing the finding text out of its own column"
             )
+    return _figure_disposition(value.get("figure_disposition"))  # type: ignore[union-attr]
+
+
+def _figure_disposition(value: object) -> str | None:
+    """The reconciler's verdict on the figure, checked against a closed set.
+
+    Null is legitimate and means no reconciler saw this finding;
+    `validate_run_record` is what ties null to `DEFERRED_UNVERIFIED` and nothing
+    else, because only the record knows the finding's state.
+    """
+    if value is None:
+        return None
+    if value not in _FIGURE_DISPOSITION_VALUES:
+        return (
+            f"figure_disposition must be null or one of "
+            f"{list(_FIGURE_DISPOSITION_VALUES)}, not {value!r}. This replaced a "
+            "run-scoped allowlist of literal fingerprints and a substring match "
+            "on reconciler prose, both of which decided the column silently"
+        )
+    return None
+
+
+def _harm_statement(value: object) -> str | None:
+    """The harm a figure on this finding answers, as one sentence.
+
+    Both bounds are loose because their job is to refuse a placeholder and a
+    pasted evidence trail, not to police wording. What actually constrains this
+    field is the hash comparison in `validate_run_record`: change a word here
+    after a figure was computed and the record is refused.
+    """
+    if not isinstance(value, str) or not value.strip():
+        return (
+            "must be one sentence naming the harm any exposure figure on this "
+            "finding is a share of -- the wording that survived verification, not "
+            "the finder's original where a reconciler corrected it"
+        )
+    text = value.strip()
+    if len(text) < _HARM_STATEMENT_MIN_CHARS:
+        return (
+            f"is {len(text)} characters, which is too short to be a harm "
+            f"statement ({_HARM_STATEMENT_MIN_CHARS} minimum). A share computed "
+            "against a placeholder is a share of nothing"
+        )
+    if len(text) > _HARM_STATEMENT_MAX_CHARS:
+        return (
+            f"is {len(text)} characters; {_HARM_STATEMENT_MAX_CHARS} is the "
+            "bound. This is the sentence a figure divides, not an evidence "
+            "trail -- the trails have their own fields"
+        )
     return None
 
 
@@ -748,7 +1205,7 @@ _AXIS_KEYS = ("verdict", "trail")
 
 
 def _share_object(value: object) -> str | None:
-    """The four keys, and the arithmetic and units that must hold between them.
+    """The keys in `_SHARE_KEYS`, and the arithmetic and units between them.
 
     Every rule here refuses a specific figure that a real run produced or that a
     prose-parsing renderer would have produced from one.
@@ -802,7 +1259,34 @@ def _share_object(value: object) -> str | None:
             f"of is {len(of.strip())} characters; {_SHARE_OF_MAX_CHARS} is what "
             "the column fits. Put the rest in note"
         )
+    kind = value["figure_kind"]  # type: ignore[index]
+    if kind not in _FIGURE_KIND_VALUES:
+        return (
+            f"figure_kind must be one of {list(_FIGURE_KIND_VALUES)}, not "
+            f"{kind!r}. HARM_SHARE is the share of the population the confirmed "
+            "harm damages; PATH_EXPOSURE is how much traffic reaches the "
+            "defective code, which is an upper bound on the harm rather than a "
+            "measurement of it. `run-record.md` has what rendering both "
+            "as a bare percentage cost a reader"
+        )
+    bound = value["harm_hash"]  # type: ignore[index]
+    if not isinstance(bound, str) or not _HARM_HASH.fullmatch(bound):
+        return (
+            "harm_hash must be the 16-character hex identity of the harm "
+            "statement this figure was computed against, as produced by "
+            "digest_model.harm_hash(). It is what stops a figure outliving the "
+            "question it answers: the pipeline exists to CORRECT the harm "
+            "statement, and until this field existed nothing recorded which "
+            "wording a percentage was a share of"
+        )
     return None
+
+
+# Sixteen hex characters, which is a root-cause fingerprint's shape too -- so a
+# producer that pastes the wrong id is caught by the comparison in
+# `validate_run_record` rather than by this format check. A hash that merely
+# LOOKS right is the case this field has to survive.
+_HARM_HASH = _FINGERPRINT
 
 
 def _path_denominator(value: object) -> str | None:
@@ -811,7 +1295,7 @@ def _path_denominator(value: object) -> str | None:
     A figure with no noun after it is the failure this rejects. The renderer
     cannot supply the noun -- a percentage is a share of searches in one service
     and of something else in the next -- so a bare `0.072%` reaches the reader as
-    a number of nothing. Measured: it did, next to an Act Now finding, and the
+    a number of nothing. Measured: it did, next to a Read-closely finding, and the
     first-time reader who met it named this column as the part of the report they
     could not understand.
 
@@ -917,7 +1401,7 @@ _NOT_A_RESOLVER = frozenset(
 def _exposure_resolution(value: object) -> str | None:
     """Proof that the impact lookup was ATTEMPTED, separate from its outcome.
 
-    `references/behavior-dossier-and-verdict-schema.md` states that `UNKNOWN`
+    `references/verdicts-and-bands.md` states that `UNKNOWN`
     exposure "is legitimate only after a query was actually attempted and either
     failed or found no instrumentation", and until this block existed nothing
     stood behind that sentence: "queried, and there is no instrumentation" and
@@ -925,9 +1409,9 @@ def _exposure_resolution(value: object) -> str | None:
 
     Measured on two runs across two components: the column was almost entirely an
     absence while a substantial minority of those findings had already named the
-    metric that would settle it and were banded Act-Now anyway. The verbatim case
+    metric that would settle it and were banded most-urgent anyway. The verbatim case
     and the counts are canonical in
-    references/design-history-and-failed-approaches.md section 8.
+    # Measured across two runs on two components: 7 of 26 checked findings named a metric artifact in their own packet, 6 of those cited it with a file and line, and 0 were resolved - while 9 were banded most-urgent with no impact figure behind them.
 
     `attempted` is cross-checked against the findings count in
     `validate_run_record`, so a record cannot claim a clean impact pass over
@@ -947,7 +1431,7 @@ def _exposure_resolution(value: object) -> str | None:
 
     # `resolver_agent_id` names the agent that produced these figures.
     #
-    # Measured 2026-08-28: an orchestrator holding Oliver tools from STEP 0's
+    # Measured 2026-08-28: an orchestrator holding metric tools from STEP 0's
     # pre-flight decided to query the metrics ITSELF rather than dispatch the
     # resolver, reasoning that a named subagent might drop its output. It obtained
     # real production figures. The run would have scored its headline criterion
@@ -1000,7 +1484,87 @@ def _exposure_resolution(value: object) -> str | None:
             return f"{key} must be an integer"
     if not isinstance(value["unresolved"], list):
         return "unresolved must be a list of {fingerprint, reason} objects"
-    return _objects_with(("fingerprint", "reason"))(value["unresolved"])
+    problem = _objects_with(("fingerprint", "reason"))(value["unresolved"])
+    if problem is not None:
+        return problem
+    return _accounts_for(value, "resolved", "unresolved") or _resolved_fingerprints(
+        value
+    )
+
+
+def _accounts_for(block: dict, ok_key: str, list_key: str) -> str | None:
+    """Every attempt ends in a result or a named reason, on all four blocks.
+
+    `{attempted: 26, resolved: 0, unresolved: []}` is the shape a stage takes
+    when it silently did nothing, and three of the four resolution blocks
+    rejected it with the same inline arithmetic written three times. The fourth
+    -- `reresolution` -- had no guard at all until this became one function,
+    which is the usual cost of a copied check: the copy that never got made.
+    """
+    attempted, ok, unresolved = (
+        block.get("attempted"),
+        block.get(ok_key),
+        block.get(list_key),
+    )
+    if not (_is_count(attempted) and _is_count(ok) and isinstance(unresolved, list)):
+        return None  # shape errors are the per-key checks' job, not this one
+    if ok + len(unresolved) != attempted:
+        return (
+            f"attempted {attempted} but accounts for {ok + len(unresolved)} "
+            f"({ok} {ok_key} + {len(unresolved)} {list_key}); every attempt must "
+            "end in a figure or a named reason"
+        )
+    return None
+
+
+def _resolved_fingerprints(value: dict) -> str | None:
+    """Which candidates the resolver actually produced a conforming share for.
+
+    The counts alone cannot answer the question a reader has. `resolved` counts
+    a candidate that came back with a named `share_absent` too, so a record can
+    report 83 resolved and still render an empty column without contradicting
+    itself -- which is what one run did, having deleted 27 real figures between
+    the resolver and the record. This list is what makes the check
+    per-candidate instead of a smoke test over the whole run.
+    """
+    listed = value.get("resolved_fingerprints")
+    if not isinstance(listed, list) or any(_fingerprint(fp) for fp in listed):
+        return (
+            "resolved_fingerprints must be the list of root-cause fingerprints "
+            "the resolver returned a CONFORMING four-key share for -- an empty "
+            "list where it returned none. It is required because `resolved` "
+            "counts named absences too, so the counts alone cannot say which "
+            "candidates had a figure, and a figure deleted between the resolver "
+            "and the record is invisible without it"
+        )
+    if len(set(listed)) != len(listed):
+        return "resolved_fingerprints contains a duplicate fingerprint"
+    resolved = value.get("resolved")
+    if _is_count(resolved) and len(listed) > resolved:
+        return (
+            f"lists {len(listed)} resolved_fingerprints but reports only "
+            f"{resolved} resolved; a candidate with a share is a resolved one, "
+            "so the list can never be longer than the count"
+        )
+    return None
+
+
+def _reresolution(value: object) -> str | None:
+    """The second measurement pass, over the figures a reconciler rejected.
+
+    Null is legitimate and means no reconciler rejected a figure -- but only
+    that, and `validate_run_record` is what ties null to a count of zero
+    rejections. Without that tie this block is the stage A1 describes: one that
+    has to remember to run, and whose omission looks exactly like a run with
+    nothing to re-resolve.
+
+    Same shape as `exposure_resolution` because it is the same agent doing the
+    same job against a corrected question, and a second shape would be a second
+    thing to keep in step.
+    """
+    if value is None:
+        return None
+    return _exposure_resolution(value)
 
 
 def _provenance(value: object) -> str | None:
@@ -1009,7 +1573,7 @@ def _provenance(value: object) -> str | None:
     `date` and `pull_request` are both legitimately null -- a commit subject that
     names no pull request is common in history predating the merge tooling. A
     missing pull request is a fact about that commit, not a resolution failure,
-    so it must not be spelled the same way as one. `run-record-schema.md` has how
+    so it must not be spelled the same way as one. `run-record.md` has how
     often that happens in practice, and is canonical for why no author is
     recorded here.
     """
@@ -1057,7 +1621,7 @@ def _method(value: object) -> str | None:
 
 
 # Words this skill invented, which no reader of the digest has a definition for.
-# `run-record-schema.md` holds the substitution table and is canonical; this is the
+# `run-record.md` holds the substitution table and is canonical; this is the
 # executable half of the same rule.
 #
 # It exists because the prose form of the rule demonstrably does not hold. A reader
@@ -1114,6 +1678,16 @@ _VERBATIM_FIELDS: Final[frozenset[str]] = frozenset(
         "permalink",
         "fingerprint",
         "metric_query",
+        # `harm_statement` is not reader-facing: it exists so a figure can be
+        # bound to a question, and `consequence` is the sentence a reader gets.
+        # Scanned, it fails a whole record over a word the reader never meets --
+        # and the collision is real rather than hypothetical, because "candidate"
+        # is this skill's jargon AND ordinary vocabulary in a recommender, where
+        # candidate generation is what the code under search does.
+        "harm_statement",
+        # The same argument for the hash: sixteen hex characters cannot contain
+        # invented vocabulary, so scanning it can only ever cost time.
+        "harm_hash",
     }
 )
 
@@ -1131,7 +1705,7 @@ def _scan_prose(value: object, path: str, field: str) -> list[ValidationError]:
     are nested at three different depths -- `consequence` on the finding,
     `trail` inside `mechanism` and `intent`, `note` inside `exposure` -- and a
     flat check over the finding's own keys would have missed every nested one and
-    reported the record clean. `run-record-schema.md` has the per-field counts.
+    reported the record clean. `run-record.md` has the per-field counts.
     """
     if isinstance(value, str):
         if field not in _PROSE_FIELDS:
@@ -1166,7 +1740,7 @@ def _scan_jargon(value: object, path: str, field: str) -> list[ValidationError]:
                 path,
                 "carries wording no reader of this report can define: "
                 + ", ".join(hits)
-                + ". run-record-schema.md has what to write instead.",
+                + ". run-record.md has what to write instead.",
             )
         ]
     if isinstance(value, dict):
@@ -1194,6 +1768,7 @@ _FINDING_CHECKS: dict[str, Callable[[object], str | None]] = {
     "band_reason": _band_reason,
     "title": _text,
     "consequence": _text,
+    "harm_statement": _harm_statement,
     "observed_symptom": _observed_symptom,
     "observed_full": _optional_text,
     "defect_site": _text,
@@ -1214,7 +1789,7 @@ _RECORD_CHECKS: dict[str, Callable[[object], str | None]] = {
     "run_id": _text,
     "scope_strategy": _text,
     "scope_label": _text,
-    "components": _non_empty_list,
+    "components": _components,
     "findings": _any_list,
     "coverage": _coverage_entries,
     "degraded_paths": _objects_with(
@@ -1230,12 +1805,13 @@ _RECORD_CHECKS: dict[str, Callable[[object], str | None]] = {
     # urgent group" while the header rendered 9, because nothing links a
     # hand-authored sentence to the array it describes. The reason cannot go the
     # same way -- it is a fact about the run, not a count of it.
-    "shortfall": _optional_mapping(("reason",)),
+    "shortfall": _shortfall,
     "repo": _optional_mapping(("host", "full_name", "ref")),
     "gate": _mapping(("dossiers_scanned", "leaks_found", "redaction_hits")),
     "permalink_resolution": _permalink_resolution,
     "provenance_resolution": _provenance_resolution,
     "exposure_resolution": _exposure_resolution,
+    "reresolution": _reresolution,
 }
 
 
@@ -1375,12 +1951,12 @@ def validate_run_record(raw: object) -> list[ValidationError]:
             and attempted != len(findings)
         ):
             errors.append(
-                ValidationError(
+                _attempted_mismatch(
                     "permalink_resolution.attempted",
-                    f"is {attempted} but the record carries {len(findings)} "
-                    "finding(s); every finding must have been attempted, because "
-                    "a null permalink is only meaningful once it is known that "
-                    "somebody looked",
+                    attempted,
+                    len(findings),
+                    "A null permalink is only meaningful once it is known that "
+                    "somebody looked.",
                 )
             )
         # And the outcomes must account for every attempt. Measured: an
@@ -1437,7 +2013,7 @@ def validate_run_record(raw: object) -> list[ValidationError]:
             )
     # Same two checks for the impact lookup, for the same reason. Without them
     # `{attempted: 0, resolved: 0, unresolved: []}` validates beside a page of
-    # Act-Now findings whose urgency nothing evidences -- which is the state
+    # Read-closely findings whose urgency nothing evidences -- which is the state
     # measured on two real runs before this block existed.
     # A band without a stated reason is the state this field exists to end. Not
     # required on `Not checked`: there is no band decision to justify there, and
@@ -1447,7 +2023,7 @@ def validate_run_record(raw: object) -> list[ValidationError]:
             f.get("fingerprint", f"findings[{i}]")
             for i, f in enumerate(findings)
             if isinstance(f, dict)
-            and f.get("band") not in (None, Band.NOT_CHECKED.value)
+            and f.get("band") not in (None, Band.NOT_TRIAGED.value)
             and not (isinstance(f.get("band_reason"), str) and f["band_reason"].strip())
         ]
         if unjustified:
@@ -1462,6 +2038,119 @@ def validate_run_record(raw: object) -> list[ValidationError]:
                     "capability it still has",
                 )
             )
+    # `DEFERRED_UNVERIFIED` and `Not triaged` are the same fact stated in the two
+    # columns the digest groups by, so a record carrying one without the other is
+    # rejected. SKILL.md section 9 has required the pairing since the band existed;
+    # nothing enforced it, and on 2026-09-11 a run wrote scrutiny bands on all 46
+    # candidates nobody had checked. The band decides which section renders the
+    # finding, so the whole unchecked tail rendered as 46 expanded rows carrying
+    # the "Not checked" verdict instead of collapsing into the one-click list
+    # `_render_spill` exists to produce -- 46,227 characters of visible page
+    # against 6,237 once corrected.
+    #
+    # Both directions, because each is a different lie: a scrutiny band on an
+    # unchecked candidate promises a judgement nobody made, and `Not triaged` on a
+    # checked one hides a real verdict behind a fold.
+    #
+    # **The correspondence is total, and that is not a reason to delete this.**
+    # `DEFERRED_UNVERIFIED` is the only state mapping to `Verdict.NOT_CHECKED`, so
+    # the band carries no information the state does not. Deriving it in
+    # `_build_finding` instead would produce a correct digest sitting on top of
+    # portfolio files that still say `Read closely` -- measured: all 46 deferred
+    # files from that run carry the wrong band under a "Band:" heading -- with
+    # nothing anywhere reporting the divergence.
+    #
+    # Rejecting rather than silently rebanding follows the rule this module states
+    # at the top and applies everywhere else: a caller repairing a record is an
+    # agent, and it repairs exactly what it is told about. The record is written
+    # minutes before rendering, so the cost of the error is one edit and a
+    # re-render, not the 121-minute run.
+    if isinstance(findings, list):
+        mismatched = [
+            f'{f.get("fingerprint", f"findings[{i}]")} '
+            f'({f.get("state")} / {f.get("band")})'
+            for i, f in enumerate(findings)
+            if isinstance(f, dict) and (_pairing_broken(f) or _unjustifiable(f))
+        ]
+        if mismatched:
+            errors.append(
+                ValidationError(
+                    "findings[].band vs findings[].state",
+                    f"pairs {FindingState.DEFERRED_UNVERIFIED.value} with a band "
+                    f"other than {Band.NOT_TRIAGED.value!r}, or the reverse, or "
+                    f"justifies a {Band.NOT_TRIAGED.value!r} band nobody decided, "
+                    f"on {_counted_list(mismatched)}; a candidate nobody verified "
+                    "has no scrutiny to assign and no reason to give for it, and "
+                    "the band is what decides whether it renders as a row or "
+                    "inside the collapsed unchecked list. Fix them together, in "
+                    "the record AND in the candidate's portfolio file: the "
+                    "pre-verification band ordered the fill and neither it nor its "
+                    "reason survives into either",
+                )
+            )
+    # A RUN THAT LEFT CANDIDATES UNCHECKED MUST SAY WHY, and `_render_counts` is
+    # where the saying happens: its gap link renders only when `shortfall` is
+    # present, so a null one puts the reader back at a bare "6 of 106" with
+    # nothing suggesting the run stopped early.
+    if isinstance(findings, list):
+        shortfall = raw.get("shortfall")
+        unchecked = [
+            f.get("fingerprint", f"findings[{i}]")
+            for i, f in enumerate(findings)
+            if isinstance(f, dict)
+            and f.get("state") == FindingState.DEFERRED_UNVERIFIED.value
+        ]
+        # `"shortfall" in raw`, not `is None`: `raw.get` collapses absent and
+        # explicitly null, and the key check above already names an absent one.
+        # The shape check accepts a BLANK reason -- hence `stated` below.
+        shape_accepted = "shortfall" in raw and _shortfall(shortfall) is None
+        if shape_accepted:
+            reason = shortfall.get("reason") if isinstance(shortfall, dict) else None
+            stated = isinstance(reason, str) and bool(reason.strip())
+            # INDEPENDENT `if`s, never an `elif` chain. Chained, the coherence
+            # branch swallowed the ceiling check on exactly the record that
+            # check exists to reach.
+            #
+            # `findings` NON-EMPTY is the third condition and is not padding: a
+            # run whose context died during finder fan-out has no candidates to
+            # defer and must still be able to say why it stopped.
+            if shortfall is not None and findings and not unchecked:
+                # BOUNDING NEVER DISCARDS, AND NEITHER DOES SELF-TRUNCATION. A
+                # record stating a shortfall with no DEFERRED_UNVERIFIED finding
+                # says both "some were not checked" and "there are none".
+                #
+                # THE LIMIT: every guard here compares two fields ONE producer
+                # writes, so a record omitting BOTH validates clean. Do not
+                # extend this block believing it can close that.
+                errors.append(
+                    ValidationError(
+                        "shortfall",
+                        "is stated, but no finding is DEFERRED_UNVERIFIED. Every "
+                        "candidate that did not complete the pipeline keeps its "
+                        "packet and is written into `findings` by name -- "
+                        "otherwise the digest renders as a complete run, because "
+                        "the masthead's gap link and the unchecked band both need "
+                        "those findings to exist",
+                    )
+                )
+            if unchecked and not stated:
+                errors.append(
+                    ValidationError(
+                        "shortfall",
+                        f"states no reason, but {_counted_list(unchecked)} were "
+                        "never checked; write the clause saying why, in the "
+                        "reader's language, so the digest can state it beside "
+                        "the verified count rather than leaving the reader to "
+                        "infer a cause",
+                    )
+                )
+            if shortfall is not None:
+                # UNCONDITIONAL on the other two checks, both of these. Nested
+                # under the reason check, each was unreachable on exactly the
+                # record it exists to catch -- it happened twice.
+                verified = len(findings) - len(unchecked)
+                errors += _ceiling_claim_errors(shortfall, verified)
+                errors += _selected_errors(shortfall, verified, len(findings))
     exposure = raw.get("exposure_resolution")
     if isinstance(exposure, dict) and isinstance(findings, list):
         attempted = exposure.get("attempted")
@@ -1471,32 +2160,15 @@ def validate_run_record(raw: object) -> list[ValidationError]:
             and attempted != len(findings)
         ):
             errors.append(
-                ValidationError(
+                _attempted_mismatch(
                     "exposure_resolution.attempted",
-                    f"is {attempted} but the record carries {len(findings)} "
-                    "finding(s); every finding must have been attempted, because "
-                    "an UNKNOWN exposure is only meaningful once it is known that "
-                    "somebody queried",
+                    attempted,
+                    len(findings),
+                    "An UNKNOWN exposure is only meaningful once it is known that "
+                    "somebody queried.",
                 )
             )
-        resolved, unresolved = exposure.get("resolved"), exposure.get("unresolved")
-        if (
-            isinstance(attempted, int)
-            and not isinstance(attempted, bool)
-            and isinstance(resolved, int)
-            and not isinstance(resolved, bool)
-            and isinstance(unresolved, list)
-            and resolved + len(unresolved) != attempted
-        ):
-            errors.append(
-                ValidationError(
-                    "exposure_resolution",
-                    f"attempted {attempted} but accounts for "
-                    f"{resolved + len(unresolved)} ({resolved} resolved + "
-                    f"{len(unresolved)} unresolved); every attempt must end in a "
-                    "figure or a named reason",
-                )
-            )
+        resolved = exposure.get("resolved")
         # Smoke test: if the resolver claims any resolved, at least ONE finding
         # must show evidence of integration (a non-null share or a share_absent
         # other than NOT_QUERIED). This catches complete non-wiring (resolved=N,
@@ -1533,6 +2205,323 @@ def validate_run_record(raw: object) -> list[ValidationError]:
                         "its output was never wired into the run record",
                     )
                 )
+    errors.extend(_check_figure_bindings(raw))
+    return errors
+
+
+def _check_figure_bindings(raw: dict) -> list[ValidationError]:
+    """The four cross-record invariants that keep the exposure column honest.
+
+    Each one refuses a shape a real run shipped. They live together because they
+    are one property split across three fields -- a figure answers a stated
+    harm, somebody judged whether it fits, and a rejected figure was re-measured
+    rather than deleted -- and reading them apart is how the first version of
+    this column ended up with 12 of its 15 actionable figures silently blanked.
+    """
+    errors: list[ValidationError] = []
+    findings = raw.get("findings")
+    if not isinstance(findings, list):
+        return errors
+
+    rejected: list[str] = []
+    # Built once, above the loop: which candidates the resolver actually
+    # produced a conforming figure for. Used by the survival check inside the
+    # loop, which is the only thing that check needed the caller's guards for.
+    resolution = raw.get("exposure_resolution")
+    listed = (
+        resolution.get("resolved_fingerprints")
+        if isinstance(resolution, dict)
+        else None
+    )
+    with_figure = (
+        {fp for fp in listed if isinstance(fp, str)}
+        if isinstance(listed, list)
+        else set()
+    )
+    for index, finding in enumerate(findings):
+        if not isinstance(finding, dict):
+            continue
+        exposure = finding.get("exposure")
+        if not isinstance(exposure, dict):
+            continue
+        prefix = f"findings[{index}]"
+        statement = finding.get("harm_statement")
+        share = exposure.get("share")
+
+        # A5. The figure is bound to THE QUESTION IT ANSWERS, and a figure whose
+        # question has changed is refused rather than rendered. Without this the
+        # re-resolve stage is a step that must remember to run: mutate the harm
+        # statement anywhere downstream and the percentage silently becomes an
+        # answer to a superseded question, which is the shape the whole column
+        # was in.
+        #
+        # HARM_SHARE ONLY, and the restriction is the point rather than a
+        # loosening. A path-exposure figure does not answer the harm statement --
+        # it answers "how much traffic reaches this code" -- so comparing its
+        # hash to the harm statement was a category error, and it made a
+        # documented shape unwritable: a reconciler that DOWNGRADES a figure AND
+        # corrects the harm's wording, where the second pass then cannot measure
+        # the corrected harm, is exactly what "retained but relabelled as path
+        # exposure" means, and it was refused every time the wording actually
+        # changed. Found in review, reproduced, and untested before then because
+        # the retention test used an UNCHANGED statement.
+        #
+        # This is not an escape hatch. A producer cannot dodge the comparison by
+        # relabelling a harm share as path exposure: ADOPTED and REPLACED imply
+        # HARM_SHARE on any harm-confirmed finding, checked below, and on a
+        # finding whose harm is not confirmed there is no harm for a figure to
+        # be a stale answer to.
+        if (
+            isinstance(share, dict)
+            and share.get("figure_kind") == "HARM_SHARE"
+            and isinstance(statement, str)
+            and statement.strip()
+        ):
+            recorded = share.get("harm_hash")
+            expected = harm_hash(statement)
+            if isinstance(recorded, str) and recorded != expected:
+                errors.append(
+                    ValidationError(
+                        f"{prefix}.exposure.share.harm_hash",
+                        f"is {recorded!r} but this finding's harm_statement "
+                        f"hashes to {expected!r}. The figure was computed against "
+                        "a different harm than the one recorded, so it answers a "
+                        "superseded question: re-resolve it against the current "
+                        "statement, or drop the share and name a share_absent. "
+                        "Do NOT reconcile this by recomputing the hash from the "
+                        "new statement -- that keeps a stale number and removes "
+                        "the only signal that it is stale",
+                    )
+                )
+
+        # A2. The reconciler's judgement on the figure is stated as data, and it
+        # is stated exactly when a reconciler saw the finding. Both directions
+        # are checked: a missing value on a verified finding is the silence the
+        # fingerprint allowlist produced, and a value on an unverified one claims
+        # a judgement nobody made.
+        state = finding.get("state")
+        disposition = exposure.get("figure_disposition")
+        reconciled = state != FindingState.DEFERRED_UNVERIFIED.value
+        if reconciled and disposition is None:
+            errors.append(
+                ValidationError(
+                    f"{prefix}.exposure.figure_disposition",
+                    f"is null on a finding in state {state!r}, which reached a "
+                    "reconciler. Every reconciled finding carries ADOPTED, "
+                    "DOWNGRADED or REPLACED, because the reconciler is the only "
+                    "actor that can see whether the queried metric governs the "
+                    "harm it just confirmed. Null here is what a run-scoped "
+                    "fingerprint allowlist degrades to on its second run: no "
+                    "match, no error, and every figure blanked",
+                )
+            )
+        elif not reconciled and disposition is not None:
+            errors.append(
+                ValidationError(
+                    f"{prefix}.exposure.figure_disposition",
+                    f"is {disposition!r} on a DEFERRED_UNVERIFIED finding. "
+                    "Nobody reconciled this one, so there is no judgement to "
+                    "record -- its figure is PATH_EXPOSURE and the column says so",
+                )
+            )
+        if (
+            disposition in _FIGURE_REJECTED
+            and FindingState.__members__.get(str(state)) in _HARM_CONFIRMED_STATES
+        ):
+            rejected.append(str(finding.get("fingerprint")))
+
+        # `figure_kind` is DERIVABLE from `figure_disposition` for three of its
+        # four values, and stored anyway for the fourth. ADOPTED and REPLACED
+        # both mean the figure answers the confirmed harm, so both imply
+        # HARM_SHARE -- and until these two checks existed, ADOPTED beside
+        # PATH_EXPOSURE validated with no error at all, which is redundant state
+        # silently contradicting the field it duplicates.
+        #
+        # DOWNGRADED is the value that earns the field: the first-pass figure
+        # may be RETAINED as an execution rate (PATH_EXPOSURE) or re-measured by
+        # the second pass (HARM_SHARE), and nothing in the record distinguishes
+        # those without being told. That case is real -- one reconciler on the
+        # 2026-09-05 run wrote exactly it, "retained but relabelled as path
+        # exposure, not harm".
+        # Only where the harm is CONFIRMED. Found by running a real verdict
+        # through this: a DISCARDED_REFUTED finding whose reconciler ADOPTED a
+        # measured ZERO -- "0% of the path, THE PATH DOES NOT EXIST" -- is a
+        # real and useful figure, and it is path exposure, because a refuted
+        # finding has no harm for anything to be a share of. Without this
+        # condition the two rules contradicted each other and no record
+        # carrying that shape could be written at all.
+        if (
+            isinstance(share, dict)
+            and disposition in ("ADOPTED", "REPLACED")
+            and FindingState.__members__.get(str(state)) in _HARM_CONFIRMED_STATES
+        ):
+            if share.get("figure_kind") != "HARM_SHARE":
+                errors.append(
+                    ValidationError(
+                        f"{prefix}.exposure.share.figure_kind",
+                        f"is {share.get('figure_kind')!r} beside "
+                        f"figure_disposition {disposition!r}, which says the "
+                        "figure answers the confirmed harm -- so it is a "
+                        "HARM_SHARE. Only DOWNGRADED leaves the kind open, "
+                        "because a downgraded figure may be retained as an "
+                        "execution rate or replaced by a re-measured one",
+                    )
+                )
+        elif disposition == "NO_FIGURE" and isinstance(share, dict):
+            errors.append(
+                ValidationError(
+                    f"{prefix}.exposure.figure_disposition",
+                    "is NO_FIGURE beside a share. NO_FIGURE says the resolver "
+                    "produced nothing for this candidate, so there was nothing "
+                    "to adopt, downgrade or replace -- a figure here means one "
+                    "of the other three describes what happened",
+                )
+            )
+
+        # A6. A harm share needs a CONFIRMED harm to be a share of. Keyed on
+        # the state rather than on whether a reconciler looked: a figure for a
+        # harm that was refuted, or that never reproduced, is the same error as
+        # a figure for a harm nobody checked.
+        if (
+            isinstance(share, dict)
+            and share.get("figure_kind") == "HARM_SHARE"
+            and FindingState.__members__.get(str(state)) not in _HARM_CONFIRMED_STATES
+        ):
+            errors.append(
+                ValidationError(
+                    f"{prefix}.exposure.share.figure_kind",
+                    f"claims HARM_SHARE on a finding in state {state!r}, whose "
+                    "harm is not confirmed. A harm share needs a harm to be a "
+                    "share OF; what was measured here is the traffic reaching "
+                    "the code, which is PATH_EXPOSURE",
+                )
+            )
+
+        # A3. A figure the resolver produced does not vanish without a named
+        # reason. The pre-existing smoke test below fires only when NO finding
+        # shows any integration at all, and its own comment records the partial
+        # case as unchecked -- on the run this was written for, the partial case
+        # was almost all of it. Figures: `run-record.md`.
+        if finding.get("fingerprint") in with_figure and share is None:
+            if disposition in _FIGURE_REJECTED:
+                # Judged and rejected, which is this pipeline working. It still
+                # owes the reader a reason in place of the figure.
+                if exposure.get("share_absent") is None:
+                    errors.append(
+                        ValidationError(
+                            f"{prefix}.exposure.share_absent",
+                            "is null on a finding whose resolver figure a "
+                            "reconciler rejected. A rejected figure leaves a "
+                            "named absence, not a blank cell -- 'no share "
+                            "measured' over a figure that WAS measured and then "
+                            "discarded is the one sentence this column must "
+                            "never print",
+                        )
+                    )
+            else:
+                errors.append(
+                    ValidationError(
+                        f"{prefix}.exposure.share",
+                        f"is null, but the resolver returned a conforming share "
+                        f"for {finding.get('fingerprint')!r} and "
+                        f"figure_disposition is {disposition!r} rather than a "
+                        "rejection. A figure that reached the resolver and not "
+                        "the record was deleted by the assembly step, which is "
+                        "the defect this check exists to catch: carry the share "
+                        "through, or record the reconciler's DOWNGRADED or "
+                        "REPLACED judgement that removed it",
+                    )
+                )
+
+    errors.extend(_check_reresolution_ran(raw, rejected))
+    return errors
+
+
+def _pairing_broken(finding: dict) -> bool:
+    """`DEFERRED_UNVERIFIED` and `Not triaged` must both hold, or neither."""
+    unverified = finding.get("state") == FindingState.DEFERRED_UNVERIFIED.value
+    not_triaged = finding.get("band") == Band.NOT_TRIAGED.value
+    return unverified != not_triaged
+
+
+def _unjustifiable(finding: dict) -> bool:
+    """A `Not triaged` finding explaining a band decision nobody made.
+
+    The `band_reason` check above only stops a sentence being MISSING, and skips
+    `Not triaged` because there is nothing to justify there. That left the other
+    direction open, and the renderer prints any truthy `band_reason` into the
+    always-visible row. Measured on the 2026-09-11 record: all 46 unverified
+    candidates carry one, each justifying the scrutiny band they should never
+    have had -- so correcting only the band would have moved the fabricated
+    judgement one column left rather than removing it.
+    """
+    reason = finding.get("band_reason")
+    return finding.get("band") == Band.NOT_TRIAGED.value and bool(reason)
+
+
+def _counted_list(fingerprints: list[str]) -> str:
+    """`3 finding(s) (a, b, c)` -- the names, not just the count.
+
+    The rejected fingerprints were being collected and then only counted, which
+    made the list ceremony over an integer. Naming them is what an operator
+    repairing the record actually needs: the count says a stage did not run, the
+    names say which rows to re-measure.
+    """
+    shown = ", ".join(sorted(fingerprints)[:6])
+    if len(fingerprints) > 6:
+        shown += ", ..."
+    return f"{len(fingerprints)} finding(s) ({shown})"
+
+
+def _check_reresolution_ran(raw: dict, rejected: list[str]) -> list[ValidationError]:
+    """Every rejected figure was re-measured against the corrected harm.
+
+    A1 as an invariant rather than a step. The re-resolve stage exists because a
+    figure computed from the finder's harm description answers a question
+    verification is designed to supersede; tying its `attempted` count to the
+    number of rejections is what stops it from quietly not running, because a
+    stage that did not run and a run with nothing to re-resolve otherwise look
+    identical in the record.
+    """
+    errors: list[ValidationError] = []
+    block = raw.get("reresolution")
+    if not rejected:
+        if block is not None:
+            errors.append(
+                ValidationError(
+                    "reresolution",
+                    "is present but no finding carries figure_disposition "
+                    "DOWNGRADED or REPLACED, so there was nothing to re-measure. "
+                    "Set it to null, or state the rejections it answers",
+                )
+            )
+        return errors
+    if block is None:
+        errors.append(
+            ValidationError(
+                "reresolution",
+                f"is null but {_counted_list(rejected)} had a figure rejected by "
+                "a reconciler. Each rejection is a figure computed against a harm "
+                "statement the verifiers then corrected, so it must be re-measured "
+                "against the corrected statement -- spawn the impact resolver "
+                "over the rejected candidates and record the pass here. Recording "
+                "an attempt that failed is a valid outcome; recording nothing is "
+                "how the figure stayed deleted",
+            )
+        )
+        return errors
+    if isinstance(block, dict):
+        attempted = block.get("attempted")
+        if _is_count(attempted) and attempted != len(rejected):
+            errors.append(
+                ValidationError(
+                    "reresolution.attempted",
+                    f"is {attempted} but {_counted_list(rejected)} carry "
+                    "figure_disposition DOWNGRADED or REPLACED. Every rejected "
+                    "figure is re-measured against the corrected harm statement, "
+                    "so the two counts are the same number written twice",
+                )
+            )
     return errors
 
 
@@ -1554,6 +2543,7 @@ def _build_finding(
         band_reason=raw["band_reason"],
         title=raw["title"],
         consequence=raw["consequence"],
+        harm_statement=raw["harm_statement"],
         observed_symptom=raw["observed_symptom"],
         observed_full=raw.get("observed_full"),
         defect_site=raw["defect_site"],
@@ -1585,10 +2575,10 @@ def _build_finding(
             if verification
             else None
         ),
-        # Act Now carries all three lines on the always-visible row; everything
+        # Read closely carries all three lines on the always-visible row; everything
         # below it drops the symptom into the expansion. A run has been measured
         # producing 44 candidates, which is unreadable otherwise.
-        symptom_collapsed=band is not Band.ACT_NOW,
+        symptom_collapsed=band is not Band.READ_CLOSELY,
     )
 
 
@@ -1675,8 +2665,25 @@ def _exposure_from_raw(raw: dict) -> Exposure:
 
     A record written before `share` existed has none of the three keys, and must
     still build and render. `.get()` rather than a strict comprehension is what
-    keeps the 82 findings of an already-published run re-renderable without a
-    re-run, which is the difference between fixing a report and reproducing it.
+    keeps an already-normalised model re-renderable without a re-run.
+
+    **THAT TOLERANCE IS NARROWER THAN IT READS, and the wider claim was wrong.**
+    This function has two callers with two different postures. Through
+    `normalise()` it is reached only AFTER `validate_run_record` has passed, so
+    a raw record predating this schema never arrives here at all -- it fails
+    validation on the required keys and exits 1. The tolerant path is only
+    exercised through `model_from_dict`, the wire format between this script's
+    stdout and `render_digest.py`'s stdin, which the documented pipeline never
+    persists. So: a run record produced before 0.25.0 CANNOT be re-rendered
+    without regenerating it, and only an already-normalised model dict can skip
+    re-validation.
+
+    That tolerance stops at the two keys `_EXPOSURE_KEYS` names. `figure_kind`
+    and `figure_disposition` are read strictly, because a record that reaches
+    here has passed validation and validation requires both -- and a `.get()`
+    here would let a re-render of an older record produce a column that silently
+    cannot tell a harm share from a path-exposure figure, which is the state this
+    change exists to leave behind.
     """
     share = raw.get("share")
     return Exposure(

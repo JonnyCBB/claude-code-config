@@ -47,7 +47,18 @@ Create `~/.claude/thoughts/shared/research/` if it doesn't exist.
 
 ## Step 11: Research Document Template
 
-Use the metadata from Step 10 and structure the document with YAML frontmatter:
+Use the metadata from Step 10 and structure the document with YAML frontmatter.
+
+**Emit every section, including the ones that come out empty.** A section with no content
+gets the heading and the single word `None.` underneath. Do not delete the heading.
+
+This is the same principle as the Step Ledger, applied to findings rather than steps: a
+reader cannot tell a section that was checked and came back empty from one nobody looked at,
+and the whole point of both is that absence is stated rather than implied. Measured
+2026-09-10 on a real run: the `Competing Findings` heading was dropped entirely rather than
+written as `None.`, because the instruction to write `None.` was inside the bracketed
+placeholder that the author is meant to replace - so removing the placeholder removed the
+instruction with it.
 
 ```markdown
 ---
@@ -61,7 +72,7 @@ tags: [research, codebase, tools, libraries, relevant-component-names]
 status: complete
 last_updated: [Current date in YYYY-MM-DD format]
 last_updated_by: [Researcher name]
-review_phase_status: [completed | skipped_simple_complexity]
+review_phase_status: completed # the review phase runs at every complexity
 complexity: [Simple | Medium | Complex]
 ---
 
@@ -72,6 +83,31 @@ complexity: [Simple | Medium | Complex]
 **Git Commit**: [Current commit hash from Step 10]
 **Branch**: [Current branch name from Step 10]
 **Repository**: [Repository name]
+
+## Step Ledger
+
+Every step of the skill, what it produced, and the evidence. Fill every row. `completed`
+means the step's work happened; a step that could not run says so in plain words and names
+what is consequently missing. Never record a skipped step as `completed`.
+
+| Step | Status | Evidence |
+| ---- | ------ | -------- |
+| 1 Read mentioned files | completed | [files read, or "none mentioned"] |
+| 2 Decompose | completed | [question count; plan path in non-interactive mode] |
+| 3 Spawn researchers | completed | [agent types spawned, and for which questions] |
+| 4 Validate completion | completed | [agents committed vs spawned] |
+| 5 Synthesize | completed | [absolute path of the synthesis file] |
+| 6 Completeness review | completed | [evaluator agent name; verdict; iterations run] |
+| 7 Review phase | completed | [reviewer personas spawned by name; Must Address count] |
+| 8 Grounding pass | completed | [grounding + verification agent names; final decision; iterations] |
+| 9 Synthesis revision | completed | [count of claims revised; count annotated unresolved] |
+| Pre-Document Gate | completed | [all artifacts confirmed present] |
+| 10-13 Document | completed | [this document] |
+
+A reader checking this research should be able to tell from this table alone which
+verification actually happened. That is its whole purpose — the previous version of this
+template recorded only the review phase, via a single frontmatter field the orchestrator
+also wrote itself, so nine other steps had no audit surface at all.
 
 ## Research Question
 
@@ -113,6 +149,28 @@ complexity: [Simple | Medium | Complex]
 
 [Links to other research documents in ~/.claude/thoughts/shared/research/]
 
+## Competing Findings
+
+[Where two agents returned conflicting information and neither is better sourced, both
+positions with their evidence and source tiers. Step 5 requires contradictions to stay
+visible rather than being silently resolved, and this is where they go.]
+
+None.
+
+## Review Methodology
+
+[Which reviewer personas ran in Step 7, any that did not deliver after the recovery ladder
+was exhausted, and — if the user asked for less review — their words. Write the reviewer
+names, not a count: "the review ran" is exactly the unfalsifiable claim the Step Ledger
+exists to replace.]
+
+## Advisory Notes
+
+["Should Consider" and "Minor" items from Step 7 that were not applied, each attributed to
+the persona that raised it.]
+
+None.
+
 ## Open Questions
 
 [Only questions the Step 8 grounding pass classified UNRESOLVABLE or SKIP, each stating the
@@ -124,24 +182,6 @@ Open questions here are expected and healthy; there is no target of zero. What m
 appear is a question that more research alone could answer.
 
 Format each as: the question — why research cannot close it — what would close it.]
-
-## Operational Context Recommendation
-
-{{If this research identified specific services, include:}}
-
-The following services were identified in this research:
-
-- [service-name-1]
-- [service-name-2]
-
-Consider running `/operational-context [service-names]` before creating an
-implementation plan. This will gather production metrics, SLOs, dependency
-health, and deployment status to inform planning decisions.
-
-{{If no specific services were identified, include:}}
-
-No specific services were identified in this research. Operational context
-gathering is not recommended at this time.
 
 ## Design Exploration Recommendation
 
@@ -174,10 +214,10 @@ No significant design tensions were identified. Proceeding directly to
 
 ## Step 13: MCP Call Documentation
 
-Include information from the web-search-researcher output so findings can be reproduced:
+Include information from the research agents' output so findings can be reproduced:
 
-- **aika mcp search**: query, source, and description
-- **codesearch mcp search**: query, repository name, and description
+- **MCP or internal search calls**: tool, query, source, and description
+- **code searches**: query, repository name, and description
 - **relevant webpages**: links and descriptions
 
 ## Follow-up Research Format (Step 15)

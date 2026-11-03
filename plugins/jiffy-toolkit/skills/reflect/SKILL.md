@@ -2,7 +2,7 @@
 name: reflect
 description: >
   Extract non-obvious learnings from Claude Code session transcripts and route them
-  to persistent storage (auto-memory, CLAUDE.md, Knowledge Graph, Infinite Memory).
+  to persistent storage (auto-memory, CLAUDE.md).
   Filters noise with an evidence-based taxonomy — skips standard patterns and
   well-documented libraries; surfaces proprietary API discoveries, bug workarounds,
   user corrections, and tool discoveries. Presents grouped recommendations for user
@@ -57,7 +57,7 @@ Session transcripts are JSONL files at:
 `~/.claude/projects/<encoded-cwd>/<session-id>.jsonl`
 
 `<encoded-cwd>` is the absolute working directory with each `/` replaced by `-`.
-Example: `/Users/alice/myproject` → `-Users-alice-myproject`
+Example: `/home/alice/myproject` → `-home-alice-myproject`
 
 **Current session (no flags):**
 
@@ -230,21 +230,12 @@ Read `references/storage-routing.md` for dedup thresholds and routing logic.
 
 For each candidate learning, check all available stores:
 
-1. **Infinite Memory** — `mcp__infinite-memory__recall(query=<3-5 key terms>, limit=3)`
-   - Similarity >0.85 → DUPLICATE (skip)
-   - Similarity 0.6-0.85 → RELATED (flag for user: "Similar to: [title]. Update?")
-
-2. **Knowledge Graph** — `mcp__knowledge-graph__search(query=<key terms>)`
-   - Matching node with same info → DUPLICATE
-   - Matching node, new info to add → UPDATE candidate
-
-3. **Auto-memory** — Read the project's `MEMORY.md` index, match descriptions
+1. **Auto-memory** — Read the project's `MEMORY.md` index, match descriptions
    - Found → DUPLICATE or UPDATE existing file
 
-4. **CLAUDE.md** — Read `~/.claude/CLAUDE.md` and project `.claude/CLAUDE.md` (if exists)
+2. **CLAUDE.md** — Read `~/.claude/CLAUDE.md` and project `.claude/CLAUDE.md` (if exists)
    - Overlapping instruction → DUPLICATE
 
-If an MCP is unavailable, skip that check with a warning and continue with the others.
 If all candidates are duplicates, stop: "All learnings already captured in existing stores."
 
 **Multi-session cross-dedup:** When processing multiple sessions, also deduplicate
@@ -267,27 +258,23 @@ Display all learnings grouped by destination:
 ## Recommended Learnings (M items)
 
 ### CLAUDE.md (N items)
-1. [0.92] "Use mcp__X for code search, not grep on large repos"
+1. [0.92] "Use the repo's search index for code search, not grep on large repos"
    Category: tool_command | Source: user correction
 
-### Infinite Memory (N items)
-2. [0.88] Bug: socket closed on edge proxy, fix: use disco resolution
+### Auto-Memory (N items)
+2. [0.88] Bug: socket closed on edge proxy, fix: use the service-discovery resolver
    Category: bug_workaround | Source: empirical discovery
-
-### Knowledge Graph (N items)
 3. [0.72] Service X is owned by team Y (confirmed via the service catalog)
    Category: relationship | Source: conversation
-
-### Auto-Memory (N items)
 4. [0.90] User prefers uv over pip for Python packages
    Category: feedback | Source: user preference
 ```
 
 **Routing accuracy**: The section heading for each learning MUST match its routed
 destination from the Step 5 decision tree, not its category name. In particular,
-`relationship` category items route to **Knowledge Graph**, not Infinite Memory —
-do not group them under the "Infinite Memory" heading. Double-check each item's
-heading against the routing tree before presenting.
+a cross-project correction routes to the global **CLAUDE.md**, not Auto-Memory, even
+though its category is `user_correction`. Double-check each item's heading against the
+routing tree before presenting.
 
 For RELATED items, show the existing entry alongside:
 "Similar to existing: '[title]'. Update the existing entry, or skip?"
@@ -317,21 +304,13 @@ Add a one-line entry to MEMORY.md. Warn if MEMORY.md would exceed 200 lines.
 **CLAUDE.md:** Edit to append the instruction in the most relevant existing section.
 Warn if the file would exceed 200 lines.
 
-**Knowledge Graph:** `add_node` with type and properties. `add_edge` for relationships.
-`update_node` for RELATED items the user chose to update.
-
-**Infinite Memory:** `remember` with title, content, type, tags, scope, confidence,
-and project_path.
-
 After all operations, print a summary:
 
 ```
 ## Stored N of M learnings
 
 - CLAUDE.md: 2 instructions added
-- Infinite Memory: 3 items (1 bugfix, 1 decision, 1 pattern)
-- Knowledge Graph: 1 node + 1 edge
-- Auto-Memory: 1 feedback memory
+- Auto-Memory: 4 memories (2 feedback, 1 project, 1 reference)
 - Skipped: 3 (user declined)
 ```
 

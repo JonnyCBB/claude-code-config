@@ -76,9 +76,9 @@ SCAN_GLOBS = (
 # This list is checked in BOTH directions. An entry that has stopped being broken
 # fails the test too, so a fixed bd release cannot leave stale exemptions behind.
 KNOWN_GAPS: dict[tuple[str, str], str] = {
-    ("reclaim", ""): "jbrooksbartlett-m248 - work leases are 1.2.x-only and "
+    ("reclaim", ""): "hq-m248 - work leases are 1.2.x-only and "
     "v1.2.2 withdrew them; the conductor docs still prescribe them",
-    ("heartbeat", ""): "jbrooksbartlett-m248 - as above",
+    ("heartbeat", ""): "hq-m248 - as above",
     # `bd leases` is broken the same way and is covered by the same bead, but it
     # is deliberately NOT listed: it appears only as unbackticked prose, which
     # this scanner does not read as a command. An exemption for something never
@@ -135,7 +135,7 @@ def _outer_flags(rest: str) -> list[str]:
 
 # Bootstrap-RED sentinel, matching scripts/tests/test-comms-contract-check.py and
 # test-conductor-signals.sh. This repo has NO continuous integration
-# (jbrooksbartlett-sqmi), so these suites are the only gate and each has to prove
+# (hq-sqmi), so these suites are the only gate and each has to prove
 # it can report a failure:
 #   EXPECT_BOOTSTRAP_RED=1 python3 scripts/tests/test-bd-cli-contract.py
 # must exit non-zero. `self_test` below proves something stronger and narrower -
@@ -261,8 +261,7 @@ def code_spans(path: str, line: str, fence: int) -> CodeSpans:
         if fence and marker.group(2).strip():
             return CodeSpans([line], fence, False)
         # Track the OPENING width rather than toggling on any ```. A four-backtick
-        # fence legitimately wraps three-backtick blocks - there is one in
-        # plugins/eng-utils/skills/mma-tune-alerts/SKILL.md:143 - and a plain
+        # fence legitimately wraps three-backtick blocks, and a plain
         # toggle inverts its state at the inner fences, so from there on prose is
         # read as code and code as prose. Only a marker at least as wide as the
         # one that opened the block closes it.

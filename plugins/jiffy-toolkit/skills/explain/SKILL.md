@@ -26,8 +26,28 @@ its internals or its vocabulary. They have not read the source document. They *d
 happened - they commissioned it, or they saw the high-level ask - so do not re-explain the motivation
 as if it were news. Explain what they do not have: the detail, the internals, and the terminology.
 
-Write in accessible language. Define every acronym and project-specific term at first use, in the
-`full name (ACRONYM)` form. Nothing a reader arriving cold would stop at should be left bare.
+**Default writing approach: ASD-STE100 Simplified Technical English (STE)-informed prose.**
+Use its clarity principles, not a claim of formal compliance. The standard includes writing rules
+and a controlled dictionary; do not call an output STE-compliant unless you checked both against
+the full standard. [Official STE overview](https://www.asd-ste100.org/about_STE.html).
+
+Start with what the reader should expect: the supported outcome, the practical change, and any
+action or decision they need to take. Then explain how it works. Do not invent a benefit or repeat
+a motivation the reader already knows. For example, if the source supports it, open with
+"Owners receive one notice per channel, not one per rollout" before explaining channel grouping.
+
+During drafting and the final reread:
+
+- Keep sentences short, with one main idea. Name the actor and use direct verbs when the actor is known.
+- State conditions before the actions they control. Keep one action per instruction and show its expected result.
+- Use the same word for the same concept. Avoid idioms, abstract noun chains, and decorative synonyms.
+- Preserve conditions, exceptions, uncertainty, evidence limits, and citations when simplifying.
+- Use concrete examples to make the result easy to picture. Mark invented examples as illustrative, not evidence.
+
+Keep the tone natural, not a sequence of clipped commands. Apply the word-choice rule below rather
+than deleting technical names to shorten the text. Define every acronym and project-specific term
+at first use, in the `full name (ACRONYM)` form. Nothing a reader arriving cold would stop at should
+be left bare.
 
 **Use the common word for anything that is not a term of art.** Two kinds of word get two different
 treatments, and conflating them is how an explainer ends up either impenetrable or patronising:
@@ -50,11 +70,18 @@ This came from a real explainer. "Provenance" appeared once, explained nothing, 
 plain equivalent sitting right there. The engineering was never the problem; the vocabulary around it
 was.
 
+`/review-document`'s word-choice rule is this same rule, for the reviewing surface. Change one,
+change both, or they drift.
+
 Use visual elements liberally - diagrams, flowcharts, figures, graphs. **The rule: if a concept would
 otherwise need a wall of text, and a diagram, figure or graph would convey it better, use the visual
-instead of the text. Not both.** Every figure still needs enough prose around it to say what it shows
-and what to take from it - a figure nobody introduces is not doing the work of the paragraph it
-replaced.
+instead of the descriptive text.** The visual replaces the description, never the explanation. Every
+figure still needs enough prose around it to say what it shows, how to read it, and what to take from
+it - a figure nobody introduces is not doing the work of the paragraph it replaced.
+
+**Understanding is the constraint, not length.** Use every word the reader needs and no more. If a
+reader new to this system would have to infer a step - what state something is in, what happens to it,
+why - write it down, even when the document gets longer.
 
 Every claim resting on a file, table, dashboard, document or command carries a real reference the
 reader can follow. The document may be forwarded to the person whose work it concerns.
@@ -73,10 +100,10 @@ When it is finished, open it in the browser.
 ## Where everything else lives
 
 **Read `craft.md`, then the file for the mode you are in. Neither read is optional.** An eval measured
-what happens without them: baseline runs given this task with no skill produced documents far longer
-than a briefing should be, missed the visual-density target most of the time, and pulled in external
-font URLs so the output would not render offline. `craft.md` carries the measured figures and is the
-only place they live.
+what happens without them: baseline runs given this task with no skill carried the source's method and
+citation trail instead of answering the reader's question, drew too few figures, and pulled in external
+font URLs so the output would not render offline. `craft.md` carries the length and visual checks and
+is the only place they live.
 
 | Read this | When |
 | --- | --- |

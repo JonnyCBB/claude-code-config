@@ -4,7 +4,7 @@
 
 set -euo pipefail
 
-SKILL_DIR="$HOME/.claude/plugins/jbb-feature-dev/skills/verify-implementation"
+SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 PASS_COUNT=0
 FAIL_COUNT=0
@@ -43,11 +43,6 @@ run_check \
   grep -q "Service Startup" "$SKILL_DIR/references/live-testing-guide.md"
 
 run_check \
-  "live-testing-guide.md has Auth Pre-Flight section" \
-  "Contains auth pre-flight check documentation" \
-  grep -q -i "auth.*pre-flight\|pre-flight.*auth\|Authentication Prerequisites" "$SKILL_DIR/references/live-testing-guide.md"
-
-run_check \
   "live-testing-guide.md has Scenario Generation section" \
   "Contains scenario generation heuristics" \
   grep -q "Scenario Generation\|Test Scenario" "$SKILL_DIR/references/live-testing-guide.md"
@@ -68,29 +63,9 @@ run_check \
   grep -q "Result Formatting" "$SKILL_DIR/references/live-testing-guide.md"
 
 run_check \
-  "live-testing-guide.md documents gcloud ADC login" \
-  "Contains gcloud auth application-default" \
-  grep -q "gcloud auth application-default" "$SKILL_DIR/references/live-testing-guide.md"
-
-run_check \
-  "live-testing-guide.md documents service account impersonation" \
-  "Contains serviceauth.serviceAccountEmail" \
-  grep -q "serviceAccountEmail" "$SKILL_DIR/references/live-testing-guide.md"
-
-run_check \
-  "live-testing-guide.md documents authx dual-token auth" \
-  "Contains print-identity-token reference" \
-  grep -q "print-identity-token" "$SKILL_DIR/references/live-testing-guide.md"
-
-run_check \
   "live-testing-guide.md documents standard ports" \
   "Contains port 5990 reference" \
   grep -q "5990" "$SKILL_DIR/references/live-testing-guide.md"
-
-run_check \
-  "live-testing-guide.md documents health check readiness" \
-  "Contains grpc.health.v1.Health/Check" \
-  grep -q "grpc.health.v1.Health" "$SKILL_DIR/references/live-testing-guide.md"
 
 run_check \
   "live-testing-guide.md documents scenario matrix categories" \

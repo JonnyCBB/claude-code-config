@@ -4,16 +4,15 @@ name: sweep-followups
 # front-loaded intent and buried the trigger phrases mid-sentence scored WORSE on the same
 # 20-query eval set: accuracy 65% vs 70%, recall 30% vs 40%, and it lost the literal-phrase
 # query "sweep for follow-ups" outright (2/2 -> 0/2). Keep the trigger phrases early and the
-# sentences short. The eval set and the probe that measured this are not in this repo; see
-# jbrooksbartlett-tlf for both paths, and re-measure before changing this.
+# sentences short. The eval set and the probe that measured this are not in this repo;
+# re-measure before changing this.
 #
 # RE-MEASURED 2026-08-19, when the dead `--status` flag had to come out of the first sentence.
 # Both wordings run in one session, 20 queries x 2: old TP=3, new TP=2 - which looks like a
 # regression and is not one. Both arms fire on the SAME three queries; one coin-flip query went
 # 1/2 -> 0/2, and the 0.5 threshold turns that into a whole TP. The old wording itself scored
-# TP=4 in tlf and TP=3 today, so the baseline moves by the same one query against itself.
-# Indistinguishable at this sample size. That the eval cannot resolve a one-query difference is
-# jbrooksbartlett-yuql; raw logs in ~/work-evidence/2026-08-19-klse-description-ab/.
+# TP=4 in the first run and TP=3 today, so the baseline moves by the same one query against itself.
+# Indistinguishable at this sample size: the eval cannot resolve a one-query difference.
 description: >
   Reads back over the current session's transcript, finds follow-ups that were mentioned
   but never filed as Beads issues, and files the ones worth keeping labelled
@@ -49,7 +48,7 @@ way is correct by construction — the loaded skill and its sibling scanner are 
 install. Do not instead glob `~/.claude/plugins/cache/*/jbb-feature-dev/*/`: that cache
 holds many versions of this plugin plus at least one non-version directory
 (`0.20.0.mislabelled-backup`), so a glob can resolve to a real file belonging to a
-version other than the one running, and fail silently (jbrooksbartlett-u7c).
+version other than the one running, and fail silently.
 
 The `else` branch is not decoration. `test -f "$SCAN" && echo ok` prints **nothing** when
 the path is wrong, which is indistinguishable from never having run the check — so a wrong
@@ -127,20 +126,40 @@ deciding. To see the current hit rate and the families it fires on, run
 canonical source for those numbers, so this file does not restate them and cannot go
 stale against them.
 
-File it when a person would want it later:
+**The bar, set by Jonny on 2026-09-11. His wording is the standard, so it is quoted rather than
+paraphrased:**
 
-- a bug found and deliberately not fixed on that branch
-- a doc, comment or requirements line that the work just made wrong
-- a missing test, or a test that only passes in isolation
-- a decision only Jonny can make
-- work explicitly pushed to a separate PR or ticket
+> "To be explicit about what I want when we file beads is we only want to file the highest value
+> beads if something will break or something will not work as intended because of something we
+> haven't done then we should file a bead otherwise the bead should not be filed and it should be
+> deleted if it does get accidentally filed. The only beads that we should definitely keep either
+> the ones that I, Jonny, file myself and any agent filed beads which would otherwise result in a
+> service that is not functional that breaks that has issues, or incredibly important and user
+> valuable features"
 
-Do **not** file:
+So file it only when one of these holds:
 
+- without it, **something breaks or does not work as intended** - a bug found and deliberately not
+  fixed on that branch, a check or gate that passes while having verified nothing
+- it is an **incredibly important and user-valuable feature**
+- **Jonny asked for it himself.** Then it is his: file it WITHOUT `agent-proposed`, so it does not
+  sit behind a confirmation he already gave.
+
+Do **not** file - these are the common misses, and the first two used to be on the file list above:
+
+- a doc, comment or requirements line the work just made wrong
+- a missing test, a flaky one, or a lint rule that could be stronger
+- a lesson, a pattern, a correction or prior art worth recording - write it where it will be read,
+  not into the queue
+- a defect in someone else's tool that will not be fixed here
+- a defect nobody will ever hit
 - the assistant narrating its own reporting scope ("out of scope for correctness-only review")
 - something it went on to do in the same session
 - an offer to act ("want me to do X?") — that is a question, not a deferral
 - a finding it investigated and refuted
+
+**Priority is not a way round this.** Filing it P0 does not make it pass, and a low priority is not
+a reason to file something that passes.
 
 For each keeper, file it per the standing rule in `~/.claude/CLAUDE.md`:
 
@@ -165,7 +184,10 @@ makes restating them here pure cost and a second place for them to drift.
 
 One thing the rule does not cover, because it is specific to sweeping: a candidate the
 scanner surfaced from the **user's** own words counts. Do not skip it because Jonny
-already knows — a queue nobody had to remember is the entire point.
+already knows — a queue nobody had to remember is the entire point. **File that one
+without `-l agent-proposed` and without the `-s deferred` step**, and quote his words in the
+description: he has already decided, so holding it behind a confirmation he gave is what makes it
+look like an agent's idea later.
 
 If invoked with `--dry-run`, stop here: report what you would file and skip step 4, so
 the watermark does not advance past candidates that were never filed.

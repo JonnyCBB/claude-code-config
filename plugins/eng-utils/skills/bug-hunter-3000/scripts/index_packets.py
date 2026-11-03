@@ -1,40 +1,24 @@
 #!/usr/bin/env python3
 """Write a Finder Packet to disk and return only a small index of it.
 
-WHY THIS EXISTS
----------------
-`index_to_disk` was named exactly once, in SKILL.md's dispatch pseudocode, and
-defined nowhere -- no script, no contract, no statement of what it returned. The
-line calling it also ACCUMULATED its result into a variable named `packets`, which
-is the opposite of what `references/mandate-partitioning.md` prescribes: "Index each
-batch to disk as it lands, and do not carry packets forward."
+**The finder holds no `Write` tool but does hold `Bash`**, which can write anywhere
+`Write` can -- so the packet is written by the FINDER and never enters the
+orchestrator's context at all. That is strictly better than indexing on arrival,
+which still pays the context cost once per packet.
 
-Measured consequence, 2026-08-28: 32 finders returned ~2.2MB of packets through one
-orchestrator's context. The orchestrator exhausted its working memory, the impact
-resolver received 14 of 116 candidates, and the run reached the verification stage
-with too little room to use it. A second consequence surfaced later: the per-packet
-byte sizes needed to calibrate `project_cost.py` were never written anywhere, so that
-calibration cannot be re-derived from any run performed without this script.
+What comes back is only what the orchestrator needs before it decides anything: per
+candidate, the fingerprint, the full-path defect site, a one-line title, scope,
+confidence, severity, effort, and whether a metric was cited. **Defect sites must be
+repository-root paths**, because grouping compares them mechanically. Everything
+interpretive stays on disk and is re-read surgically by `--read`.
 
-THE KEY FACT THAT MAKES THE STRONG FIX POSSIBLE
------------------------------------------------
-The finder holds no `Write` tool, and the packet contract used to explain the context
-cost as an unavoidable consequence of that. It is not: **the finder holds `Bash`,
-which can write anywhere `Write` can.** So the packet is written by the FINDER, and
-never enters the orchestrator's context at all.
+Usage:
+    <write>    python3 index_packets.py --run-dir <dir> --mandate <id>   (packet on stdin)
+    <collect>  python3 index_packets.py --run-dir <dir> --collect
+    <re-read>  python3 index_packets.py --run-dir <dir> --read <fingerprint>
 
-That is strictly better than indexing on arrival, which still pays the context cost
-once per packet. Nothing about the zero-outbound guarantee changes -- this writes to a
-local run directory, and the guarantee rests on the absence of outbound MCP tools, not
-on the absence of a filesystem.
-
-WHAT COMES BACK
----------------
-Only what the orchestrator needs before it decides anything: per candidate, the
-fingerprint, the full-path defect site, a one-line title, scope, confidence, severity,
-effort, and whether a metric was cited. Grouping compares defect sites mechanically,
-so those must be repository-root paths; everything interpretive stays on disk and is
-re-read surgically by `read_packet` when a dossier or portfolio entry is built.
+Two mandates sharing one id overwrite each other's packets, so ids must be unique
+within a run.
 """
 
 from __future__ import annotations
@@ -209,10 +193,6 @@ def write_and_index(
         "candidate_count": len(candidates),  # from the list, never a counter
         "candidates": candidates,
         "coverage_files": _coverage_files(packet_text),
-        # Recorded so project_cost.py can eventually be calibrated against real data.
-        # No run has ever persisted this, which is why its coefficients are ESTIMATED
-        # from a single run and cannot be re-derived.
-        "packet_bytes": len(packet_text.encode()),
         "parse_warning": parse_warning,
     }
     (d / f"mandate-{mandate}-index.json").write_text(json.dumps(index, indent=1))
@@ -247,7 +227,6 @@ def collect(run_dir: Path | str) -> dict:
     merged = {
         "mandates": len(by_mandate),
         "candidate_count": sum(m["candidate_count"] for m in by_mandate),
-        "packet_bytes_total": sum(m.get("packet_bytes", 0) for m in by_mandate),
         "by_mandate": by_mandate,
     }
     (d / "all-packets-index.json").write_text(json.dumps(merged, indent=1))

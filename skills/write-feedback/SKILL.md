@@ -1,7 +1,7 @@
 ---
 name: write-feedback
 description: Transform feedback notes into a polished, coherent feedback document for a colleague. Use when writing performance feedback or peer reviews.
-argument-hint: [colleague-name]
+argument-hint: "[colleague-name]"
 ---
 
 # Write Colleague Feedback

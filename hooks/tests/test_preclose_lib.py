@@ -3,7 +3,9 @@
 
 from __future__ import annotations
 
+import subprocess
 import sys
+import time
 import tempfile
 import unittest
 from pathlib import Path
@@ -249,6 +251,22 @@ class RegistryTest(unittest.TestCase):
         with self.assertRaises(lib.RegistryUnavailable):
             lib.is_conductor("cond-1111", Path(self.tmp.name) / "absent.db")
 
+    def test_a_database_that_opens_but_cannot_be_queried_still_raises(self):
+        # The failure that OPENS fine and fails on execute - a registry whose
+        # schema has moved, say. It reaches a different except clause from the
+        # missing-file case above, and nothing exercised it: replacing that
+        # clause with one that catches ValueError left every test passing.
+        import sqlite3
+
+        empty = Path(self.tmp.name) / "schemaless.db"
+        sqlite3.connect(str(empty)).close()
+        for call in (
+            lambda: lib.is_conductor("cond-1111", empty),
+            lambda: lib.resolve_session("cond-1111", empty),
+        ):
+            with self.assertRaises(lib.RegistryUnavailable):
+                call()
+
     def test_resolves_full_id_unique_prefix_and_title(self):
         for ref in ("work-2222", "a-worker"):
             self.assertEqual(lib.resolve_session(ref, self.db)["id"], "work-2222", ref)
@@ -359,6 +377,208 @@ class DeferredImportTest(unittest.TestCase):
             )
         self.assertEqual(done.returncode, 1)
         self.assertIn("subprocess", done.stdout)
+
+
+class SessionLivenessTest(unittest.TestCase):
+    """A session is only finished when its terminal has stopped advancing."""
+
+    def liveness(self, row, run):
+        return lib.session_liveness(row, run=run, settle=0.0)
+
+    def row(self, **overrides):
+        row = {"id": "s1", "title": "a-session", "tmux_session": "agentdeck_a_1111"}
+        row.update(overrides)
+        return row
+
+    def test_a_terminal_that_changes_between_two_reads_is_running(self):
+        state = self.liveness(
+            self.row(), fixtures.fake_deck(panes=["working 1h28m24s", "working 1h28m35s"])
+        )
+        self.assertEqual(state.state, "running")
+
+    def test_a_terminal_identical_across_two_reads_is_quiet(self):
+        state = self.liveness(self.row(), fixtures.fake_deck(panes=["done, nothing moving"]))
+        self.assertEqual(state.state, "quiet")
+
+    def test_an_empty_terminal_is_not_evidence_that_it_stopped(self):
+        # The degenerate case that reads as "finished" if you only compare the
+        # two captures: a pane that comes back empty twice is identical twice.
+        state = self.liveness(self.row(), fixtures.fake_deck(panes=["   \n"]))
+        self.assertEqual(state.state, "unknown")
+
+    def test_a_terminal_that_no_longer_exists_is_quiet(self):
+        state = self.liveness(self.row(), fixtures.fake_deck(panes=None))
+        self.assertEqual(state.state, "quiet")
+
+    def test_a_session_with_no_recorded_terminal_is_quiet(self):
+        state = self.liveness(self.row(tmux_session=""), fixtures.fake_deck(panes=None))
+        self.assertEqual(state.state, "quiet")
+
+    def test_tmux_that_cannot_be_run_at_all_is_unknown(self):
+        state = self.liveness(self.row(), fixtures.failing_run())
+        self.assertEqual(state.state, "unknown")
+
+    def test_a_capture_that_fails_is_unknown(self):
+        run = fixtures.fake_deck(panes=["a pane"], capture_rc=1)
+        self.assertEqual(self.liveness(self.row(), run).state, "unknown")
+
+    def test_the_terminal_is_named_exactly_so_a_prefix_cannot_match_another_session(self):
+        # Measured on tmux 3.5a: `has-session -t agentdeck_api-mcp` succeeds
+        # against `agentdeck_api-mcp-drive_39547e77`, and `capture-pane` on the
+        # same prefix returns THAT session's pane. Reading the wrong pane would
+        # answer the liveness question about the wrong session.
+        seen = []
+
+        def run(argv, timeout):
+            seen.append(argv)
+            return subprocess.CompletedProcess(list(argv), 0, "quiet pane", "")
+
+        self.liveness(self.row(), run)
+        self.assertIn("-t=agentdeck_a_1111", seen[0])
+
+    def test_activity_reads_window_activity_and_not_session_activity(self):
+        # Measured on a pane repainting in place every 0.3s with no newline:
+        # window_activity advanced every second, session_activity never moved.
+        # No fake runner can tell the two format strings apart, so the choice is
+        # pinned here or it is pinned nowhere.
+        seen = []
+
+        def run(argv, timeout):
+            seen.append(argv)
+            return subprocess.CompletedProcess(list(argv), 0, "1789321182\n", "")
+
+        self.assertEqual(lib.last_activity_stamp(self.row(), run), "1789321182")
+        self.assertIn("#{window_activity}", seen[-1])
+
+    def test_activity_is_empty_when_the_terminal_is_gone_and_none_when_unaskable(self):
+        self.assertEqual(lib.last_activity_stamp(self.row(), fixtures.fake_deck(panes=None)), "")
+        self.assertIsNone(lib.last_activity_stamp(self.row(), fixtures.failing_run()))
+
+
+    def argv_of(self, verb, call, **row):
+        seen = []
+
+        def run(argv, timeout):
+            seen.append(argv)
+            return subprocess.CompletedProcess(list(argv), 0, "1789321182\n", "")
+
+        call(self.row(**row), run)
+        return next(a for a in seen if verb in a)
+
+    def test_the_reads_use_the_plain_target_form_that_tmux_accepts(self):
+        # `-t=` is exact but capture-pane and list-panes REJECT it outright
+        # ("can't find pane: =foo"), so sending it there makes every capture fail,
+        # every session read "unknown", and every session permanently unremovable.
+        name = "agentdeck_a_1111"
+        capture = self.argv_of("capture-pane", lambda r, run: self.liveness(r, run))
+        listed = self.argv_of("list-panes", lib.last_activity_stamp)
+        for argv in (capture, listed):
+            self.assertIn("-t", argv)
+            self.assertIn(name, argv)
+            self.assertNotIn("-t=" + name, argv)
+        self.assertEqual(capture[capture.index("-S") + 1], "-60")
+        self.assertIn("-s", listed)
+
+    def test_the_two_reads_are_separated_by_a_real_interval_by_default(self):
+        # Every other test overrides settle, so the production default is
+        # constrained by this test alone: at 0.0 the two captures are taken
+        # back-to-back, come back identical, and the original defect returns
+        # while the suite stays green.
+        stamps = []
+
+        def run(argv, timeout):
+            if "capture-pane" in argv:
+                stamps.append(time.monotonic())
+            return subprocess.CompletedProcess(list(argv), 0, "a quiet pane", "")
+
+        lib.session_liveness(self.row(), run)
+        self.assertGreaterEqual(stamps[1] - stamps[0], 1.0)
+
+    def test_a_prefix_of_another_session_does_not_resolve(self):
+        run = fixtures.fake_deck(
+            panes=["quiet"], live={"agentdeck_a_1111-drive_39547e77"}
+        )
+        self.assertEqual(self.liveness(self.row(), run).state, "quiet")
+        self.assertEqual(
+            self.liveness(self.row(), run).reason.split()[0:2], ["its", "terminal"]
+        )
+
+    def test_only_tmux_saying_the_session_is_gone_reads_as_gone(self):
+        # Measured on tmux 3.7c, all of these exit 1. Two are facts about the
+        # session; the third says only that this process cannot reach the server,
+        # and reading it as "gone" turns the gate off for every session at once.
+        cases = {
+            "can't find session: agentdeck_a_1111": ("quiet", ""),
+            "no server running on /private/tmp/tmux-501/default": ("quiet", ""),
+            "error connecting to /private/tmp/tmux-501/x (No such file or directory)": (
+                "unknown",
+                None,
+            ),
+            "": ("unknown", None),
+        }
+        for stderr, (state, stamp) in cases.items():
+
+            def run(argv, timeout, stderr=stderr):
+                return subprocess.CompletedProcess(list(argv), 1, "", stderr)
+
+            self.assertEqual(self.liveness(self.row(), run).state, state, stderr)
+            self.assertEqual(lib.last_activity_stamp(self.row(), run), stamp, stderr)
+
+    def test_a_list_panes_that_exits_nonzero_is_unaskable_not_empty(self):
+        # "" means "there is no terminal", which ALLOWS a removal. A failed read
+        # must not spell itself the same way.
+        run = fixtures.fake_deck(panes=["quiet"], list_rc=1)
+        self.assertIsNone(lib.last_activity_stamp(self.row(), run))
+
+    def test_every_pane_in_the_session_contributes_to_the_stamp(self):
+        def run(argv, timeout):
+            if "list-panes" in argv:
+                return subprocess.CompletedProcess(
+                    list(argv), 0, "1789321182\n1789321190\n", ""
+                )
+            return subprocess.CompletedProcess(list(argv), 0, "", "")
+
+        self.assertEqual(
+            lib.last_activity_stamp(self.row(), run), "1789321182,1789321190"
+        )
+
+
+    def test_a_pane_reprinting_identical_bytes_still_reads_as_running(self):
+        # Measured: a pane reprinting the SAME bytes every 0.3s captures
+        # identically while #{window_activity} advances. Certifying on the pane
+        # alone hands the guard a stamp that has already moved, so the checklist
+        # passes, the removal is refused, and re-running reproduces the pair
+        # forever - a session that can never be retired.
+        stamps = iter(["100", "200"])
+
+        def run(argv, timeout):
+            if "list-panes" in argv:
+                return subprocess.CompletedProcess(list(argv), 0, next(stamps), "")
+            return subprocess.CompletedProcess(list(argv), 0, "working", "")
+
+        self.assertEqual(self.liveness(self.row(), run).state, "running")
+
+    def test_a_quiet_verdict_carries_the_stamp_the_guard_will_re_read(self):
+        state = self.liveness(self.row(), fixtures.fake_deck(panes=["still"]))
+        self.assertEqual(state.state, "quiet")
+        self.assertEqual(state.stamp, fixtures.ACTIVITY)
+
+    def test_a_terminal_that_is_gone_carries_an_empty_stamp_not_a_missing_one(self):
+        # "" compares equal to itself, so a session whose pane was already gone
+        # stays removable. None would refuse forever.
+        self.assertEqual(self.liveness(self.row(), fixtures.fake_deck(panes=None)).stamp, "")
+
+
+    def test_a_socket_name_is_passed_through(self):
+        seen = []
+
+        def run(argv, timeout):
+            seen.append(argv)
+            return subprocess.CompletedProcess(list(argv), 0, "quiet pane", "")
+
+        self.liveness(self.row(tmux_socket_name="alt"), run)
+        self.assertEqual(seen[0][1:3], ["-L", "alt"])
+
 
 
 if __name__ == "__main__":

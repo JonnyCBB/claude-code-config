@@ -551,11 +551,7 @@ Read [`${CLAUDE_PLUGIN_ROOT}/skills/shared/references/visual-qa-review.md`](${CL
    open ~/.claude/teach-me/<slug>/index.html
    ```
 
-6. Report the output path to the user, including:
-   ```
-   **To share internally:**
-   - Say "publish" or "share this" to deploy to your internal static host (SSO-protected)
-   ```
+6. Report the output path to the user.
 
 ## Reference Files
 

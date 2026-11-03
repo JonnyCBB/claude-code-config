@@ -10,13 +10,16 @@ Read this file when Step 2 instructs you to `Read references/plan-templates.md`.
 
 To answer "[user's question]", I need to investigate:
 
-1. [Question 1] → Will use [subagent-type]
-2. [Question 2] → Will use [subagent-type]
-3. [Question 3] → Will use [subagent-type]
+1. Q1: [Question 1] → Will use [subagent-type]
+2. Q2: [Question 2] → Will use [subagent-type]
+3. Q3: [Question 3] → Will use [subagent-type]
 ...
 ```
 
-For each question, determine: what type of information is needed, which subagent type is most appropriate, and what specific areas to investigate.
+For each question, determine the information needed, assigned role, and areas to investigate.
+Assign stable IDs to questions and success criteria; preserve them in assignments, evidence,
+evaluator flags, reviewer gaps, candidates, and follow-ons. Link newly found items to their
+originating IDs. Delivered assignment evidence, not equal agent counts, establishes coverage.
 
 ## Assumptions
 
@@ -30,7 +33,7 @@ In approaching "[user's question]", I am making the following assumptions:
 2. [Assumption about intent, e.g., "You want documentation, not recommendations"]
 
 **Implicit assumptions** (inferred from context):
-1. [Assumption about domain, e.g., "The system uses standard shared infrastructure"]
+1. [Assumption about domain, e.g., "The system uses the repository's standard infrastructure"]
 2. [Assumption about methodology, e.g., "Current codebase is source of truth over old docs"]
 
 **Constraints assumed:**
@@ -46,9 +49,9 @@ Evaluate each assumption: Was it explicitly stated? Inferred? Could it be wrong,
 ## Success Criteria
 
 This research will be considered complete when:
-- [ ] [Specific deliverable, e.g., "All authentication entry points are identified with file paths"]
-- [ ] [Level of detail required, e.g., "Each component's role in the flow is documented"]
-- [ ] [Scope of coverage, e.g., "Both happy path and error handling are covered"]
+- [ ] SC1: [Specific deliverable, e.g., "All authentication entry points are identified with file paths"]
+- [ ] SC2: [Level of detail required, e.g., "Each component's role in the flow is documented"]
+- [ ] SC3: [Scope of coverage, e.g., "Both happy path and error handling are covered"]
 ```
 
 ## Scope
@@ -74,7 +77,8 @@ and reviewer selection criteria.
 
 Based on the research plan, this research is classified as: **[Simple/Medium/Complex]**
 
-**Review phase**: [Skip (Simple) / Lightweight — 3 personas (Medium) / Full — 5 personas (Complex)]
+**Review phase roster**: [2 personas (Simple) / 3 (Medium) / 5 (Complex)] — the phase
+itself always runs.
 
 ## Research Context
 
@@ -108,12 +112,27 @@ Based on the research plan, this research is classified as: **[Simple/Medium/Com
 | Q2 | Sequential | Q1 | Q1's answer about [X] will narrow the scope of Q2's search |
 | Q3 | Parallel | None | Independent - different system/domain |
 | Q4 | Sequential | Q2, Q3 | Needs synthesis of both findings to form focused query |
-| Q5 | Direct | None | Simple lookup, single agent sufficient |
+| Q5 | Direct | None | Single deterministic lookup, no agent needed |
 
 **Question types:**
 - **Parallel**: Truly independent — no information dependency on other questions
 - **Sequential**: Answer from a prior question narrows scope, provides vocabulary, or changes the search strategy
-- **Direct**: Simple enough to answer with a grep, glob, or single file read in the main context — no sub-agent needed. Use Direct when the question has a deterministic answer that doesn't require LLM reasoning. Handle Direct questions immediately in the main context before spawning any agents. Only escalate to a sub-agent if the direct lookup fails to produce a clear answer.
+- **Direct**: one grep, glob or file read answers it outright, in the main context. Direct is
+  a property of **the question's shape** — a single deterministic lookup whose answer is a
+  name, a version, a path, a field list, or a yes/no. It is never a property of what you
+  happen to have read already.
+
+  **"I read the files in Step 1 and I think I know the answer" does not make a question
+  Direct.** That is a self-assessment of your own coverage, and it is exactly what Steps 6,
+  7 and 8 exist to check. A question asking how something works, why it behaves as it does,
+  what order things run in, or what happens in some case is **never** Direct, however
+  confident Step 1 left you — those need an agent that goes looking for what you did not
+  think to read.
+
+  Measured on a real run: an executor classified all four of the user's research questions as
+  Direct on the grounds that Step 1 had already answered them, spawned **zero** agents, and
+  Step 4's checklist then confirmed "0 agent types listed, 0 spawned -> match". The research
+  phase disappeared and every downstream check passed.
 
 **Direct question examples and resolution**:
 
@@ -126,6 +145,9 @@ Based on the research plan, this research is classified as: **[Simple/Medium/Com
 | "What fields does the `UserEvent` proto have?" | Read | Read the `.proto` file directly |
 
 **Direct question rules**:
+- **At least one question must be Parallel or Sequential.** If your classification leaves
+  every question Direct, the classification is wrong, not the research: re-read the questions
+  as a stranger would and find the one that needs someone to go looking.
 - Resolve Direct questions BEFORE spawning Batch 1 agents
 - If a Direct lookup is inconclusive (e.g., multiple matches, ambiguous result), escalate to a sub-agent in the next batch
 - Direct questions do not appear in the Pre-Spawn Verification Table (they don't use agents)
@@ -145,27 +167,6 @@ Batch 3: Q4 (informed by Q2 + Q3 findings)
 ```
 
 **Decomposition default rule:** Classify each question as Parallel, Sequential, or Direct. Default to Parallel when the dependency is unclear. Only classify as Sequential when there's a clear benefit to waiting (scope narrowing, vocabulary discovery). Use Direct for simple lookups that don't benefit from decomposition.
-
-## TaskCreate Tracking Pattern
-
-Use `TaskCreate` (not the deprecated TodoWrite) to track research progress. Tasks are
-visible in the Claude Code UI and the system periodically nudges the model to check them.
-
-**Task creation timing:**
-
-- Post-research step tasks (Steps 4-9, Pre-Document Gate, Steps 10-13): create ALL
-  immediately after Step 3 agents are spawned (see SKILL.md "Post-Research Step Tracking")
-- Per-iteration tasks (new agents, new synthesis, new validation): create when the
-  evaluator returns ITERATE in Step 6
-
-**Task lifecycle:** `pending` → `in_progress` (via TaskUpdate when starting) →
-`completed` (via TaskUpdate when done)
-
-**Before each step:** Call `TaskList` to verify the previous step is `completed`. If not,
-STOP and complete it first.
-
-Do NOT begin synthesis until all current-phase agent tasks are `completed` (Step 4); create
-a fresh synthesis + validation task pair per iteration via `TaskCreate`.
 
 ## Research Plan File Specification (NON_INTERACTIVE mode only)
 
@@ -203,12 +204,9 @@ AskUserQuestion(
 )
 ```
 
-- Do **NOT** emit the plain-text "Do these look correct?" prompt -- always use the
-  AskUserQuestion tool so the user gets a structured choice in the UI.
-- Wait for the user's selection before proceeding to Step 3. If they pick "Request
-  changes", revise the plan (again rendered fully in the UI) and ask via
-  AskUserQuestion again.
-- Skip this gate entirely in NON_INTERACTIVE mode.
+Never emit a plain-text "Do these look correct?" prompt instead — the tool call is what
+gives the user a structured choice in the UI. This gate does not apply in NON_INTERACTIVE
+mode, which writes the plan to disk instead.
 
 ## Domain Expert Check
 
@@ -248,16 +246,17 @@ At the end of Step 2, create an accountability list:
 ## Agent Type Verification
 
 Based on the questions above, I will spawn the following agent types:
-- codebase-explorer (questions 1, 3)
-- web-search-researcher (question 2)
-- codebase-explorer (question 4)
+- jbb-feature-dev:codebase-explorer (questions 1, 3, 4)
+- jbb-feature-dev:web-search-researcher (question 2)
 
 Total unique agent types: 2
 
 Domain expert verification in Step 7: [expert-name] (if applicable)
 ```
 
-This list is your contract: all listed agent types must be spawned before synthesis.
+This list is your contract: match each question-to-role assignment to delivered evidence
+before synthesis. Equal type counts do not prove coverage; missing mandatory delivery keeps
+the checkpoint incomplete. Simple research still requires Gap Analyst and Devil's Advocate.
 
 ## Example: Automerge Decomposition
 
@@ -265,8 +264,8 @@ User question: "How do we handle automerge for dependency bot PRs?"
 
 **Questions:**
 
-1. What dependency bots are available? -> **web-search-researcher**
-2. How does automerge work? -> **web-search-researcher**
+1. What dependency bots does this organisation run? -> **codebase-explorer**
+2. How does automerge work for those bots? -> **web-search-researcher**
 3. What automerge configurations exist in this repository? -> **codebase-explorer**
 4. What automerge patterns do similar repos use? -> **codebase-explorer**
 5. What external tools (Renovate, Dependabot) support automerge? -> **web-search-researcher**
@@ -276,7 +275,7 @@ User question: "How do we handle automerge for dependency bot PRs?"
 | Question | Type       | Depends On | Rationale                                                              |
 | -------- | ---------- | ---------- | ---------------------------------------------------------------------- |
 | Q1       | Parallel   | None       | Need to know what bots exist before understanding their configs        |
-| Q2       | Parallel   | None       | General platform context, independent                                   |
+| Q2       | Parallel   | None       | General bot documentation, independent                                 |
 | Q3       | Sequential | Q1         | Knowing which bots exist (Q1) tells us what config files to look for   |
 | Q4       | Sequential | Q1, Q3     | Need to know our bot (Q1) and our config (Q3) to find similar patterns |
 | Q5       | Sequential | Q1         | Knowing which bot we use (Q1) focuses external research                |

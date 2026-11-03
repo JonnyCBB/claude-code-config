@@ -58,7 +58,7 @@ Then wait for user input.
 - If an operational context document is provided (as a file path argument), read it fully
 - If no operational context is provided AND the task references specific service/component names:
   - Spawn the `web-search-researcher` agent for the identified service(s)
-  - OR note to user: "This task involves [service]. Running /operational-context to gather production data."
+  - OR note to user: "This task involves [service]. Share any production data (metrics, SLOs, dependencies) you want the plan to respect."
 - If the task does not involve specific services (e.g., pure refactoring, documentation), skip
 
 3. **Read all files identified by research agents** FULLY into main context.

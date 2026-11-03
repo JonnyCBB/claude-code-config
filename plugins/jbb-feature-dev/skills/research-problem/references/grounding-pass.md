@@ -18,18 +18,17 @@ Steps 8-9 instruct you to `Read references/grounding-pass.md`.
 
 ## Purpose
 
-After research is complete and reviewed (Steps 1-7), scan the synthesized findings for
-uncertainties that can be resolved with a single tool call, file read, or CLI command,
-and resolve them empirically before generating the final document. A separate
-Verification Agent checks that resolution genuinely happened before the pass is
-considered done, rather than trusting the Grounding Agent's own self-report — see
-`## Grounding Loop: Orchestrator Handoff Protocol` below for how the two agents iterate
-together.
+Resolve material items answerable through authorized, available evidence within budget
+before the document is written. Several safe reads can form one attempt. Inventory stable
+IDs for requested answers, success criteria, scoped claims (including unmarked claims),
+evaluator flags, reviewer gaps, candidates, and follow-ons. Heuristics add items; they never
+limit eligibility. Preserve IDs and link follow-ons to originating items.
 
-The pass has two inputs of different shapes, and both must be worked:
+The pass has two inputs of different shapes, and both must be worked — missing the second
+is the common failure:
 
-- **Claims** — assertions in the synthesis carrying uncertainty, detected by the heuristic
-  table or flagged `Needs Verification: YES` by Step 6.
+- **Claims** — assertions in the synthesis, including unmarked claims, requested answers,
+  and scoped factual descriptions; heuristics and Step 6 flags add detection signals.
 - **Questions** — the `## Candidate Open Questions` list drafted in Step 5. These assert
   nothing, so they match no heuristic; they are work items regardless. A candidate question
   may only reach the final document as an Open Question once this pass classifies it
@@ -44,47 +43,47 @@ target of zero. The test is about the _reason_ a question is open, not the count
 
 - **It needs a human decision.** "Should we widen the per-user path beyond `MCP_GATEWAY`?" is
   a product choice; no amount of searching settles it.
-- **It needs someone's knowledge or consent.** "Who holds the `api_client_creator` role?"
-  needs a person, not a query.
-- **The instrument exists but is unreachable from this session.** Access denied, no
-  credentials, a tool that 404s. Record the attempt and the error — a documented failure is a
-  resolved classification, not an open loop.
+- **It needs someone's knowledge or consent.** Check authorized directories, APIs, or
+  records before declaring knowledge human-only. For example, role membership may be
+  queryable; permission to widen a role remains a consent or policy decision.
+- **The instrument exists but is unreachable from this session.** Record access failures
+  and safe availability checks. One failed route does not prove all sources unavailable;
+  apply the Per-Attempt Bounding Rules before classifying the evidence as inaccessible.
 - **It can only be observed later.** "Does the 45-day archiver actually sweep this config?"
   cannot be answered before day 45.
 - **The sources of truth genuinely disagree** and nothing available adjudicates between them.
-- **It is immaterial.** Per the Materiality Filter, a question whose answer changes no
-  conclusion is correctly left alone — say so explicitly rather than implying it was pursued.
+- **It is immaterial.** Per the Materiality Filter, incidental detail that changes no
+  substantive answer or scoped finding is correctly left alone; state the scope reason.
 
-**A question may NOT stay open when the document itself names what would settle it.** Phrases
-like "one refresh call settles it", "a direct `ListConfig` probe would confirm this", "this
-rests on a Slack index rather than the API", or "use the pricing calculator" mark a work item
-that got written down instead of done. Heuristic 6 exists to catch exactly this phrasing.
+**Named instruments require attempts or verified access, safety, scope, or budget constraints.**
+Phrases like "one refresh call settles it", "a direct `ListConfig` probe would confirm this",
+"this rests on a Slack index rather than the API", or "use the pricing calculator" identify
+work to classify, not automatic authority to execute it. Inaccessibility can justify blocked
+classification; budget-limited material evidence keeps the checkpoint incomplete.
 
 The failure mode this guards against is specific and has recurred: a run ends, the reader
 scans the Open Questions, asks one of them back, and a single command answers it. Every such
 round-trip means the research stopped one call short and handed the remainder to the person
 who commissioned it. Judge each Open Question by asking — _if the reader asked me this right
-now, would I reach for a tool, or would I have to ask someone?_ Only the second belongs here.
+now, could authorized evidence answer it within budget, or is a qualifying limit verified?_
+Record the limit rather than treating the presence or absence of one tool as decisive.
 
 ## Heuristic Table: Detection Signals
 
 | #   | Detection Signal                                                                                                                                                                                                          | Resolution Action                                                          | Cost                  | False Positive Risk                                              | Handling on Failure                                                                       |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | --------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| 1   | Text mentions a tool name matching `mcp__*` pattern + "not tested" / "not verified" / "unconfirmed"                                                                                                                       | Call the MCP tool with a minimal test input (e.g., a known component name) | Low (1 call, <15s)    | Tool requires auth not available in session                      | Skip on error; document as "Attempted: [tool call]. Result: [error]. Remains unresolved." |
-| 2   | "should be confirmed in [file]" / "not verified against [source file]" / "not checked in [file]"                                                                                                                          | Read or grep the referenced file via CodeSearch MCP or direct Read         | Low (1 call, <5s)     | File doesn't exist or has moved                                  | Skip on 404; document as "File not found at referenced path."                             |
-| 3   | Text contains a shell command (e.g., `gh api ...`, `curl ...`, `git ...`) + "not run" / "should be verified" / "recommended"                                                                                              | Execute the command via Bash                                               | Low (1 call, <30s)    | Command requires env not in session (missing binary, wrong repo) | Skip on non-zero exit; document command + error                                           |
-| 4   | URL provided but content described as "not fetched" / "not verified" / "assumed from"                                                                                                                                     | Fetch the URL via WebFetch                                                 | Low (1 call, <10s)    | URL returns 403/404/timeout                                      | Skip on error; document as "URL inaccessible: [status code]."                             |
-| 5   | "release status unconfirmed" / "availability not verified" / "version unknown"                                                                                                                                            | Query package registry, GitHub API, or AiKA search                         | Low (1-2 calls, <15s) | Registry doesn't carry the package; API returns no results       | Skip on empty/error; document as "Not found in [registry]."                               |
-| 6   | The text **names the instrument that would settle it** — "one X call settles it" / "a direct [probe] would confirm" / "rests on [weaker source], not [authoritative source]" / "use the [tool]" / "could be confirmed by" | Execute the named instrument                                               | Low (1-2 calls, <30s) | The named instrument needs access unavailable in session         | Skip; document as "Attempted: [instrument]. Result: [error]. Remains unresolved."         |
+| 1 | Tool name matching `mcp__*` + "not tested" / "not verified" / "unconfirmed" | Inspect the action, then use an authorized read with relevant input | Read cost depends on tool | Auth or input may be unavailable | Classify failure under Per-Attempt Bounding Rules; record action and response |
+| 2 | "should be confirmed in [file]" / "not verified against [source file]" / "not checked in [file]" | Read or search the source via Grep, Glob, or Read | Bounded reads | File may move | Classify failure; check a corrected path or independent read-only route within the recovery allowance |
+| 3 | Shell command + "not run" / "should be verified" / "recommended" | Inspect command, arguments, method, and side effects before an authorized read | Command-dependent | Missing binary, wrong repo, or mutation | Report required mutations separately; record failures and limits |
+| 4 | URL + "not fetched" / "not verified" / "assumed from" | Fetch authorized content via WebFetch | Bounded fetch | Access denial or timeout | Classify failure; a failed URL does not prove all sources inaccessible |
+| 5 | "release status unconfirmed" / "availability not verified" / "version unknown" | Query authoritative registry or release records | Bounded reads | Registry/query coverage may be incomplete | Empty results prove absence only within verified source/query coverage; record missing checks |
+| 6 | Text names its instrument: "one X call settles it" / "a direct [probe] would confirm" / "rests on [weaker source], not [authoritative source]" / "use the [tool]" / "could be confirmed by" | Inspect authority, availability, safety, scope, and budget before reading | Instrument-dependent | Access or safety constraint | Attempt safely or record a verified constraint; unfinished material evidence blocks completion |
 
 ### Scope Notes
 
-- These heuristics catch **explicit uncertainty markers** — cases where the research agent
-  flagged something as uncertain. They do not catch **silent unverified claims** (where the
-  agent stated something as fact without noting it was unverified). Step 6's `Needs
-Verification: YES` flags (passed into the Grounding Agent alongside the synthesis) close
-  part of this gap by surfacing claims about tool behavior, API responses, or configuration
-  effects that were never marked uncertain in prose but weren't empirically checked either.
+- These heuristics catch explicit uncertainty markers. Independently inventory unmarked
+  claims, requested answers, success criteria, flags, reviewer gaps, candidates, and follow-ons.
+  Absence of a heuristic match is never proof that an item is grounded.
 - **Heuristic 6 applies to questions as well as claims**, and is the highest-yield signal in
   this table. An audit of shipped research documents found roughly one to two answerable Open
   Questions per document, and in most cases the text named its own instrument — the research
@@ -102,9 +101,9 @@ Classify **every detected uncertainty and every candidate Open Question** as:
 
 | Classification   | Criteria                                                                                                                                       | Action                                           |
 | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| **RESOLVABLE**   | Matches a heuristic pattern AND the resolution action is available in the current session (tool connected, file accessible, command available) | Attempt resolution                               |
-| **UNRESOLVABLE** | More research alone cannot answer it — see `## What Legitimately Stays Open` for the qualifying reasons                                        | Document as Open Question — do not attempt       |
-| **SKIP**         | Resolution cost exceeds bounds (multi-step scaffolding, requires test data setup, needs staging environment)                                   | Document as "Skipped: [reason]" — do not attempt |
+| **RESOLVABLE** | Authorized, available evidence can answer within budget; no heuristic match or single-call restriction applies | Attempt safe resolution |
+| **UNRESOLVABLE** | A verified qualifying reason from `## What Legitimately Stays Open` prevents more research alone answering it | Document reason, evidence, and closure condition |
+| **SKIP** | A stated scope, safety, or verified budget limit prevents pursuit; uncertainty alone is insufficient | Record the concrete reason and needed action; budget-limited material evidence stays incomplete |
 
 Classification is mandatory and total: an item that reaches the final document as an Open
 Question without a classification is a process defect, not a disclosure. UNRESOLVABLE is a
@@ -113,10 +112,11 @@ skipped.
 
 ## Materiality Filter
 
-A claim or question is **material** if resolving it could change a conclusion,
-recommendation, or tier classification in the document. A claim is only pursued if it is
-BOTH objectively verifiable (per the RESOLVABLE/UNRESOLVABLE/SKIP axis above) AND
-material.
+An item is **material** if resolving it could have a substantive effect on requested answers,
+success criteria, scoped factual descriptions, conclusions, recommendations, or tiers.
+Resolve material items answerable through authorized, available evidence within budget.
+Incidental detail and edits that leave meaning, evidence, and recommendations unchanged do
+not reopen checks.
 
 Example: "File X's line count wasn't independently verified" is material if that count
 feeds a downstream planning decision (e.g., a per-file task estimate) — pursue it. The
@@ -136,9 +136,9 @@ bracketed placeholders with actual values. On the first grounding iteration, omi
 
 ```markdown
 You are the Grounding Agent for a research document. Your job is to resolve every
-uncertainty AND every candidate Open Question that can be settled with a single tool call,
-file read, or CLI command — so that what remains open is only what more research cannot
-answer.
+material item AND every candidate Open Question answerable through authorized, available
+evidence within budget. Several safe reads can form one attempt. Assess every supplied ID,
+not only items matching a heuristic.
 
 ## Synthesized Findings to Ground
 
@@ -167,13 +167,28 @@ still pursue a newly-surfaced claim if resolving a listed gap reveals one that p
 the Materiality Filter.]
 [/IF]
 
+## Cumulative Ledgers
+
+[CUMULATIVE_LEDGERS — full stable-ID inventory, originating links, evidence, errors,
+classifications, superseding corrections, verification outcomes, and remaining run budget]
+
+## Canonical Policies
+
+[CLASSIFICATION_RULES — expand the complete canonical section verbatim]
+[LEGITIMATE_OPEN_REASONS — expand the complete What Legitimately Stays Open section verbatim]
+[MATERIALITY_FILTER — expand the complete canonical Materiality Filter section verbatim]
+
 ## Instructions
 
-1. **Scan** three sources, not one: (a) the synthesized findings, for uncertainty markers
-   matching any detection signal in the heuristic table below; (b) every Step 6 `Needs
-Verification: YES` flag, even if it doesn't match a heuristic verbatim; (c) every entry in
-   Candidate Open Questions. On iteration 2+, prioritize the Prior Verification Feedback
-   gaps first. Heuristic 6 (the text naming its own instrument) applies to all three.
+Collect evidence through authorized reads. Do not send messages, mutate records, connect
+servers, or change settings. Artifact writes require explicit authority. Inspect mixed-action
+tools and commands; report required mutations separately. These prompt rules do not enforce
+technical permissions.
+
+1. **Inventory** stable IDs for requested answers, success criteria, unmarked claims,
+   evaluator flags, reviewer gaps, candidates, and follow-ons. Scan findings for heuristic
+   signals as additions, not eligibility conditions. On iteration 2+, prioritize prior gaps
+   without dropping unresolved IDs or earlier evidence.
 
 2. **Classify** each detected uncertainty and each candidate Open Question as RESOLVABLE,
    UNRESOLVABLE, or SKIP using the classification rules. For anything you classify
@@ -182,9 +197,9 @@ Verification: YES` flag, even if it doesn't match a heuristic verbatim; (c) ever
    cannot name one, it is not UNRESOLVABLE; attempt it.
 
 3. **Resolve** each RESOLVABLE item by executing the resolution action:
-   - For MCP tools: call with a minimal test input
+   - For MCP tools: inspect available actions, then use an authorized relevant read within scope and budget; report required mutations separately
    - For file references: read or grep the file
-   - For shell commands: execute via Bash
+   - For shell commands: inspect commands and arguments, then execute only authorized reads via Bash
    - For URLs: fetch via WebFetch
    - For version/availability: query the appropriate registry
    - For a question naming its own instrument (Heuristic 6): run that instrument
@@ -199,8 +214,10 @@ Verification: YES` flag, even if it doesn't match a heuristic verbatim; (c) ever
 
 4. **Report** your results in this format for each item:
 
-   ### Item [N]
-   - **Kind**: Claim / Candidate Open Question
+   ### Item [stable ID]
+   - **Kind**: Requested answer / Success criterion / Claim / Evaluator flag / Reviewer gap /
+     Candidate Open Question / Follow-on
+   - **Originating IDs**: [linked question, criterion, claim, flag, or gap IDs]
    - **Location**: [section and line reference in findings, or "Candidate Open Questions"]
    - **Original text**: "[the uncertain claim, or the question as written]"
    - **Detection signal**: Heuristic [N] or "Step 6 flag" or "Candidate Open Question" or
@@ -208,76 +225,88 @@ Verification: YES` flag, even if it doesn't match a heuristic verbatim; (c) ever
    - **Classification**: RESOLVABLE / UNRESOLVABLE / SKIP
    - **If UNRESOLVABLE, qualifying reason**: [which reason from `## What Legitimately Stays Open`]
    - **Action taken**: [what you did, or why you didn't act]
-   - **Result**: [empirical finding, or error encountered]
+   - **Result**: [empirical finding, or classified error encountered]
+   - **Execution evidence**: [exact action and arguments/query; source identity/version;
+     response excerpt; available call ID, or explicitly unavailable; evidential limits]
+   - **Coverage/limits**: [query scope, coverage supporting absence claims, and missing checks]
+   - **History**: [prior evidence, errors, classifications, superseding correction, verification outcome]
    - **Updated text**: "[revised claim, or the answer to the question]" or "Remains open — [reason]"
 
 5. **Self-check** your execution fidelity before finishing. Produce a table with columns
-   Item | Kind (Claim/Question) | Classification | Action Taken (Y/N) | Qualifying reason (if
-   UNRESOLVABLE) | Result. Every RESOLVABLE row must show "Y" with a corresponding result, and
+   Item ID | Kind | Originating IDs | Classification | Action Taken (Y/N) | Qualifying reason
+   (if UNRESOLVABLE) | Result. Every RESOLVABLE row must show "Y" with a corresponding result, and
    every UNRESOLVABLE row must name a qualifying reason. A RESOLVABLE row showing "N", or an
    UNRESOLVABLE row with no qualifying reason, is a reporting defect — flag it explicitly
    rather than silently submitting the table as-is. Also state the count of candidate Open
    Questions you received and the count you classified; they must match. This table is the
    primary evidence a separate Verification Agent will check next, so completeness and honesty
-   here matter more than in a report nobody double-checks.
+   here matter more than in a report nobody double-checks. Match IDs to evidence and
+   classifications; list missing, duplicate, or substituted IDs, not just totals.
 
 ## Heuristic Table
 
-[HEURISTIC_TABLE]
+[HEURISTIC_TABLE_AND_SCOPE_NOTES — complete canonical detection table and scope notes verbatim]
 
 ## Per-Attempt Bounding Rules
 
-- **Maximum 25 resolution attempts within this invocation.** Count one attempt per item you
-  try to resolve, plus one per follow-on you pursue. Do **not** count tool calls, batches, or
-  reads you make while reasoning — an item needing four greps to settle is one attempt. This
-  unit is defined tightly on purpose: an earlier version bounded "rounds" and left the unit
-  open, and two agents doing identical work self-reported 6 and 11 against the same cap, which
-  makes a cap unenforceable and its overruns undiagnosable. Report the count using this
-  definition, and if you are unsure whether something counted, say so rather than picking the
-  flattering reading.
+- **Maximum 25 resolution attempts within this invocation.** One attempt per item you try to
+  resolve, plus one per follow-on you pursue. Do **not** count tool calls, batches or reads
+  made while reasoning — an item needing four greps to settle is one attempt. The unit is
+  defined this tightly because an earlier version bounded "rounds" and left the unit open:
+  two agents doing identical work self-reported 6 and 11 against the same cap, which makes a
+  cap unenforceable and its overruns undiagnosable. If you are unsure whether something
+  counted, say so rather than taking the flattering reading.
 
-  The budget is deliberately generous — accuracy matters more here than finishing quickly, and
-  the Materiality Filter, not this number, is what should stop you pursuing something. Observed
-  real passes have needed roughly 6-13 attempts, so 25 is around double the high end. If you
-  approach it, that is a signal the synthesis carries unusually many material gaps: hand the
-  remainder to the next iteration via "Follow-ons for the next iteration" (see Instructions
-  step 3) rather than overrunning or silently dropping them. This bound is separate from the
-  orchestrator's Grounding Iteration Bound (how many times you get re-spawned) — you are not
-  responsible for that count.
+  The budget is deliberately generous — real passes have needed roughly 6-13 attempts, so 25
+  is about double the high end, and the Materiality Filter rather than this number is what
+  should stop you. Approaching it signals unusually many material gaps: hand the remainder to
+  the next iteration under "Follow-ons for the next iteration" rather than overrunning or
+  dropping them. This is separate from the orchestrator's Grounding Iteration Bound, which
+  you are not responsible for.
 
-- **30-second timeout** per attempt — skip any attempt that takes longer
-- On any error (MCP failure, command failure, 404, timeout): skip and document the
-  attempt and error. Never retry a failed attempt.
+- Use supported tool timeouts. Time limits execution, not answerability; checkpoint
+  unfinished material items as incomplete.
+- Classify errors as access, invalid query/path, not found, timeout/transient, or uncertain
+  outcome. Allow one corrected query or independent read-only source for idempotent reads
+  per item within budget. Never repeat unchanged failures or retry mutations or uncertain
+  outcomes. Several safe reads may form one attempt; recovery does not reset it.
+- One failed route does not prove all sources unavailable. Check evidence availability safely.
+  SKIP requires a scope, safety, or verified budget reason, including the concrete cost when
+  cost blocks pursuit. Uncertainty alone is insufficient.
+- Empty results prove absence only within verified source/query coverage. Record the query,
+  scope, result, and missing checks. Preserve consent, inaccessible-source,
+  future-observation, and irreconcilable-source limits.
 
 ## Principles
 
-- You are a documentarian. Report what you observe empirically — do not evaluate,
-  critique, or recommend.
-- Prefer false negatives over false positives: if unsure whether an uncertainty is
-  resolvable, classify as SKIP rather than attempting something speculative.
+- Document empirical findings by default; permit evidence-backed evaluation when explicitly
+  requested within scope. Never invent a recommendation.
+- If unsure whether an item is resolvable, check authorized evidence availability safely.
+  Do not speculate or use uncertainty as a SKIP reason. State what is needed and the verified
+  scope, safety, or budget constraint; material budget limits keep the run incomplete.
 - Every resolution attempt must be documented, whether it succeeds or fails.
 ```
 
 ## Verification Agent
 
-Step 8 uses a dedicated Verification Agent instead of trusting the Grounding Agent's own
-self-check — for the same reason Step 6 uses a separate evaluator instead of
-self-evaluation: models reliably skew positive when grading their own work. The
-Grounding Agent's self-check table (above) is a useful first-line signal, but it is still
-the same agent grading itself; the Verification Agent is what actually gates whether
-Steps 8-9 are done.
+The Grounding Agent's self-check table is a first-line signal, but it is the same agent
+grading itself. The Verification Agent is what actually gates whether Steps 8-9 are done.
 
 ### Verification Agent Prompt Template
 
-Pass this prompt to the Verification Agent (model: haiku, no tools). Replace bracketed
-placeholders with actual values — including `[MATERIALITY_FILTER]`, which must be this
-file's canonical `## Materiality Filter` text verbatim, not a paraphrase.
+Pass this prompt to the Verification Agent (model: haiku; told not to use tools). Replace bracketed
+placeholders with actual values. Inline the complete canonical Classification Rules,
+Materiality Filter, What Legitimately Stays Open, Heuristic Table and Scope Notes, and
+Per-Attempt Bounding Rules in both delivered prompts. Expand blocks verbatim, not as paths
+or paraphrases. Include cumulative ID/evidence and budget ledgers, not only this round's gaps.
+Verify complete delivery before dispatch. The agent's tool roster need not be empty.
 
 ```markdown
 You are the Grounding Verification Agent for a research document. Your job is to judge
 whether the Grounding Agent's resolution work is genuinely complete. You do not call
 tools, read files, or re-run any resolution attempt yourself — you are checking a report,
-not redoing the work it describes.
+not redoing the work it describes. Assess only complete supplied evidence. Reject missing
+input and report evidence limits. This verdict is not independent empirical reproduction.
 
 You are a separate agent from the one that produced the grounding report. This
 separation exists for the same reason Step 6 uses a dedicated evaluator: models reliably
@@ -306,8 +335,12 @@ is a coverage gap.]
 
 ## Grounding Agent Report (this iteration)
 
-[GROUNDING_AGENT_REPORT — the full per-uncertainty results and self-check table produced
-by this iteration's Grounding Agent]
+[GROUNDING_AGENT_REPORT — the full per-item results and self-check table for this iteration]
+
+## Cumulative Ledgers
+
+[CUMULATIVE_LEDGERS — full stable-ID inventory, evidence, errors, classifications,
+superseding corrections, verification outcomes, and remaining run-budget counters]
 
 [IF ITERATION 2+:]
 
@@ -327,18 +360,18 @@ Open Questions for four failure modes:
    marked resolved.
 2. **Coverage gaps**: any claim matching a Heuristic Table signal, any Step 6 `Needs
 Verification: YES` flag, or any Candidate Open Question that the grounding report never
-   mentions at all. Compare the count of candidate questions supplied against the count the
-   report classified — a mismatch is a coverage gap even if the report claims completeness.
+   mentions at all, including unmarked claims, requested answers, criteria, reviewer gaps,
+   and follow-ons. Match candidate IDs to classifications and evidence; list missing,
+   duplicate, or substituted IDs. Counts alone do not establish coverage.
 3. **Miscategorization**: any claim or question marked SKIP or UNRESOLVABLE that, on
-   inspection, looks resolvable with a single tool call, file read, or CLI command per the
+   inspection, is answerable through authorized, available evidence within budget per the
    Classification Rules — or any item the report treats as worth pursuing that the
    Materiality Filter (below) would not actually classify as material.
 4. **Unjustified Open Questions**: any item classified UNRESOLVABLE without naming a
    qualifying reason from `## What Legitimately Stays Open`, or naming one that does not fit.
-   Watch specifically for a question whose own text names the instrument that would settle it
-   (the disqualifying phrasings under `## What Legitimately Stays Open`) yet is classified
-   UNRESOLVABLE — that is Heuristic 6 being missed, and it is the single most common way an
-   answerable question reaches a finished document.
+   For a question naming its instrument, require an attempt or verified access, safety,
+   scope, or budget constraint. A named instrument alone neither proves access nor forbids
+   blocked classification. Budget-limited material evidence cannot support PROCEED.
 
 ## Materiality Filter
 
@@ -346,19 +379,37 @@ Verification: YES` flag, or any Candidate Open Question that the grounding repor
 verbatim here, not a paraphrase, so the Verification Agent judges against the exact same
 definition the Grounding Agent and Step 6 use rather than a drifted restatement]
 
+## Classification Rules
+
+[CLASSIFICATION_RULES — complete canonical section verbatim]
+
+## What Legitimately Stays Open
+
+[LEGITIMATE_OPEN_REASONS — complete canonical section verbatim]
+
+## Detection Signals
+
+[HEURISTIC_TABLE_AND_SCOPE_NOTES — complete canonical detection table and scope notes verbatim]
+
+## Per-Attempt Bounding Rules
+
+[PER_ATTEMPT_BOUNDING_RULES — complete canonical section from the Grounding Agent template verbatim]
+
 Produce your evaluation using EXACTLY this format:
 
 ### Coverage Check
 
 - Step 6 `Needs Verification: YES` flags all addressed: [YES/NO — list any missed]
 - Heuristic-matched claims all addressed: [YES/NO — list any missed]
-- Candidate Open Questions: [N supplied / N classified — list any unclassified]
+- Candidate Open Questions: [supplied IDs / classified IDs — list missing, duplicate, or substituted IDs]
+- Requested answers, criteria, unmarked claims, reviewer gaps, follow-ons: [IDs and coverage gaps]
 
 ### Resolution Quality Check
 
 For each RESOLVABLE row in the grounding report's self-check table:
 Claim or question: [text]
-Genuinely resolved: [YES/NO — evidence]
+Supported by supplied evidence: [YES/NO — cite the response/item connection; list missing
+or self-reported-only evidence, action/source/response/call-ID limits]
 
 ### Open Question Justification Check
 
@@ -369,11 +420,13 @@ Reason holds: [YES/NO — if NO, say what instrument the text itself names]
 
 ### Decision
 
-PROCEED — every material, objectively-verifiable claim and question is genuinely resolved,
-or correctly classified UNRESOLVABLE/SKIP with a qualifying reason that holds
+PROCEED — supplied evidence supports every material resolution or qualifying
+UNRESOLVABLE/SKIP reason; no decisive evidence is missing and no material evidence remains
+budget-limited
 OR
-ITERATE — a material gap remains (apply the Materiality Filter above; a non-material gap
-does not justify ITERATE — note it as an Open Question instead)
+ITERATE — material gaps, missing decisive evidence, unsupported self-reports, or unfinished
+material evidence remain. Apply the supplied Materiality Filter; classify non-material limits
+without reopening checks.
 
 [If ITERATE:]
 Remaining material gaps:
@@ -395,9 +448,9 @@ Remaining material gaps:
   orchestrator already has plus the Grounding Agent's report) and never calls tools,
   reads files, or re-runs resolution attempts. Giving it tools would just make it a
   second grounding pass, not a check on the first one.
-- **Input**: synthesized findings + Step 6 flags (identical to the Grounding Agent's
-  input for this iteration) + the Grounding Agent's full report for this iteration +
-  prior verification feedback (iteration 2+ only)
+- **Input**: full findings, flags, candidates, cumulative ID/evidence and budget ledgers,
+  current grounding report, expanded canonical policies, and prior verification feedback
+  (iteration 2+ only). Paths and summaries do not replace complete supplied input.
 
 ## Grounding Loop: Orchestrator Handoff Protocol
 
@@ -406,31 +459,29 @@ mirroring Step 6's separate-evaluator principle. This section covers the orchest
 responsibilities across that loop; the two prompt templates above cover what each agent
 does within a single iteration.
 
-1. **Spawn**: Spawn the Grounding Agent with the synthesized findings + Step 6 flags (+
-   Prior Verification Feedback, iteration 2+ only).
-2. **Spawn**: Once the Grounding Agent completes, spawn the Verification Agent with the
-   same findings/flags plus the Grounding Agent's report.
+1. **Spawn**: Deliver complete findings, flags, candidates, reviewer gaps, cumulative
+   ID/evidence and budget ledgers, and expanded canonical policies to the Grounding Agent.
+   Include prior verification feedback from iteration 2 onward.
+2. **Spawn**: Deliver the same full inputs plus the current grounding report to the
+   Verification Agent. Verify complete input delivery.
 3. **Display**: Output the Verification Agent's verdict verbatim (no editing, no
    summarizing).
 4. **Parse**: Read the Decision field — it starts with either "PROCEED" or "ITERATE".
-5. **If PROCEED**: Proceed to Step 9 using this iteration's grounding report as final.
+5. **If PROCEED**: Proceed to Step 9 using the cumulative evidence ledger and current verdict.
 6. **If ITERATE** and the Grounding Iteration Bound (below) has not been reached:
    increment the iteration counter and return to step 1, passing the Verification
    Agent's "Remaining material gaps" list as the next round's Prior Verification
    Feedback.
-7. **If ITERATE** and the Grounding Iteration Bound has been reached: stop. Document
-   every remaining gap from the Verification Agent's final report as an Open Question or
-   a "Skipped: [reason] — Grounding Iteration Bound reached" annotation (the same
-   bounded-out fallback used elsewhere in this skill), then proceed to Step 9 using the
-   final iteration's grounding report.
-8. **Delivery resilience**: Apply this skill's standard idle/recovery ladder to both
-   agents independently. If either goes idle without delivering (`idle_notification`
-   with no content message), prompt it via SendMessage using its agent ID, then respawn
-   once if still idle. If the Verification Agent's respawn also fails, fall back to the
-   Grounding Agent's own self-check table as the completeness signal, explicitly
-   annotated as "unverified self-report — Verification Agent did not deliver," and
-   proceed to Step 9. If the Grounding Agent's respawn also fails, document the gap and
-   proceed to Step 9 with whatever the last successful iteration produced.
+7. **If ITERATE** and a required run counter is exhausted: stop execution. Save an
+   incomplete draft checkpoint with remaining IDs, attempts, evidence, and next actions.
+   Bounds never pass gates or convert unfinished material evidence into completion.
+8. **Delivery resilience**: Apply `SKILL.md`'s Agent Delivery Resilience ladder to both
+   agents independently — it is the canonical statement, including which address form
+   `SendMessage` accepts. Do not restate it here.
+
+   Missing grounding or verification delivery prevents Step 8 completion and Step 9.
+   Record failure, attempts, missing IDs, and next actions in an incomplete checkpoint.
+   Earlier reports and self-checks never replace the current independent verdict.
 9. **Task ownership**: All `TaskUpdate`/`TaskCreate` mutations are the orchestrator's
    responsibility. Neither agent modifies task state.
 10. **Never substitute self-verification.** The orchestrator must never judge the
@@ -441,28 +492,20 @@ does within a single iteration.
 ## Grounding Iteration Bound
 
 - **Maximum 5 grounding iterations** (one iteration = one Grounding Agent spawn plus one
-  Verification Agent spawn). This is a starting default, not an empirically validated
-  number — no telemetry yet exists for how many iterations a real grounding pass actually
-  needs. It's set higher than Step 6's own "max 4" (see `verification-and-iteration.md`'s
-  Maximum Iterations Rule) deliberately: grounding gaps are typically narrower and cheaper
-  to close per round than the open-ended research gaps Step 6 iterates on, so a slightly
-  larger budget before falling back to Open Questions is reasonable here. Revisit once a
-  few real runs are instrumented for cost and time.
-- This bound is distinct from the Grounding Agent Prompt Template's **Per-Attempt Bounding
-  Rules**, which cap resolution attempts inside a single Grounding Agent invocation. The two
-  answer different questions — how much resolution work one spawn gets, versus how many times
-  the orchestrator re-spawns the Grounding-Agent-then-Verification-Agent pair — and each is
-  stated once, in its own section, so they cannot drift into meaning the same thing. Neither
-  number is repeated here; a previous revision of this bullet restated both and one of them
-  went stale, contradicting the very bullet above it.
-- This is the single canonical location for the grounding-iteration bound; `SKILL.md`'s
-  Step 8 points here rather than restating the number.
+  Verification Agent spawn). A starting default, not a measured figure — no telemetry exists
+  yet for how many iterations a real pass needs. It is deliberately above Step 6's max of 4
+  because grounding gaps are narrower and cheaper to close per round.
+- Distinct from the Per-Attempt Bounding Rules, which cap attempts *inside* one Grounding
+  Agent invocation. One spawn's workload versus how many times the pair is re-spawned. Each
+  number is stated once, in its own section; an earlier revision restated both here and one
+  went stale, contradicting the bullet above it.
+- This is the canonical location for this bound. `SKILL.md` points here.
 
 ## Synthesis Revision Instructions (Step 9)
 
-After the grounding loop reaches PROCEED (or exhausts the Grounding Iteration Bound), the
-main orchestrator reviews the final iteration's grounding results and revises the
-synthesized findings. This is Step 9.
+After the grounding loop reaches independent PROCEED, the orchestrator uses cumulative
+results to revise the synthesis. An exhausted bound with material gaps stops at an incomplete
+checkpoint, not Step 9.
 
 ### When to Revise
 
@@ -482,7 +525,7 @@ section. Common triggers:
 
 ### How to Revise
 
-1. Read all grounding results from the final grounding iteration's report
+1. Read the cumulative ledger of all grounding results and the current independent verdict
 2. For each result with `Classification: RESOLVABLE` and a non-error `Result`:
    - Locate the section(s) in the synthesized findings that reference the resolved
      uncertainty
@@ -490,17 +533,19 @@ section. Common triggers:
    - Check if the change affects recommendations, conclusions, or tier classifications
      in that section
    - If yes, update those dependent statements
-3. For each result with an error (tool failed, file not found, command failed), or a gap
-   still open when the Grounding Iteration Bound was reached:
+3. For each failed resolution attempt or blocked item whose supported UNRESOLVABLE/SKIP
+   classification permits completion under the current independent PROCEED verdict:
    - Replace the uncertainty marker with the grounding attempt annotation:
-     "Attempted: [action]. Result: [error]. Remains unresolved." or "Skipped: [reason] —
-     Grounding Iteration Bound reached."
+     "Attempted: [action]. Result: [error]. Remains unresolved." or
+     "Skipped: [verified qualifying reason]".
+     Bound exhaustion never qualifies; material gaps retain an incomplete checkpoint.
 4. Do NOT re-open Step 2's research questions or spawn new research agents. Only update
    sections that reference grounded findings.
 
-   **But**: if applying a grounding result reveals a follow-on question that passes the
-   Materiality Filter and is resolvable in a single action, route it back into the grounding
-   loop rather than writing it into Open Questions. A question created inside a verification
+   **But**: if applying a result reveals a material follow-on answerable through authorized,
+   available evidence within remaining budget, assign a linked stable ID and return it to
+   grounding. Several safe reads may form one attempt. Do not silently expand scope.
+   A question created inside a verification
    gate must not escape through it. The canonical example: grounding retires a metric-based
    claim ("this gauge cannot support a growth rate"), which creates the question "so what is
    the real count?" — that question is one probe away and belongs in the loop, not in the
@@ -508,11 +553,15 @@ section. Common triggers:
 
 ### Bounding
 
-- **Single revision pass** — revise affected sections once, then proceed to Step 10
-- **No fixed time bound** — Step 9 runs until synthesis revision is genuinely complete.
-  The only cutoff is a stall: if the agent sends an `idle_notification` with no further
-  content, apply this skill's standard recovery ladder (nudge once via SendMessage using
-  the agent's ID, respawn once if still idle, then halt and document the gap if the
-  respawn also stalls).
-- **No re-review** — grounding results, confirmed by the Verification Agent, are
-  empirical facts, not prose claims; they do not need persona review
+- Revise affected sections and dependent requested answers/recommendations. Supply the
+  cumulative ledgers to renewed checks; final-round gap reports are not cumulative.
+- **No fixed time bound** for revision itself; user limits and required exhausted run
+  counters still stop execution. Handle stalls with `SKILL.md`'s Agent Delivery Resilience.
+- Do not re-review unchanged observations or edits that leave meaning, evidence, and
+  recommendations unchanged. Substantively changed requested answers, scoped factual
+  descriptions, conclusions, recommendations, or tiers require completeness evaluation and
+  affected persona review of changed reasoning/evidence.
+- The parent tracks completeness rounds, persona-review rounds, grounding pairs,
+  per-invocation item attempts, and user limits in one cumulative run-budget ledger.
+  Renewed checks consume remaining counters; handoffs and corrections never reset them.
+  Keep artifacts incomplete until required checks pass or execution stops.

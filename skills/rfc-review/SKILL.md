@@ -1,7 +1,7 @@
 ---
 name: rfc-review
 description: Comprehensive RFC review using specialized subagents with context gathering, technical analysis, and synthesis. Use when the user wants a thorough review of an RFC document.
-argument-hint: [google-doc-url-or-file-path]
+argument-hint: "[google-doc-url-or-file-path]"
 ---
 
 # RFC Review
@@ -21,8 +21,7 @@ Step 2: Summarize Linked Documents ← BLOCKING
 Step 3: Extract Terms/Systems for Research
    ↓
 Step 4: Spawn Context-Gathering Agents ← BLOCKING
-   ├─ web-search-researcher (internal/unfamiliar terms)
-   ├─ web-search-researcher (external concepts)
+   ├─ web-search-researcher (unfamiliar terms, external concepts)
    └─ repo-discovery (systems mentioned in RFC)
    ↓
 Step 5: Spawn Codebase Exploration Agents (if repos discovered) ← BLOCKING
@@ -64,7 +63,7 @@ If more than 10 linked documents found, ask user to prioritize.
 
 Analyze RFC content to identify:
 
-- **organisation-specific terms** that need research
+- **Organisation-specific or unfamiliar terms** that need research
 - **External concepts** that may need research
 - **Systems/services** mentioned that may need codebase exploration
 
@@ -81,8 +80,7 @@ Reference: See `skills/shared-references/agent-verification-pattern.md` for the 
 
 **BLOCKING STEP** - Launch IN PARALLEL:
 
-- **web-search-researcher** (if unfamiliar internal terms found)
-- **web-search-researcher** (if external concepts found)
+- **web-search-researcher** (if unfamiliar terms or external concepts found)
 - **repo-discovery** (if systems/services mentioned)
 
 Wait for ALL to complete before Step 5.

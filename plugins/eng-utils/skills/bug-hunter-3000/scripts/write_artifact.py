@@ -1,57 +1,30 @@
 #!/usr/bin/env python3
-"""
-Write one bug-hunt artifact: redact it, put it on disk, then prove what landed
-on disk is the artifact.
+"""Write one bug-hunt artifact: redact it, put it on disk, then prove what landed is it.
 
-Why this owns the write instead of leaving it to the caller
------------------------------------------------------------
-The caller used to do this in three steps -- mask to stdout, redirect into the
-destination, then re-scan the destination. Every step was a place to go wrong,
-and on a measured run all three failed at once:
+Three properties, each load-bearing:
 
-    cat << 'EOF' | python3 redact_scan.py --mask > portfolio/x.md
-
-Mid-run, the plugin tree was replaced with an older revision whose
-`redact_scan.py` had no `--mask` mode. An unknown flag is silently ignored, so
-the script fell back to report mode, whose stdout is status JSON -- and the
-redirect wrote that JSON over the artifact. Ten artifacts became 35 identical
-bytes:
-
-    {"status": "CLEAN", "findings": []}
-
-The re-scan step then read that blob, found no secrets in it, and reported
-CLEAN for all ten. The run summary recorded "written through --mask and
-re-verified on disk (all CLEAN)", which was false in every clause.
-
-Two properties follow from putting the write in here:
-
-1. There is no redirect to misroute. The destination is an argument, not a
-   shell redirection, so stdout carries nothing a typo can turn into content.
-2. This file is itself a version tripwire. An older tree does not contain it,
-   so the write fails with "No such file or directory" instead of succeeding
+1. **The destination is an argument, not a shell redirection.** No redirect means no
+   stdout for a typo to turn into content.
+2. **`--sentinel` is required, and is checked BEFORE anything is written.** "Does this
+   file contain secrets?" and "is this file the artifact I wrote?" are different
+   questions, and only the second rejects a status blob that happens to be clean.
+3. **This file is a version tripwire.** An older revision of the skill does not contain
+   it, so the write fails with "No such file or directory" rather than succeeding
    against a script that quietly does something else.
 
-And the verification asks the question that actually matters. "Does this file
-contain secrets?" is not the same question as "is this file the artifact I
-wrote?" -- a status blob passes the first and fails the second. The sentinel
-check is what distinguishes them, which is why `--sentinel` is required rather
-than optional: an optional integrity check is one that gets omitted on the run
-where it would have mattered.
-
 Usage:
-    python3 write_artifact.py --sentinel <FINGERPRINT> <DEST> < draft.md
+    <artifact on stdin> | python3 write_artifact.py --sentinel <fp|run_id> <dest>
 
-Findings and verification detail are reported as JSON on stderr. Nothing is
-written to stdout, so a stray `> file` cannot capture anything meaningful.
+Exit codes:
+    0  OK             written and verified. A true `redacted` field in the JSON means a
+                      secret shape was masked -- report it as a gate hit.
+    1  VERIFY_FAILED  bytes landed and they are not this artifact. Retried ONCE with
+                      byte-identical content first. Report `problems` verbatim.
+    2  NO_INPUT / usage -- nothing written and nothing scanned. NOT a pass.
 
-Exit codes -- three outcomes, deliberately distinct:
-    0  OK             written, and the bytes on disk verified as this artifact.
-                      Check the JSON's `redacted` field: true means a secret
-                      shape was masked and the run summary owes a gate hit.
-    1  VERIFY_FAILED  something landed, but it is not this artifact -- wrong
-                      content, truncated, or rewritten after the write. Do not
-                      record this candidate as written.
-    2  NO_INPUT / usage error. The gate did not run. Never a pass.
+**Never regenerate content to retry.** The only sanctioned retry is byte-identical: a
+redraft-and-rescan loop was measured laundering a real identifier through the gate in
+reworded form.
 """
 
 import json
@@ -75,7 +48,7 @@ _MIN_SIZE_RATIO = 0.5
 # deterministic failure fails twice and is reported, which is the honest reading:
 # retrying further would turn a genuine write failure into a hang, and retrying
 # with regenerated content would be the redraft-and-rescan loop
-# design-history section 13 prohibits, because a reworded redraft can launder a
+# the skill prohibits, because a reworded redraft can launder a
 # real identifier through the gate.
 _MAX_ATTEMPTS = 2
 

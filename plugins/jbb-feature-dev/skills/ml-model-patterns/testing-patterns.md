@@ -59,8 +59,6 @@ def create_audiobook_metadata_response(**kwargs) -> AudiobookMetadataResponse:
     )
 ```
 
-**Reference**: `Findaway/audiobook-matches-backend/tests/utils/factory/audiobook_metadata.py:8-40`
-
 ### Factory Pattern Benefits
 
 - **Sensible defaults**: Tests focus on what's different, not boilerplate
@@ -470,7 +468,6 @@ def test_config_processing(config_file, expected_output):
 
 ## Related Patterns
 
-- [skf-tensorflow-pipelines/testing-patterns.md](../skf-tensorflow-pipelines/testing-patterns.md) - TensorFlow/SKF patterns
 
 ## Documentation Links
 

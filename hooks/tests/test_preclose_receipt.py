@@ -25,6 +25,7 @@ def live(content=OUTPUT, ok=True, code="message"):
 
 
 LIVE = live()
+ACTIVITY = receipt_helpers.ACTIVITY
 
 
 class ValidateTest(unittest.TestCase):
@@ -35,7 +36,14 @@ class ValidateTest(unittest.TestCase):
         self.path = self.root / "r.json"
 
     def check(
-        self, *, live=LIVE, tool="claude", prune=False, output_text=OUTPUT, **kwargs
+        self,
+        *,
+        live=LIVE,
+        tool="claude",
+        prune=False,
+        output_text=OUTPUT,
+        activity=ACTIVITY,
+        **kwargs,
     ):
         receipt_helpers.write_receipt(self.path, output_text=output_text, **kwargs)
         return receipt_mod.validate_receipt(
@@ -43,6 +51,7 @@ class ValidateTest(unittest.TestCase):
             expected_session_id=kwargs.get("session_id", "sess-1"),
             expected_tool=tool,
             live_output=live,
+            live_activity=activity,
             require_worktree_clean=prune,
         )
 
@@ -56,6 +65,7 @@ class ValidateTest(unittest.TestCase):
             expected_session_id="sess-1",
             expected_tool="claude",
             live_output=LIVE,
+            live_activity=ACTIVITY,
             require_worktree_clean=False,
         )
         self.assertFalse(verdict.ok)
@@ -68,6 +78,7 @@ class ValidateTest(unittest.TestCase):
             expected_session_id="sess-1",
             expected_tool="claude",
             live_output=LIVE,
+            live_activity=ACTIVITY,
             require_worktree_clean=False,
         )
         self.assertFalse(verdict.ok)
@@ -93,6 +104,23 @@ class ValidateTest(unittest.TestCase):
         verdict = self.check(overrides={"schema_version": "banana"})
         self.assertFalse(verdict.ok)
 
+    def test_a_receipt_written_before_the_liveness_check_no_longer_authorises_anything(
+        self,
+    ):
+        # Schema 1 receipts were written by a runner that never asked whether the
+        # session had stopped. They are sitting in ~/evidence/preclose right now,
+        # and every one of them would otherwise still permit a removal.
+        verdict = self.check(overrides={"schema_version": 1})
+        self.assertFalse(verdict.ok)
+
+    def test_a_receipt_with_no_recorded_stamp_is_refused_rather_than_compared(self):
+        # receipt_helpers always supplies a well-formed liveness block, so without
+        # this nothing reaches the refusal: deleting it left all six modules green.
+        for liveness in ({"state": "quiet", "reason": "x"}, {}, None, "quiet", []):
+            verdict = self.check(overrides={"liveness": liveness}, activity="")
+            self.assertFalse(verdict.ok, liveness)
+            self.assertIn("no terminal activity", verdict.reason)
+
     def test_missing_dump_file_is_rejected(self):
         receipt_helpers.write_receipt(self.path, output_text=OUTPUT)
         (self.root / "sess-1-final.md").unlink()
@@ -101,6 +129,7 @@ class ValidateTest(unittest.TestCase):
             expected_session_id="sess-1",
             expected_tool="claude",
             live_output=LIVE,
+            live_activity=ACTIVITY,
             require_worktree_clean=False,
         )
         self.assertFalse(verdict.ok)
@@ -121,6 +150,7 @@ class ValidateTest(unittest.TestCase):
             expected_session_id="sess-1",
             expected_tool="claude",
             live_output=LIVE,
+            live_activity=ACTIVITY,
             require_worktree_clean=False,
         )
         self.assertFalse(verdict.ok)
@@ -173,6 +203,7 @@ class ValidateTest(unittest.TestCase):
             expected_session_id="sess-1",
             expected_tool="claude",
             live_output=LIVE,
+            live_activity=ACTIVITY,
             require_worktree_clean=False,
         )
         self.assertFalse(verdict.ok)
@@ -233,6 +264,7 @@ class BuildTest(unittest.TestCase):
                 dump_bytes=1,
                 output_sha256="a",
                 worktree={},
+                liveness={},
             )
 
 

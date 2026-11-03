@@ -1,14 +1,29 @@
 # Craft notes
 
-Read before writing, and again before calling it finished. These are measured from the explainer
-corpus, not preferences. They apply to both modes.
+Read before writing, and again before calling it finished. They apply to both modes. No number here
+is a target: length and visuals are judged by whether the reader can follow every step.
 
 Everything here is about *how much* and *what shape*. Nothing here specifies a look — palette,
 typography and layout belong entirely to `/frontend-design`.
 
 ## How long
 
-**Target 20-33% of the source document's word count.** Measure it; do not estimate.
+**As long as the reader needs to understand everything, and no longer.** Never cut a sentence to reach
+a word count. Run these three checks on every section:
+
+1. **Inference.** Read it as the reader, who does not know this system. Every place where they must
+   work out a state, a next step or a reason for themselves is a missing sentence: add it. A real
+   section about a size rule never said whether the section was locked, or whether it was removed,
+   and the reader had to ask.
+2. **Coverage.** Every finding in the source appears. A terse document reads as confident while having
+   dropped whole findings: a first run of this skill shed seven of the source's sections.
+3. **Cut.** Remove only what the reader loses nothing without: restatement, an account of how the
+   investigation went, citation trails the footer carries, a motivation the reader already knows.
+   Never remove a definition, a step in a causal chain, a worked example or a stated result. Explainers
+   written without this skill failed by keeping the investigation's method and citations, not by
+   being long.
+
+Measure and report the ratio to the source, as a description only:
 
 ```bash
 wc -w <source>.md
@@ -17,27 +32,11 @@ python3 -c "import re,sys,pathlib; t=pathlib.Path(sys.argv[1]).read_text(); \
   print(len(re.sub(r'<[^>]+>',' ',t).split()))" <output>.html
 ```
 
-The band comes from the corpus: briefings written for a single decision-maker landed at 22-33% of
-their source, while peer-facing reviews ran 71-79%. A briefing is the lower band.
-
-**This is the rule the eval showed carries the most weight, so here is the evidence rather than an
-assertion.** Across three baseline runs given the same task with no skill, **none landed in the band**
-- the two that produced research-doc explainers came in at **52% and 67% of source**. A document at
-two-thirds the length of its source is not a briefing; it is the source with the citations removed.
-The same runs missed the density target 2 times in 3, once with a single visual in 3,000 words, and
-**both pulled in external font URLs** - one while describing itself as "a single self-contained file",
-which is the worst kind of failure because the artifact looks finished and silently will not render
-offline.
-
-**Coming in under the band is the likelier failure, and it does not look like one.** A terse document
-reads as confident and well-edited while having quietly dropped whole findings. A first run of this
-skill produced 9% against a hand-written baseline of 23.8% for the same source, having shed seven of
-the source's sections. If the count is below the band, the question is not "is this tight enough" but
-"which findings are missing".
-
 ## How many visuals — and how much prose around them
 
-**Roughly one visual element per 100-200 words**, counted as `<svg>` + `<figure>` + `<table>`:
+**Draw a visual wherever it makes a mechanism, flow, state change or trend easier to follow.** There
+is no target ratio. Report words per visual, counted as `<svg>` + `<figure>` + `<table>`, as a
+description only:
 
 ```bash
 python3 -c "import re,sys,pathlib; t=pathlib.Path(sys.argv[1]).read_text(); \
@@ -48,34 +47,26 @@ python3 -c "import re,sys,pathlib; t=pathlib.Path(sys.argv[1]).read_text(); \
   print(f'{w} words / {v} visuals = ' + (f'{w//v} words per visual' if v else 'NO VISUALS AT ALL'))" <output>.html
 ```
 
-**The subtraction is not optional.** A figure that wraps an SVG - which is the normal shape for a
-numbered plate - was counted twice by the earlier version, halving the apparent words-per-visual. On a
-real artifact it reported 105 when the true figure was 172. Worse, an agent following the skill found
-the two bands **jointly unsatisfiable** because of it: hitting the density target as measured drove the
-word count to 42% of source, outside the compression band. Do not work around this by avoiding
-`<figure>`; count each visual once.
+**The subtraction is not optional.** A figure that wraps an SVG is one visual; counting it twice
+halves the figure. "NO VISUALS AT ALL" is always a defect. Any other result is never a reason to cut
+words.
 
-**That last clause is not defensive padding.** An earlier version divided by `max(v,1)`, so a document
-with zero visuals reported "3 words / 0 visuals = 3 words per visual" - reading as outstanding density
-when nothing had been drawn at all. A check whose worst input produces its best-looking output is worse
-than no check. Found by running the block against an empty fixture, not by reading it.
-
-Use one definition and stay with it. Counting theme class names like `.plate` or `.chart` as well
-gives a different number for the same file, and a rule whose figure and whose check disagree is worse
-than no rule.
+Use one definition and stay with it. Do not replace the script's count with a hand count, and do not
+count theme class names like `.plate` or `.chart` as well.
 
 **Three ways this goes wrong, all observed:**
 
-1. **Too sparse.** A first run came in at 282 words per visual — a wall of text with occasional
-   pictures — while passing every other check. This failure is independent of the word count.
-2. **Traded against the word count.** A second run reached 68 words per visual and fell to 11.8%
-   compression, because it converted prose into figure labels rather than adding figures to prose.
-   **Check both numbers together and treat a pass on one with a fail on the other as a fail.**
+1. **A wall of text.** A mechanism explained only in paragraphs when a figure of its states would let
+   the reader see it. Add the figure; keep the prose that explains it.
+2. **Prose turned into figure labels.** A run that chased a density number converted its explanation
+   into labels and table cells. A cell saying "Match, but position 3 already won" leaves the reader to
+   work out why. The sentence that says why belongs in the prose.
 3. **Figures without context.** The same run put figures next to each other with too little prose
-   between them to say what each showed. **A figure needs a sentence introducing what it is and a
-   sentence saying what to take from it.** The rule in `SKILL.md` — use the visual instead of the
-   paragraph, not both — means replace the *explanation*, not the *framing*. An unintroduced figure
-   is not doing the work of the paragraph it replaced; it is just sitting there.
+   between them to say what each showed. **A figure needs a sentence introducing what it is, a
+   sentence on how to read it when that is not obvious, and a sentence saying what to take from it.**
+   The rule in `SKILL.md` — use the visual instead of the paragraph — means replace the *description*,
+   never the *explanation* or the *framing*. An unintroduced figure is not doing the work of the
+   paragraph it replaced; it is just sitting there.
 
 A visual counts when it carries information the prose does not then repeat. A decorative rule or an
 icon does not count.

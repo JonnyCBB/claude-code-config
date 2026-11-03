@@ -109,8 +109,7 @@ genuinely parallel." is.
 Author via `/skill-creator:skill-creator`.
 
 - **Path:** `~/.claude/plugins/jbb-feature-dev/skills/<handle>-mode/SKILL.md`. **Never
-  `~/.claude/skills/`** — `apply-to-user.sh` replaces that whole directory and the skill would
-  vanish.
+  `~/.claude/skills/`** — a mode skill belongs in the plugin so it installs and updates with it.
 - **Description:** trigger on the handle and `/<handle>-mode`, never on generic words like "write
   code" or "review PR".
 - **Sticky by default.** Once entered, the mode stays active across turns until explicitly exited.

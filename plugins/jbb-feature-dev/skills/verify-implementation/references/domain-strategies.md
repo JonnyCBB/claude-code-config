@@ -15,43 +15,25 @@ For changes to files, configurations, skills, and commands within `~/.claude/` o
 
 ### Before/After Procedure
 
-1. Record current state (feature branch):
-
-   ```bash
-   # Capture file contents and command outputs on feature branch
-   cat <file> > /tmp/verify-after-<label>.txt
-   <command> > /tmp/verify-after-<label>-output.txt 2>&1
-   ```
-
-2. Capture baseline (base branch):
-
-   ```bash
-   git stash  # if uncommitted changes
-   git checkout <base-branch>
-   cat <file> > /tmp/verify-before-<label>.txt 2>/dev/null || echo "FILE_NOT_FOUND"
-   <command> > /tmp/verify-before-<label>-output.txt 2>&1 || true
-   ```
-
-3. Return to feature branch:
-
-   ```bash
-   git checkout <feature-branch>
-   git stash pop  # if stashed
-   ```
-
-4. Compare:
-   ```bash
-   diff /tmp/verify-before-<label>.txt /tmp/verify-after-<label>.txt
-   ```
+1. Capture relevant file contents and command output from the feature working tree,
+   including the recorded staged, unstaged, and untracked scope. Preserve exit statuses.
+2. Create a separate detached baseline worktree at the recorded base commit using Git's
+   worktree add operation and detach option. Record its path and commit. Do not stash,
+   switch, reset, or clean the feature checkout, and do not copy secrets into the baseline.
+3. Run the same relevant local commands in the baseline directory with separate output paths.
+   Record missing files or commands as actual observations. Do not suppress failures or
+   claim a comparison if the baseline cannot execute the required check.
+4. Compare expected differences and relevant unchanged behavior against the captured output.
+   Confirm the feature checkout and its changes remain intact. Retain the baseline worktree
+   and report its path; do not delete it or its artifacts without explicit authorization.
 
 ## Backend API Domain
 
 For changes to gRPC or REST services.
 
-For comprehensive live service testing including startup, scenario generation, and
-validation, see `references/live-testing-guide.md` (invoked in Step 8). Step 8 handles
-service startup, Before/After comparison, and cleanup autonomously — the "ask user to
-restart" steps below apply only to Step 9's non-live Before/After verification.
+For local service startup, scenario generation, validation, and isolated baseline comparison,
+see `live-testing-guide.md` (invoked in Step 8). Reuse those results in Step 9 rather than
+restarting services or repeating requests. Keep both service calls and dependencies local.
 
 ### Verification Techniques
 
@@ -61,66 +43,24 @@ restart" steps below apply only to Step 9's non-live Before/After verification.
 
 ### Before/After Procedure
 
-1. Capture "after" responses (service running on feature branch):
-
-   ```bash
-   # Send requests and capture responses
-   curl -s <endpoint> | jq '.' > /tmp/verify-after-<label>.json
-   # or
-   spgrpcurl <service> <method> '<request>' > /tmp/verify-after-<label>.json
-   ```
-
-2. Record all responses before switching branches.
-
-3. Switch to base branch and rebuild:
-
-   ```bash
-   git stash  # if uncommitted changes
-   git checkout <base-branch>
-   <build-command>  # e.g., mvn compile, sbt compile
-   ```
-
-4. Ask user to restart service on base branch (Step 9 only — Step 8 handles this autonomously). Wait for confirmation.
-
-5. Capture "before" responses:
-
-   ```bash
-   curl -s <endpoint> | jq '.' > /tmp/verify-before-<label>.json
-   # or
-   spgrpcurl <service> <method> '<request>' > /tmp/verify-before-<label>.json
-   ```
-
-6. Return to feature branch:
-
-   ```bash
-   git checkout <feature-branch>
-   git stash pop  # if stashed
-   ```
-
-7. Ask user to restart service on feature branch (Step 9 only — Step 8 handles this autonomously). Wait for confirmation.
-
-8. Compare:
-   ```bash
-   diff /tmp/verify-before-<label>.json /tmp/verify-after-<label>.json
-   ```
+Follow the Before/After Execution Procedure in `live-testing-guide.md`. Capture feature
+responses from the recorded working-tree state and baseline responses from the separate
+worktree at the recorded base commit. Use identical local inputs and separate logs, build
+artifacts, and ports. Preserve raw responses and exit statuses. A baseline startup blocker
+leaves the comparison unverified. Do not switch the feature checkout or remove either
+worktree without authorization.
 
 ## Common Patterns
 
 ### Retry Logic
 
-For transient service failures, retry up to 3 times with 2-second backoff:
-
-```bash
-for attempt in 1 2 3; do
-  result=$(<command> 2>&1) && break
-  echo "Attempt $attempt failed, retrying in 2s..."
-  sleep 2
-done
-```
+Retry only when captured evidence supports a transient local failure. Preserve each
+attempt's output and status; do not hide an earlier failure behind a later success.
+Use bounded retries with a timeout, not an indefinite wait.
 
 ### Assertion Format
 
-Use consistent assertion format in both verification scripts and evidence documents:
+Use consistent assertion format in evidence documents and any optional local wrapper:
 
 - `PASS: <description of what was verified>`
 - `FAIL: <description of what failed> — Expected: <X>, Got: <Y>`

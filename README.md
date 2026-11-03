@@ -15,7 +15,7 @@ This repo also serves as a **Claude Code plugin marketplace**. You can install p
 | If you want to...                              | Install                                      |
 | ---------------------------------------------- | -------------------------------------------- |
 | Build features with AI-guided TDD workflow     | jbb-feature-dev                               |
-| Investigate incidents or document architecture | eng-utils                                    |
+| Document architecture or hunt bugs             | eng-utils                                    |
 | Create interactive explainers or presentations | jiffy-toolkit                                |
 | All of the above                               | Install all three -- they work independently |
 
@@ -23,14 +23,14 @@ This repo also serves as a **Claude Code plugin marketplace**. You can install p
 
 | Plugin                                    | When to use it                                                               | Description                                                                                                                                                                                                                                                                                                                  | Examples                                                                                |
 | ----------------------------------------- | ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| [jbb-feature-dev](plugins/jbb-feature-dev/) | You're **building a feature** from scratch                                   | End-to-end development workflow: from requirements gathering and codebase research through TDD planning, parallel implementation, code review, and delivery. Includes 29 expert agents (research, code review, and language experts for Python and TypeScript). | `/elicit-requirements` -> `/create-plan-tdd` -> `/implement-plan-tdd` -> `/code-review` |
-| [eng-utils](plugins/eng-utils/)           | Something is **broken in production** or you need to **understand a system** | Incident triage and root cause investigation, architecture documentation with C4 diagrams, and service diagnostics (pods, logs, alerts, callgraphs, edge config).                                                                                                                                                            | `/incident-investigation`, `/system-architecture-doc`                                   |
+| [jbb-feature-dev](plugins/jbb-feature-dev/) | You're **building a feature** from scratch                                   | Current-session implementation with independent built-in /simplify, specialist review, local verification, and authorized submission through latest-head CI and clean review. Optional requirements, research, and TDD planning skills remain available. | `/jbb-feature-dev:implement-change <task>` |
+| [eng-utils](plugins/eng-utils/)           | You need to **understand, hunt bugs in, or prune a system**            | Architecture documentation with C4 diagrams, codebase friction analysis, multi-candidate bug hunts (bug-hunter-3000, bug-hunter-crossfire), and dead-code pruning (prune-code).                                                                                                                                                                                                                                                                                                               | `/system-architecture-doc`, `/prune-code`                                               |
 | [jiffy-toolkit](plugins/jiffy-toolkit/)   | You need to **explain or present** something                                 | Turn concepts into polished interactive pages, slide decks, and standards-compliant documentation.                                                                                                                                                                                                                           | `/teach-me`, `/frontend-slides`                                                         |
 
 ### How the plugins relate
 
 - **jbb-feature-dev** -- the _build_ phase: idea -> shipped code
-- **eng-utils** -- the _operate_ phase: incidents, diagnostics, system understanding
+- **eng-utils** -- the _operate_ phase: system understanding, bug hunting, pruning
 - **jiffy-toolkit** -- the _communicate_ phase: explanations, presentations, documentation standards
 
 ### Plugin scale
@@ -93,9 +93,9 @@ configured. Nothing here depends on a private MCP gateway.
 
 **Additional per plugin:**
 
-- **jbb-feature-dev**: Enterprise Context Agent connector (for workplace knowledge search)
-- **eng-utils**: CLI tools for some diagnostics (`grpcurl`, `gcloud`, `spt` -- see [eng-utils README](plugins/eng-utils/))
-- **jiffy-toolkit**: Enterprise Context Agent connector; optionally Python 3 + Playwright (for visual QA) and Manim (for math content)
+- **jbb-feature-dev**: `gh` for PR submission and CI monitoring
+- **eng-utils**: `git` and `gh`; the bug hunts read local checkouts
+- **jiffy-toolkit**: optionally Python 3 + Playwright (for visual QA) and Manim (for math content)
 
 See each plugin's README for full details.
 
@@ -107,12 +107,12 @@ See each plugin's README for full details.
   - [2. Getting Started](#2-getting-started)
     - [2.1. Prerequisites](#21-prerequisites)
       - [2.1.1. Install Claude Code](#211-install-claude-code)
-      - [2.1.2. Copy the directories into your `~/.claude` folder](#212-copy-the-directories-into-your-claude-folder)
+      - [2.1.2. Copy the directories into your `~/.claude` folder](#212-put-the-config-in-place)
       - [2.1.3. Install the required MCP tools](#213-install-the-required-mcp-tools)
-      - [2.1.4. Install `gh` and `bq` CLI tools](#214-install-gh-and-bq-cli-tools)
+      - [2.1.4. Install the `gh` CLI tool](#214-install-the-gh-cli-tool)
   - [3. Using These Tools / My Workflows](#3-using-these-tools--my-workflows)
     - [3.1. Using Skills](#31-using-skills)
-      - [3.1.1. Example usage - Viewing data endpoint schemas and data samples](#311-example-usage---viewing-data-endpoint-schemas-and-data-samples)
+      - [3.1.1. Example usage - Pruning dead code](#311-example-usage---pruning-dead-code)
     - [3.2. Using Subagents](#32-using-subagents)
       - [3.2.1. Example usage - Using a single subagent](#321-example-usage---using-a-single-subagent)
       - [3.2.2. Example usage - Running two subagents in parallel](#322-example-usage---running-two-subagents-in-parallel)
@@ -146,7 +146,7 @@ See each plugin's README for full details.
 
 ## 1. Inspiration
 
-Many of the agents, commands, skills and ultimately my current philosophy about creating workflows with Claude Code were **heavily** inspired by this article by Human Layer: [Getting AI to Work in Complex Codebases](https://github.com/humanlayer/advanced-context-engineering-for-coding-agents/blob/main/ace-fca.md) (Thank you to **Santiago Dubov**, @sdubov, for sharing the article with me and the useful discussions that have come from our shared passion for agentic coding tooling). I've tweaked a few commands and agents to work for my use cases and I strongly encourage you to do the same. Pick the pieces from this repo that you like and tweak those that don't work so well for you in its current form.
+Many of the agents, commands, skills and ultimately my current philosophy about creating workflows with Claude Code were **heavily** inspired by this article by Human Layer: [Getting AI to Work in Complex Codebases](https://github.com/humanlayer/advanced-context-engineering-for-coding-agents/blob/main/ace-fca.md). I've tweaked a few commands and agents to work for my use cases and I strongly encourage you to do the same. Pick the pieces from this repo that you like and tweak those that don't work so well for you in its current form.
 
 I can't wait to see what you come up with.
 
@@ -158,23 +158,21 @@ I can't wait to see what you come up with.
 
 Follow the [official install instructions](https://code.claude.com/docs/en/overview) for installing Claude Code.
 
-#### 2.1.2. Copy the directories into your `~/.claude` folder
+#### 2.1.2. Put the config in place
 
-You can use the provided script to copy all agents, commands, and skills to your `~/.claude` directory:
+This repo is the `~/.claude` directory itself. On a new machine, clone it there before you first start Claude Code (if `~/.claude` already exists, move it aside first):
 
 ```bash
-./apply-to-user.sh
+git clone https://github.com/JonnyCBB/claude-code-config.git ~/.claude
 ```
 
-This script will:
+`settings.json` registers this repo as the `jbb-claude-code-plugins` marketplace and enables `jbb-feature-dev`, `eng-utils` and `jiffy-toolkit`, plus the public plugins it uses, so the first start of Claude Code installs them. To install the plugins on a machine without taking the whole config, use the marketplace commands in the Installation section above.
 
-- Check if `~/.claude` exists (you need to create it first by running Claude Code at least once)
-- Backup any existing agents, commands, and skills directories to `.backup` versions
-- Copy the new directories from this repo to `~/.claude`
+The hooks call `python3`, `jq` and `git`. The follow-up capture rule and the conductor hooks call `bd` (beads) and `agent-deck`; without them those steps fail softly. Install them with Homebrew:
 
-Alternatively, you can manually copy each of the `agents`, `commands` and `skills` folders, along with their contents into your `~/.claude` directory. If you already have these directories setup then you only need to copy the contents into your corresponding local directories.
-
-**Note:** As of writing (2025-11-06) I'm not certain that [Claude Code Plugin marketplaces](https://code.claude.com/docs/en/plugin-marketplaces) are available/secure enough to use. However, once I find out that they are available then I can add these as a plugin and you shouldn't have to worry about doing the manual "copy-pasta" process.
+```bash
+brew install jq beads agent-deck
+```
 
 #### 2.1.3. MCP servers (optional)
 
@@ -188,7 +186,7 @@ claude mcp add --transport http --scope user <name> <url>
 The doc-oriented skills (`review-document`, `google-docs`) can use a Google Drive connector if you
 have one enabled.
 
-#### 2.1.4. Install `gh` and `bq` CLI tools
+#### 2.1.4. Install the `gh` CLI tool
 
 Install the GitHub CLI tool `gh`:
 
@@ -197,15 +195,7 @@ brew install gh
 gh auth login --hostname github.com -p ssh
 ```
 
-The BigQuery command line tool `bq` is part of the Google Cloud SDK:
-
-```sh
-brew install --cask google-cloud-sdk
-gcloud init
-gcloud auth application-default login
-```
-
-**Note:** I don't use GitHub or BigQuery MCP tools because there are already really good CLI tools for interacting with GitHub, `gh`, and BigQuery, `bq`, directly. Personally, I prefer using the CLI tools over MCP tools when working with agents. Agents can easily utilise the `--help` documentation with a CLI tool to work out how to use them and you don't have to worry about networks calls etc.
+**Note:** I don't use a GitHub MCP server because there is already a really good CLI tool for GitHub, `gh`. Personally, I prefer using the CLI tools over MCP tools when working with agents. Agents can easily utilise the `--help` documentation with a CLI tool to work out how to use them and you don't have to worry about networks calls etc.
 
 ## 3. Using These Tools / My Workflows
 
@@ -213,23 +203,21 @@ Claude Code is incredibly customisable and therefore you can use these tools in 
 
 ### 3.1. Using Skills
 
-[Skills](https://code.claude.com/docs/en/skills) are automatically invoked by the model. Based on the prompt and the description given for each Skill the model will decide on when it should use a Skill (this doesn't always work perfectly as [I found out the hard way](https://your-workspace.slack.com/)).
+[Skills](https://code.claude.com/docs/en/skills) are automatically invoked by the model. Based on the prompt and the description given for each Skill the model will decide on when it should use a Skill (this doesn't always work perfectly).
 
 Examples of skills I rely on day-to-day (see `~/.claude/skills/` and the bundled plugin skills for the full set):
 
-1. [Bulk Data Status Override](/skills/bulk-data-status-override/)
-2. [Data Endpoints](plugins/jbb-feature-dev/skills/data-endpoints/) — schema, data viewing, status, lineage, and PII validation (now lives in jbb-feature-dev / eng-utils)
-3. [Google Docs](/skills/google-docs/)
+1. [Google Docs](/skills/google-docs/)
+2. [Prune Code](plugins/eng-utils/skills/prune-code/)
+3. [Research Problem](plugins/jbb-feature-dev/skills/research-problem/)
 
-#### 3.1.1. Example usage - Viewing data endpoint schemas and data samples
+#### 3.1.1. Example usage - Pruning dead code
 
-Suppose I want to get the schema for the `coredata.UserSnapshotXT.days.v1.gcs.parquet` data endpoint and then view the data for two of the records in the dataset. Equipped with the "Data Endpoints" skill I can write the following prompt to Claude Code:
+Suppose a module has grown and I suspect some of it is no longer used. Equipped with the "Prune Code" skill I can write the following prompt to Claude Code:
 
 ```
-Show me the schema for the data endpoint coredata.UserSnapshotXT.days.v1.gcs.parquet and view 2 records from this endpoint
+Find code in src/billing/ that nothing calls any more and propose what to delete
 ```
-
-This should give a summary of the schema along with the records (the final command to view the records took a couple of mins to run for me).
 
 ### 3.2. Using Subagents
 
@@ -247,10 +235,10 @@ Use the web-search-researcher subagent to compare httpx and aiohttp for an async
 
 #### 3.2.2. Example usage - Running two subagents in parallel
 
-In Claude Code you can run subagents in parallel simply by prompting it. For example, navigate to the route of any repository that exists locally and you can run both the [codebase-analyser](/agents/codebase-analyzer.md) and [codebase-locator](/agents/codebase-locator.md) subagents on it parallel by simply prompting:
+In Claude Code you can run subagents in parallel simply by prompting it. For example, navigate to the route of any repository that exists locally and you can run both the [codebase-explorer](/plugins/jbb-feature-dev/agents/codebase-explorer.md) and [web-search-researcher](/plugins/jbb-feature-dev/agents/web-search-researcher.md) subagents on it in parallel by simply prompting:
 
 ```
-Can you spin up both the codebase-analyser and codebase-locator subagents to run in parallel on this repository and give a summary of the core request flow in the service and the important steps of that flow
+Spin up the codebase-explorer and web-search-researcher subagents in parallel: summarise the core request flow in this service, and find the current upstream docs for the framework it uses
 ```
 
 ### 3.3. Using Custom Slash Commands
@@ -265,11 +253,11 @@ If I've already got several code changes in a branch that are pretty self-explan
 /submit-pr
 ```
 
-The `/submit-pr` skill is a full PR lifecycle manager — it generates comprehensive descriptions, discovers repo PR templates, optionally integrates with Jira (fuzzy-matching ticket transitions), monitors builds via `/loop` with lint/format auto-fix, sends Slack notifications, and supports auto-merge. See the [jbb-feature-dev plugin README](plugins/jbb-feature-dev/README.md) for all available flags.
+The `/submit-pr` skill generates reviewer-visible descriptions, discovers repo PR templates, optionally integrates with Jira, and monitors latest-head CI and explicit clean review via `/loop`. It sends Slack notifications only when requested and never merges or enables automatic merging. See the [jbb-feature-dev plugin README](plugins/jbb-feature-dev/README.md) for all available flags.
 
 #### 3.3.2. Example usage - PR reviewing
 
-PR reviews are very common and we typically look at similar aspects for each PR. The [/code-review skill](plugins/jbb-feature-dev/skills/code-review/) (which superseded `/pr-review` in jbb-feature-dev) spins up several specialist subagents — bug-catcher, security-reviewer, laidx-reviewer, language experts, and domain experts — to review the PR. This can be invoked using:
+PR reviews are very common and we typically look at similar aspects for each PR. The [/code-review skill](plugins/jbb-feature-dev/skills/code-review/) (which superseded `/pr-review` in jbb-feature-dev) spins up several specialist subagents — bug-catcher, security-reviewer, repo-rules-reviewer, general-code-reviewer, and Python/TypeScript language experts — to review the PR. This can be invoked using:
 
 ```
 /code-review [PR_BRANCH_OR_NUMBER]
@@ -324,7 +312,7 @@ You may or may not run this command depending on how confident you are that the 
 
 This does not produce a document but instead presents clarifying questions to the user about the plan.
 
-This wonderful command was the [brain child of Joel Kemp](https://your-workspace.slack.com/) and has been very useful for me.
+This command has been very useful for me.
 
 ##### 3.3.3.4. /implement-plan
 
@@ -358,11 +346,8 @@ There is no substitute for reviewing this code yourself BEFORE sending the PR fo
 
 This repository is far from finished, nor are any of the existing Skills, Agents and Commands in a finished state. I found that I've tweaked the entire setup A LOT over the last couple of months and I expect to do the same in the foreseeable future. Some changes/additions I know I want to make are:
 
-- I would like to create a sub-agent that reviews data annotations for data endpoints to ensure that we're complying with encryption policies and are providing sufficient descriptions to be useful.
 - Potentially create a workflow-orchestration expert agent for whichever pipeline framework I end up using.
-- Create a custom command and potentially agents that utilise some of the Oliver MCP tools to triage, solve and produce write-ups for incidents
 - Python/ML focussed agents. Despite being an ML engineer I haven't worked in an ML repo for a while (SHAME) so I haven't written any ML/Python focussed agents. I hope to write some of these pretty soon.
-- I haven't completely given up on creating a custom command for creating a usable A/B test config in the experimentation platform based on a test spec. (My most recent attempt [got close but I failed](https://your-workspace.slack.com/)).
 
 ## 5. Tips for Creating Agents, Commands and Skills
 
@@ -431,7 +416,7 @@ Create a subagent whenever most of the tokens produced by a task are **redundant
 
 #### 5.3.2. When to create a Skill
 
-The utility of [Claude Code Skills](https://code.claude.com/docs/en/skills) isn't immediately obvious but it's been argued that they ["maybe a bigger deal than MCP"](https://simonwillison.net/2025/Oct/16/claude-skills/). When asked "_Do we have a good description on when one should skill vs sub agent_" this was [the answer from an Anthropic representative](https://your-workspace.slack.com/):
+The utility of [Claude Code Skills](https://code.claude.com/docs/en/skills) isn't immediately obvious but it's been argued that they ["maybe a bigger deal than MCP"](https://simonwillison.net/2025/Oct/16/claude-skills/). When asked "_Do we have a good description on when one should skill vs sub agent_" this was the answer from an Anthropic representative:
 
 > hey! really good question, and tehre [sic] for sure is overlap. subagents are a strategy for dividing up work so that the context window is not polluted by sub-tasks and/or to enable parallel work. Sub agents do often have their own initial context/prompt, and would be configured with a potentially different set of skills than the parent agent. **Skills** = Expand in your current context **Sub-agents** = Get their own separate context.
 > I recommend using skills when you need to maintain context from your currrent workflow/convo. and subagents when you want parralel processing of individual tasks and can have context isolation.

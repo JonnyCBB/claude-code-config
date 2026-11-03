@@ -1,7 +1,7 @@
 ---
 name: implement-plan
 description: Execute approved implementation plans with progress tracking. Use when the user has an approved plan file and wants to begin implementation.
-argument-hint: [plan-path] [--non-interactive]
+argument-hint: "[plan-path] [--non-interactive]"
 ---
 
 # Implement Plan
@@ -127,7 +127,7 @@ When something isn't working as expected:
 
 - First, make sure you've read and understood all the relevant code
 - Consider if the codebase has evolved since the plan was written
-- Use the web-search-researcher subagent for information that is not in the repo
+- Use the codebase-explorer subagent for information that is in the repo or other local repos
 - If the code uses an unfamiliar framework, use web-search-researcher for its docs
 - **Spawn detected domain experts proactively**
 - **STOP and present the mismatch clearly - ask for guidance before continuing**

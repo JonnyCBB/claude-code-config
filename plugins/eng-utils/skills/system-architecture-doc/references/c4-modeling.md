@@ -8,9 +8,11 @@ Read this file when Phase 4 begins.
 Read these files for format decisions and syntax reference:
 - `${CLAUDE_PLUGIN_ROOT}/skills/c4-architecture/SKILL.md` — format decisions, level selection, file conventions
 - `${CLAUDE_PLUGIN_ROOT}/skills/c4-architecture/references/c4-formats.md` — Structurizr DSL syntax, PlantUML C4 elements, sequence patterns
+- `${CLAUDE_PLUGIN_ROOT}/skills/c4-architecture/references/infra-scanning.md` — element mapping patterns from infrastructure files
 
 ## Step 4b: Generate the Enriched C4 Model
 
+Use the element mapping patterns from `infra-scanning.md` and the DSL syntax from `c4-formats.md`
 to build the Structurizr DSL model. Do NOT duplicate those references here — read them directly.
 
 **Enrichment** — add properties discovered in Phase 2 and Phase 3:
@@ -53,7 +55,7 @@ perspectives {
 **Do not skip this step.** Validation catches errors before they reach the final documentation.
 
 1. **Structurizr CLI validation**: Run `structurizr-cli validate workspace.dsl` to check DSL syntax. If `structurizr-cli` is not installed, note "Structurizr CLI: NOT AVAILABLE (not installed)" in the summary and proceed with the remaining checks. Do not silently skip the entire validation step.
-2. **Oliver cross-check**: Compare model relationships against Oliver dependency data from the Phase 2 inventory. If Oliver data was not collected in Phase 2, note this gap.
+2. **Runtime dependency cross-check**: Compare model relationships against observed runtime dependency data (distributed traces, a service-mesh graph, or monitoring) where the user supplied it in Phase 1 or 2. If no runtime data was available, note this gap: every relationship then rests on code and config evidence alone.
 3. **Inventory cross-check**: Compare model elements against `inventory.md` from Phase 2. Every component in the inventory should appear in the model.
 
 ```
@@ -67,10 +69,10 @@ Inventory cross-check:
 - Components in model: [N]
 - Missing from model: [list, or "none"]
 
-Relationship cross-check against Oliver data:
+Relationship cross-check against runtime dependency data:
 - Confirmed relationships: [N]
-- In model but not in Oliver (may be async/infrequent): [list]
-- In Oliver but not in model (potentially missing): [list]
+- In model but not in runtime data (may be async/infrequent): [list]
+- In runtime data but not in model (potentially missing): [list]
 
 Unverified elements (from catalog only, no tracing confirmation): [list]
 ```

@@ -21,6 +21,7 @@ You receive:
 - **Section ordering problems**: Prerequisites explained after dependent content, conclusion before evidence, critical information buried
 - **Missing sections for document type**: Reference editorial-reference.md document type standards — RFC missing "Alternatives Considered", README missing "Installation", tutorial missing "Prerequisites"
 - **Information front-loading failures**: Key conclusions or actions buried at the end of long sections instead of stated upfront
+- **The opening states a mechanism instead of an outcome**: in any document someone has to act on or decide on, the first thing the reader meets should be what the author wants to be true afterwards, phrased in the reader's own vocabulary - not the change the author wants made, and not a description of the document. An objective that is present but sits in the second paragraph still counts as this finding: position alone does not fix it, and a real request carrying a bolded objective in its second paragraph was still sent back with "can you explain in human language what you need and what you're trying to achieve?". Never report this when the document states no objective: flag the absence, and do not invent one
 - **Paragraph bloat**: Sections exceeding ~5 paragraphs without subsection breaks; walls of text
 - **Orphaned content**: Sections that don't connect to adjacent sections; dangling cross-references
 - **Table of contents needs**: Documents over ~20 sections without navigation aids
@@ -34,7 +35,8 @@ You receive:
 5. Compare against required sections for that document type (per editorial-reference.md)
 6. Evaluate logical flow — does each section build on the previous?
 7. Check information front-loading — are key points stated early in each section?
-8. Identify structural improvements
+8. Check the document's own opening states an outcome, not a mechanism (skip for reference material nobody has to act on)
+9. Identify structural improvements
 
 ## Output
 

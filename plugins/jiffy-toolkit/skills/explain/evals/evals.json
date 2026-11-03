@@ -6,7 +6,7 @@
     "Case 2 is cheap and tests a guard rather than an artifact: a bare PR number must be refused, because it resolves against the current directory's git remote and would silently describe a different pull request in another worktree.",
     "Case 3 added after iteration 1, which had a coverage hole: BOTH its fixtures happened to have no bead in frontmatter, so the suite tested declaring an absent bead and never tested a successful harvest - the one path whose value the eval called into question.",
     "Eval prompts MUST forbid writes outside the run's own outputs directory. Iteration 1 subagents filed five beads to the tracker (ivpr, p3pe, cqi6, hgxm, i3ei). All agent-proposed and deferred so harmless, but an eval that mutates shared state is not a clean measurement.",
-    "Band figures appearing in these assertions (20-33% compression, 100-200 words per visual) are COPIES for gradeability. references/craft.md is canonical; if it changes, update these and nothing else restates them.",
+    "Word ratio and words per visual are RECORDED per run with the references/craft.md scripts, for comparison across iterations. No assertion passes or fails on them: a reader could not follow a band-compliant explainer, and the version they could follow was 94% of its source at 342 words per visual.",
     "Bead fixtures are NOT committed - see evals/fixtures/README.md. Regenerate with `bd show <id> --json`. They carry named individuals and local paths."
   ],
   "assertions_apply_to_all_cases": [
@@ -42,12 +42,16 @@
           "check": "exactly one .html file; zero <img>; zero external <script src> or <link rel=stylesheet>; zero fetch/XMLHttpRequest/WebSocket"
         },
         {
-          "name": "compression_in_briefing_band",
-          "check": "rendered word count is 20-33% of the source document's 3862 words, i.e. 772-1274 words"
+          "name": "no_inference_gaps",
+          "check": "a grader given ONLY the output, reading as an engineer who does not know this system, lists every place in a mechanism section where they had to infer what state something is in, what happens to it next, or why. Pass if the list is empty."
         },
         {
-          "name": "visual_density_in_band",
-          "check": "100-200 words per visual element, counting svg+figure+table"
+          "name": "covers_every_source_finding",
+          "check": "every finding in the source document appears in the output"
+        },
+        {
+          "name": "mechanisms_have_visuals",
+          "check": "every section that explains a mechanism, flow or state change has at least one introduced figure; record words per visual (figure-wrapped svg counted ONCE) without grading on it"
         },
         {
           "name": "every_figure_introduced",
@@ -66,7 +70,7 @@
     },
     {
       "id": 1,
-      "prompt": "Produce an HTML explainer for the research document at ~/.claude/thoughts/shared/research/2026-08-04-seal-home-pilot-gap-analysis.md, for a senior engineer who commissioned it and has not read it. Save the HTML into the outputs directory.",
+      "prompt": "Produce an HTML explainer for the research document at ~/.claude/thoughts/shared/research/2026-08-04-agent-pilot-gap-analysis.md, for a senior engineer who commissioned it and has not read it. Save the HTML into the outputs directory.",
       "expected_output": "output contains a provenance section listing sources consulted",
       "assertions": [
         {
@@ -102,24 +106,28 @@
     },
     {
       "id": 3,
-      "prompt": "Produce an HTML explainer for the research document at ~/.claude/thoughts/shared/research/2026-08-17-seal-live-verification-commit-bound-gate.md, for a senior engineer who commissioned it and has not read it. Save the HTML into the outputs directory.",
-      "expected_output": "the frontmatter names bead jbrooksbartlett-ap0; the harvest must RESOLVE it and the output must carry context the source document does not foreground",
+      "prompt": "Produce an HTML explainer for the research document at ~/.claude/thoughts/shared/research/2026-08-17-live-verification-commit-bound-gate.md, for a senior engineer who commissioned it and has not read it. Save the HTML into the outputs directory.",
+      "expected_output": "the frontmatter names bead proj-ap0; the harvest must RESOLVE it and the output must carry context the source document does not foreground",
       "assertions": [
         {
           "name": "resolves_the_named_bead",
-          "check": "harvest reads bead jbrooksbartlett-ap0 from frontmatter and reports it as found"
+          "check": "harvest reads bead proj-ap0 from frontmatter and reports it as found"
         },
         {
           "name": "surfaces_context_absent_from_the_source",
           "check": "output carries at least one fact from the bead or its edges that the source document does not state"
         },
         {
-          "name": "compression_in_band",
-          "check": "20-33% of the source word count"
+          "name": "no_inference_gaps",
+          "check": "a grader given ONLY the output, reading as an engineer who does not know this system, lists every place in a mechanism section where they had to infer what state something is in, what happens to it next, or why. Pass if the list is empty."
         },
         {
-          "name": "visual_density_in_band",
-          "check": "100-200 words per visual, counting a figure-wrapped svg ONCE"
+          "name": "covers_every_source_finding",
+          "check": "every finding in the source document appears in the output"
+        },
+        {
+          "name": "mechanisms_have_visuals",
+          "check": "every section that explains a mechanism, flow or state change has at least one introduced figure; record words per visual (figure-wrapped svg counted ONCE) without grading on it"
         },
         {
           "name": "self_contained",

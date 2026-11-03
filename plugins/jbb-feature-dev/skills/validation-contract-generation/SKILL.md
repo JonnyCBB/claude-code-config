@@ -3,7 +3,7 @@ name: validation-contract-generation
 description: >
   Generate a validation contract from acceptance criteria in a requirements document.
   Produces testable assertions with stable IDs grouped by detected domain (Backend API,
-  Data Engineering, ML). Called by /orchestrate-feature-dev before planning. Trigger
+  Data Engineering, ML). Use when a task needs a frozen acceptance contract. Trigger
   phrases: (1) "generate validation contract" (2) "contract from requirements"
   (3) "validation-contract-generation".
 argument-hint: "--requirements <path> [--non-interactive] | --amend --contract <path> --review-doc <path> [--review-doc <path2>] [--non-interactive]"
@@ -38,12 +38,12 @@ Parse `$ARGUMENTS` for flags and input:
 
 1. Read the requirements document fully using Read without limit/offset.
 
-2. Extract all acceptance criteria blocks matching the pattern `AC-N:` followed by GIVEN/WHEN/THEN clauses. Collect each AC's identifier (e.g., `AC-1`, `AC-2`) and its full text.
+2. Extract all labeled and unlabeled GIVEN/WHEN/THEN acceptance scenarios from `## Acceptance Criteria`. Collect each scenario's full text. Preserve explicit `AC-N:` identifiers; after collecting all explicit IDs, assign unlabeled GIVEN/WHEN/THEN scenarios the first unused positive `AC-N` identifiers in document order. These IDs are contract provenance, not edits to the requirements document.
 
-3. If no `AC-N:` blocks are found, halt with an error:
+3. If no GIVEN/WHEN/THEN scenarios are found, halt with an error:
 
    ERROR: No acceptance criteria found. The requirements document must contain
-   AC-N: blocks with GIVEN/WHEN/THEN clauses.
+   GIVEN/WHEN/THEN scenarios in its Acceptance Criteria section.
 
 4. Print a summary of discovered ACs:
 
@@ -125,7 +125,7 @@ Run multi-persona review on the generated assertions before writing the contract
 
 See `references/review-personas.md` for persona definitions, prompt template, and iteration rules.
 
-1. **Spawn both reviewer agents in parallel**: Coverage Auditor (model: sonnet) and Live Testing Enforcer (model: opus). Pass each reviewer: the generated assertions from Step 4, the AC list from Step 2, the domain detection results from Step 3, and the live testing policy from Step 3b. **Agent delivery resilience**: if a reviewer sends an `idle_notification` without content, prompt it via SendMessage using its agent ID (not name); if still no delivery, respawn once; if respawn fails, document the gap and proceed with the other reviewer's findings.
+1. **Spawn both reviewer agents in parallel**: Coverage Auditor (model: sonnet) and Live Testing Enforcer (model: opus). Pass each reviewer: the generated assertions from Step 4, the Step 2 mapping from source scenario text to explicit or assigned AC IDs, the domain detection results from Step 3, and the live testing policy from Step 3b. **Agent delivery resilience**: if a reviewer sends an `idle_notification` without content, prompt it via SendMessage using its agent ID (not name); if still no delivery, respawn once; if respawn fails, document the gap and proceed with the other reviewer's findings.
 
 2. **Collect and synthesize feedback** using the Review Synthesis Format from `references/review-personas.md`. Categorize each item as Must Address / Should Consider / Minor.
 

@@ -47,6 +47,11 @@ Examples:
 - Missing input validation on internal APIs
 - Error messages that leak implementation details
 - Missing logging for diagnosability
+- A name that contradicts what the code does (`isValid()` returning a count, `getUser()` that
+  also writes), or a comment that is wrong or stale rather than merely unnecessary. Both mislead
+  a reader who trusts them, which is why they sit above the LOW band. See
+  `code-review-modes/SKILL.md` sections "Vague and generic names" case 3 and
+  "Unnecessary comments" case 6.
 
 #### File Growth and Single Responsibility
 
@@ -67,7 +72,10 @@ Examples:
 - Documentation improvements
 - Minor code simplifications
 - Test coverage suggestions
-- Non-critical naming improvements (only when genuinely confusing)
+- Naming that breaks a written convention — a generic verb where the rule names one
+  (`process()`, `handle()`, `data()`), or wrong casing for the language. Cite the rule.
+  A name you merely prefer differently is not a finding at any severity; see
+  `false-positive-guidance.md` LOW_VALUE.
 
 ## Confidence Scoring
 

@@ -9,11 +9,10 @@ Both elicit variants spawn context-gathering agents during their Step 2 ("Contex
 | Artifact Detected                                                   | Agent to Spawn                                       | Query Focus                                                 |
 | ------------------------------------------------------------------- | ---------------------------------------------------- | ----------------------------------------------------------- |
 | Repository name, file path, class/method name                       | codebase-explorer                                    | Architecture, existing patterns, related code               |
-| Library / tool / framework name                                     | web-search-researcher + web-search-researcher | What it is, how it's used, docs                  |
-| Component / service name                                            | web-search-researcher (lightweight)             | What it does, current health, dependencies, callers/callees |
-| Dataset / BigQuery table / pipeline name                            | web-search-researcher (lightweight)             | Schema, contents, ownership, lineage, freshness             |
-| Team / squad / person name                                          | web-search-researcher (Band Manager)          | Ownership, membership, whether still active                 |
-| GHE PR / issue link                                                 | web-search-researcher (gh CLI)                | PR state, reviews, CI checks, linked discussion             |
+| Library / tool / framework name                                     | web-search-researcher                                | What it is, how it's used, docs                             |
+| Component / service name                                            | codebase-explorer (lightweight)                      | What it does, dependencies, callers/callees                 |
+| Dataset / table / pipeline name                                     | codebase-explorer (lightweight)                      | Schema, producers and consumers in code                     |
+| PR / issue link                                                     | none: read it directly with the `gh` CLI             | PR state, reviews, CI checks, linked discussion             |
 | Domain keywords (from `shared-references/domain-agent-registry.md`) | matching domain expert agent                         | Domain-specific context and patterns                        |
 | Existing research doc path                                          | thoughts-explorer                                    | Prior research findings                                     |
 
@@ -59,17 +58,13 @@ Default behavior is announce-and-spawn — do NOT ask the user for permission. T
 - **Cap at ~2 research dispatches per question branch.** If still unresolved after two passes, record as `UNKNOWN_TERM` (or ASSUMPTION in non-interactive mode) and proceed.
 - **Non-interactive mode**: this section does not apply (the interview does not run; Context Sprint handles upfront research).
 
+## Outcomes and Decision Authority
+
+Both variants write the desired outcome, meaningful edge cases and exclusions, and observable evidence of success. When the owner names a framework, file change, architecture, or test tool, ask what it protects. Keep it as a constraint only when the answer establishes a real compatibility, policy, or product need; otherwise record it as a possible approach, not an acceptance condition. Describe what evidence would show completion, not a guessed command or environment. Cite the source if a specific check is externally required.
+
+Ask the owner about choices that change scope, acceptance, privacy or consent, retention, material spend, safety, public interfaces, or another hard-to-reverse outcome, even when invisible in the UI. Research discoverable facts instead of asking. A low-impact, reversible implementation choice may be agent-owned: record its reason and reversibility, without presenting it as owner-approved. In unattended mode, label any unresolved consequential choice as an unconfirmed assumption with basis, confidence, owner if known, and what changes if wrong. Recording an assumption grants no permission to act on it.
+
 ## Suggest Next Step
 
-State the file path and recommend the next command:
-
-```
-Requirements saved to: [full path]
-
-Next steps:
-- Run `/research-problem [path]` to research the codebase and external context
-- Run `/create-plan-tdd [path]` to create an implementation plan directly
-- Run `/operational-context [component]` if you need production metrics first
-```
-
-The downstream chain (`/research-problem` → `/create-plan-tdd`) is unchanged across both variants — both produce a fully compatible requirements document.
+State the saved file path and suggest the relevant next step: `/research-problem [path]` or
+`/create-plan-tdd [path]`.

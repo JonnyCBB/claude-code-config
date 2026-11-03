@@ -1,74 +1,34 @@
 #!/usr/bin/env python3
-"""
-Resolve one verified source permalink per finding, against a pinned commit SHA,
-and account for every finding that did not get one.
+"""Resolve one verified, sha-pinned source permalink per finding, and account for the rest.
 
-Why this is a script and not an instruction
--------------------------------------------
-`references/run-record-schema.md` is canonical for what a permalink must be, and
-`digest_model._PERMALINK` is the pattern that enforces it. Both are consulted
-here rather than restated, so this file cannot drift from either. What matters
-for this script is that the rule is conditional: a link may be emitted only
-after proving the file at that SHA is byte-identical to the checkout the finder
-actually read, and `null` is the legitimate answer when that proof fails. Two
-measured failures show that stating the rule is not enough to get it followed.
+A link may be emitted only after proving the file at that sha is byte-identical to the
+checkout the finder read. `null` is the legitimate answer when that proof fails.
 
-1. The rule was skipped wholesale and nothing noticed. On a measured run the
-   orchestrator emitted `null` for all 64 findings without ever attempting the
-   check. Validation passed silently, because `digest_model._permalink` accepts
-   `null` unconditionally -- it has to, since `null` is the honest answer for an
-   unpushed file, and a validator cannot tell "I checked and it differs" from
-   "I did not check". The digest then told 64 readers that the examined checkout
-   did not match a pushed commit. Nobody had established that. It was false:
-   every one of the 49 distinct defect files was byte-identical to
-   `origin/master`, and all 64 findings could have linked. A report that
-   volunteers a cause it never tested is worse than one that links nothing,
-   because the false cause is the part the reader remembers.
+How a ref is chosen:
 
-2. Hand-built links fail in a specific, silent way. `digest_model._check_finding`
-   exists because an orchestrator built its anchors with `line.split("-")[0]`
-   and every ranged finding in that run shipped truncated: `#L177` for a defect
-   declared at `:177-181`. That anchor resolves. It renders as a working link.
-   It just drops most of the defect, and only someone who already knew the range
-   would catch it.
+1. Local HEAD, but only if `git branch -r --contains <sha>` is non-empty. A link to an
+   unpushed sha 404s for every reader but the author, which is worse than no link --
+   it looks like the report cites a deleted file.
+2. Otherwise a pushed ref, `origin/master` by default, `--ref` to override, resolved to
+   a full 40-hex sha.
+3. Either way `git diff --quiet <sha> -- <path>` must pass before a link is emitted.
 
-Both are the same class of error -- a step that is easy to omit or fumble by
-hand, and whose omission looks identical to a correct run. So the resolution is
-mechanised here: `attempted` is written from `len(findings)` rather than from a
-counter the caller increments, so "attempted nothing" cannot be spelled as a
-clean run; and the anchor is built from the parsed range rather than from its
-first component, so a truncated anchor cannot be spelled at all.
+When no candidate ref matches, the `permalink_resolution.unlinked` entry carries a
+reason naming the ref and the failure -- "file differs from origin/master at the
+examined checkout", never "could not verify". A generic reason is the same silence as
+no reason.
 
-How a ref is chosen
--------------------
-1. Local HEAD, but only if `git branch -r --contains <sha>` is non-empty. A link
-   to a sha that was never pushed 404s for every reader but the author, which is
-   a worse failure than no link: it looks like the report cites a deleted file.
-2. Otherwise a pushed ref, `origin/master` by default, `--ref` to override,
-   resolved to a full 40-hex sha with `git rev-parse`.
-3. Either way the file must be byte-identical between the working checkout and
-   the candidate ref (`git diff --quiet <sha> -- <path>`) before a link is
-   emitted. This is the schema's own rule. The measured incident behind it: a
-   local review branch had the defect at `InfluenceModule.java:164` while the
-   pushed ref had the same `@Provides` at `:168`, and `:164` there held an
-   unrelated `.build();`.
+**`attempted` is derived from `len(findings)`**, so a loop that skipped every finding
+reports 64 attempted against 0 linked and cannot spell itself as clean. A record with
+zero findings is a clean sweep and exits 0; that is distinct from the check never running.
 
-When no candidate ref has a matching file, `permalink` is `null` and the
-`permalink_resolution.unlinked` entry carries the specific reason -- "file
-differs from origin/master at the examined checkout", not "could not verify".
-A reason that names the ref and the failure is auditable; a generic one is the
-same silence that produced failure 1 above.
-
-Read-only, by construction
---------------------------
-Only `rev-parse`, `branch -r --contains`, `cat-file -e` and `diff --quiet` are
-ever run, each with `--no-optional-locks` so that not even the index stat cache
-is rewritten. There is no checkout, no fetch, no write to the target repo. The
-one thing this process writes is the updated record on stdout.
+**Read-only by construction.** Only `rev-parse`, `branch -r --contains`, `cat-file -e`
+and `diff --quiet` are run, each with `--no-optional-locks` so not even the index stat
+cache is rewritten. The anchor is built from the parsed range, never from
+`line.split("-")[0]`, which shipped `#L177` for a defect declared at `:177-181`.
 
 Usage:
     python3 resolve_permalinks.py --repo <checkout> < run.json > resolved.json
-    python3 resolve_permalinks.py --repo <checkout> --record run.json --ref origin/main
 
     --repo        required; the local checkout root the finders read.
     --record      read the record from this path instead of stdin.
@@ -76,36 +36,14 @@ Usage:
     --host        used only when the record's `repo.host` is absent.
     --full-name   used only when the record's `repo.full_name` is absent.
 
-The updated record goes to stdout. A human summary goes to stderr, including
-every distinct unlinked reason with its count, so a run that linked nothing has
-to say why on the terminal rather than only inside the JSON.
-
-Nothing to attempt is not the same as attempting nothing
---------------------------------------------------------
-A record with zero findings exits 0 and emits `permalink_resolution` with
-`attempted: 0`. That is a clean sweep, and a clean sweep is a valid and
-important result -- a run that finds nothing still requires a digest,
-precisely so a searched-and-clean component cannot be confused with an
-unsearched one.
-
-The failure this script exists to prevent is the opposite one: 64 findings that
-were never checked, reported as though the check had happened. The defence
-against that is structural rather than a guard -- `attempted` is derived from
-`len(findings)`, so a loop that skipped every finding still reports 64 attempted
-against 0 linked, and cannot spell itself as clean. Refusing to run on an empty
-record would not add to that defence; it would only collapse "there was nothing
-to look at" into "the look never happened", which is the very conflation the
-paragraphs above are about.
+The updated record goes to stdout; a human summary, including every distinct unlinked
+reason with its count, goes to stderr.
 
 Exit codes:
-    0  OK        every finding was attempted; nulls among them are legitimate,
-                 and so is a record with no findings at all.
-    1  SELF_CHECK_FAILED  a link was built that `digest_model` would reject.
-                 The record on stdout is not fit to render. This is a bug in
-                 this script, not in the record.
-    2  usage error, or no input at all -- a missing record, unparseable JSON, or
-       a record with no `findings` array. These are all "the check never ran",
-       which is distinct from "the check ran and had nothing to check".
+    0  OK        every finding was attempted; nulls among them are legitimate.
+    1  SELF_CHECK_FAILED  a link was built that `digest_model` would reject. A bug here,
+                 not in the record.
+    2  usage error, or no input at all -- the check never ran.
 """
 
 import argparse

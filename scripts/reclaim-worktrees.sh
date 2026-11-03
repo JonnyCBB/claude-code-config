@@ -3,9 +3,9 @@
 # reclaim-worktrees.sh - the weekly SCHEDULED RECLAMATION, as a job.
 #
 # Contract: docs/conductor-work-contract.md section 4, "SCHEDULED RECLAMATION".
-# Operator guide: docs/reclamation.md. Bead: jbrooksbartlett-e1ak.
+# Operator guide: docs/reclamation.md. Bead: hq-e1ak.
 # The measurements this design rests on, with verbatim probe output:
-#   ~/evidence/jbrooksbartlett-e1ak/measurements-2026-08-19.md
+#   ~/evidence/hq-e1ak/measurements-2026-08-19.md
 #
 #   ./reclaim-worktrees.sh --dry-run             classify everything, change nothing
 #   ./reclaim-worktrees.sh                       the weekly run
@@ -75,7 +75,7 @@ MAXDEPTH=${RECLAIM_MAXDEPTH:-4}
 
 # How long a worktree with NO pull request must have sat untouched before it is reclaimed. Jonny set
 # the rule and this number on 2026-08-19; it is now the fourth row of the contract's SCHEDULED
-# RECLAMATION table (jbrooksbartlett-e6ne), which had no rule for the class before that.
+# RECLAMATION table (hq-e6ne), which had no rule for the class before that.
 # See the NONE branch of the sweep for the argument that it is as safe as the merged-PR rule.
 NO_PR_MIN_AGE_DAYS=${RECLAIM_NO_PR_MIN_AGE_DAYS:-14}
 
@@ -383,7 +383,7 @@ validate_tunable() {
 # below the dispatch, and an independent review reproduced the consequence: --install-schedule with
 # a malformed window wrote the plist and exited 0, then every launchd trigger refused with exit 2.
 #
-# NO_PR_MIN_AGE_DAYS is the dangerous one (jbrooksbartlett-lngd): if non-numeric, the -lt
+# NO_PR_MIN_AGE_DAYS is the dangerous one (hq-lngd): if non-numeric, the -lt
 # comparison at the sweep's keep branch returns non-zero, the keep is SKIPPED, and the worktree is
 # REMOVED. A setting that exists to protect recent work turns into the opposite of a protection.
 # The other two are less harmful today but carry the same class of bug one edit away.
@@ -869,7 +869,7 @@ parse_worktrees() { # <repo>
 #     only for a worktree that actually reaches this stage, is fewer calls AND exact.
 #
 # Returns OPEN | MERGED | CLOSED | NONE | UNREADABLE. UNREADABLE is never conflated with NONE:
-# GHE was unreachable for ~16 hours on 2026-08-15/16, and "I could not ask" must not read as
+# The git host was unreachable for ~16 hours on 2026-08-15/16, and "I could not ask" must not read as
 # "there is no pull request, so nobody minds if this goes".
 pr_state_for() { # <repo> <branch>
   command -v gh >/dev/null 2>&1 || {
@@ -1226,7 +1226,7 @@ while IFS= read -r repo; do
     fi
 
     # 2. Uncommitted work. Rescued, then LEFT IN PLACE - see docs/reclamation.md and
-    #    jbrooksbartlett-trts for why this differs from the contract's "then remove".
+    #    hq-trts for why this differs from the contract's "then remove".
     worktree_dirty "$wt"
     case $? in
     0)
@@ -1309,7 +1309,7 @@ while IFS= read -r repo; do
         #
         # This class was 7 of the 35 worktrees cleared on 2026-08-19 - 20% of the reclaim - and
         # nothing else reaches it: those 7 were not locked, so the dead-lock rule missed them too.
-        # Written into the contract's SCHEDULED RECLAMATION table on 2026-08-20 (jbrooksbartlett-e6ne).
+        # Written into the contract's SCHEDULED RECLAMATION table on 2026-08-20 (hq-e6ne).
         if ! idle=$(worktree_idle_days "$wt"); then
           gap "the age of $wt (no readable timestamp, so it was kept)"
           row kept-no-pr "$wt" "$short_branch" 0 \
@@ -1493,7 +1493,7 @@ run_caches() {
       cands=(pip3 pip)
       args=(cache purge)
       ;;
-    # `prune` and not `clean`, decided 2026-08-20 (jbrooksbartlett-di8u). This cache measured
+    # `prune` and not `clean`, decided 2026-08-20 (hq-di8u). This cache measured
     # 3.7 GB, roughly ten times the other three combined, but `clean` empties it and then charges
     # most of it straight back on the next resolve, so the real saving is much smaller than the
     # number suggests. `prune` drops only what nothing is using.
@@ -1558,7 +1558,7 @@ run_caches() {
       #
       # Then it required uv's output to name the lock file by absolute path. That never fires:
       # measured on uv 0.11.19, the message abbreviates it to a RELATIVE path -
-      #     waiting for lock on `/Users/x/.cache/uv` at `.cache/uv/.lock`
+      #     waiting for lock on `/home/x/.cache/uv` at `.cache/uv/.lock`
       # - so the absolute form is not in the text and every held lock read as a hard failure. The
       # regression shipped because the TEST STUB emitted a message uv does not actually produce.
       #

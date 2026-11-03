@@ -26,7 +26,7 @@ SESSION = "sess-1111"
 ANSWER = "the final answer"
 
 
-class ChecklistTest(unittest.TestCase):
+class ChecklistFixture(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
@@ -78,6 +78,8 @@ class ChecklistTest(unittest.TestCase):
         path = self.root / "evidence" / "preclose" / (SESSION + ".json")
         return json.loads(path.read_text()) if path.exists() else None
 
+
+class ChecklistTest(ChecklistFixture):
     def test_real_output_writes_a_passing_receipt_and_a_dump(self):
         self.assertEqual(self.run_it(self.registry()), 0, self.err.getvalue())
         receipt = self.receipt()
@@ -89,12 +91,13 @@ class ChecklistTest(unittest.TestCase):
 
     def test_the_receipt_it_writes_actually_validates(self):
         # End to end: writer and reader must agree about the format.
-        self.run_it(self.registry())
+        self.run_it(self.registry(tmux_session="agentdeck_a_1111"))
         verdict = receipt_mod.validate_receipt(
             self.root / "evidence" / "preclose" / (SESSION + ".json"),
             expected_session_id=SESSION,
             expected_tool="claude",
             live_output=lib.SessionOutput(True, ANSWER, code="message"),
+            live_activity="",
             require_worktree_clean=False,
         )
         self.assertTrue(verdict.ok, verdict.reason)
@@ -407,6 +410,113 @@ class SelftestTest(unittest.TestCase):
         code = self.selftest(path)
         self.assertEqual(code, 0, self.err.getvalue())
         self.assertIn("SELFTEST PASS", self.out.getvalue())
+
+
+class LivenessGateTest(ChecklistFixture):
+    """The checklist must not believe a session that is still working.
+
+    Measured 2026-08-29: the same session mid-turn saved 103 bytes of a
+    half-finished sentence and reported PASSED; once finished it saved 3,272
+    bytes and reported PASSED. Same verdict, thirty-two times the content. The
+    check could not see the difference, so the byte count was the only signal
+    separating them and nothing read it.
+    """
+
+    def run_with(self, panes, content=ANSWER, deck=None, **row):
+        db = self.registry(tmux_session="agentdeck_a_1111", **row)
+        self.plant_transcript()
+        deck = deck or {}
+        self.dump = lib.dump_path(SESSION, self.env(db))
+        return checklist.run_checklist(
+            SESSION,
+            self.env(db),
+            run=fixtures.fake_deck(content, panes=panes, **deck),
+            out=self.out,
+            err=self.err,
+            settle=0.0,
+        )
+
+    def test_a_session_still_mid_turn_is_refused(self):
+        code = self.run_with(["working 1h28m24s", "working 1h28m35s"])
+        self.assertEqual(code, 1)
+        self.assertEqual(self.receipt()["status"], "failed")
+        self.assertEqual(self.receipt()["liveness"]["state"], "running")
+
+    def test_a_mid_turn_fragment_is_never_written_as_a_final_record(self):
+        # The defect itself: what got saved was a sentence the worker wrote while
+        # still working. Refusing is only half the fix if the fragment still
+        # lands on disk as that session's final word.
+        self.run_with(
+            ["turn in flight", "turn in flight, more"],
+            content="Delivered. Final check -",
+        )
+        self.assertFalse(
+            self.dump.exists(), "a running session left a final record behind"
+        )
+
+    def test_a_finished_session_still_passes_and_captures_its_real_report(self):
+        code = self.run_with(["nothing moving here"])
+        self.assertEqual(code, 0, self.err.getvalue())
+        self.assertEqual(self.receipt()["status"], "passed")
+        self.assertEqual(self.dump.read_text(), ANSWER)
+
+    def test_a_terminal_that_cannot_be_established_is_refused(self):
+        code = self.run_with(["   \n"])
+        self.assertEqual(code, 1)
+        self.assertEqual(self.receipt()["liveness"]["state"], "unknown")
+
+    def _validate(self, activity):
+        return receipt_mod.validate_receipt(
+            self.root / "evidence" / "preclose" / (SESSION + ".json"),
+            expected_session_id=SESSION,
+            expected_tool="claude",
+            live_output=lib.SessionOutput(True, ANSWER, code="message"),
+            live_activity=lambda: activity,
+            require_worktree_clean=False,
+        )
+
+    def test_the_receipt_validates_while_the_recorded_stamp_still_matches(self):
+        self.run_with(["nothing moving here"])
+        self.assertTrue(self._validate(fixtures.ACTIVITY).ok)
+
+    def test_the_receipt_is_refused_once_the_recorded_stamp_differs(self):
+        # The window the output hash cannot close: the checklist established this
+        # session had stopped, and by removal time it is working again. Measured
+        # live, a 57-byte progress note stayed hash-stable for over a minute while
+        # the session went on working, so the freshness check above sees nothing.
+        self.run_with(["nothing moving here"])
+        verdict = self._validate("200")
+        self.assertFalse(verdict.ok)
+        self.assertIn("working again", verdict.reason)
+
+    def test_a_terminal_that_has_since_gone_is_not_a_session_working_again(self):
+        self.run_with(["nothing moving here"])
+        self.assertTrue(self._validate("").ok)
+
+    def test_a_terminal_that_cannot_be_re_read_refuses(self):
+        self.run_with(["nothing moving here"])
+        verdict = self._validate(None)
+        self.assertFalse(verdict.ok)
+        self.assertIn("could not re-read", verdict.reason)
+
+    def test_a_checklist_that_could_not_record_the_stamp_does_not_report_passed(self):
+        # quiet + no stamp is reachable: has-session and capture-pane succeed while
+        # list-panes fails. Reported as PASSED it writes a receipt the guard then
+        # refuses forever, naming the receipt rather than tmux - a check that
+        # cannot pass, wearing a PASSED label.
+        code = self.run_with(["nothing moving here"], deck={"list_rc": 1})
+        self.assertEqual(code, 1)
+        self.assertEqual(self.receipt()["status"], "failed")
+        self.assertEqual(self.receipt()["liveness"]["state"], "unknown")
+
+    def test_a_socket_name_that_is_a_path_is_refused(self):
+        code = self.run_with(["nothing moving here"], tmux_socket_name="../../../tmp/x")
+        self.assertEqual(code, 1)
+        self.assertEqual(self.receipt()["liveness"]["state"], "unknown")
+
+    def test_the_receipt_records_what_was_established_about_liveness(self):
+        self.run_with(["nothing moving here"])
+        self.assertEqual(self.receipt()["liveness"]["state"], "quiet")
 
 
 if __name__ == "__main__":

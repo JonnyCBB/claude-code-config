@@ -174,14 +174,14 @@ and infrastructure, and their maintainers don't know your context.
 
 **Examples**:
 
-- Research documents consistently check internal docs, and Aika before external sources
+- Research documents consistently check internal docs and internal search tools before external sources
 - Skills encode organisation-specific knowledge that the model wouldn't know from training data
 
 **Override**: When no internal tool exists for the need, or when the internal tool is
 deprecated/unmaintained. Also when the external tool is an industry standard that the organisation
 explicitly supports (e.g., gRPC, Kubernetes, Ray).
 
-**Test**: "Have I checked internal tools (internal docs, Aika) before recommending an
+**Test**: "Have I checked internal tools (internal docs, internal search) before recommending an
 external solution?" If not, check first.
 
 ---

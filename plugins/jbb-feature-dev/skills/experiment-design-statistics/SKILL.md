@@ -22,4 +22,4 @@ Data-science and statistical-methodology patterns for designing experiments — 
 
 ## Support Channels
 
-- #experiment-support - Primary EP/C4S support
+- Your experimentation platform's support channel

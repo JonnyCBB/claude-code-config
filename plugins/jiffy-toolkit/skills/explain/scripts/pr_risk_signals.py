@@ -107,7 +107,7 @@ ROLE_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
 ROLE_ORDER: tuple[str, ...] = tuple(name for name, _ in ROLE_PATTERNS) + ("source",)
 
 DEPLOY_INFRA = re.compile(
-    r"(^|/)kubernetes/|(^|/)k8s/|(^|/)(gantry|deployment-info|build-info|monitoring-info)\.ya?ml$"
+    r"(^|/)kubernetes/|(^|/)k8s/|(^|/)(deployment-info|build-info|monitoring-info)\.ya?ml$"
     r"|\.tf$|\.tfvars$|(^|/)helm/|(^|/)terraform/"
 )
 

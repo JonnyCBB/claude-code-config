@@ -1,7 +1,7 @@
 {
   "name": "eng-utils",
-  "description": "Engineering utilities: /improve-codebase-architecture for codebase friction analysis and proposals, /system-architecture-doc and /c4-architecture for C4 architecture documentation, and /bug-hunter-3000 for multi-candidate bug investigation over named components with independent mechanism/intent verification and an HTML digest.",
-  "version": "0.24.1",
+  "description": "Engineering utilities: /improve-codebase-architecture for codebase friction analysis and proposals, /system-architecture-doc and /c4-architecture for C4 architecture documentation, /bug-hunter-3000 for multi-candidate bug investigation over named components with independent mechanism/intent verification and an HTML digest, /bug-hunter-crossfire for bugs between two services found by comparing every caller of a shared callee, and /prune-code for deleting dead code, redundant tests and stale comments after verifying each deletion.",
+  "version": "0.32.0",
   "author": {
     "name": "JonnyCBB",
     "email": "jonnybrooks04@gmail.com"

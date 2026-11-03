@@ -23,7 +23,7 @@ LlmAgents — discovered empirically, not documented anywhere"
 Signal: empirical discovery, contradicts assumptions
 
 **bug_workaround:**
-"SEAL fresh-session harness `_child_environment` stripped Vertex AI env vars causing
+"An agent test harness `_child_environment` stripped Vertex AI env vars causing
 'No API key' error — fix: allowlist env forwarding in fresh-session mode only"
 Signal: error → investigation → fix sequence
 
@@ -75,7 +75,7 @@ Signal: user validates a non-default approach
 Signal: timeline info (relative date already converted to absolute)
 
 **relationship:**
-"HBM is owned by surf-formation, not Home Assembly"
+"The billing service is owned by the payments team, not the platform team"
 Signal: organizational ownership statement
 
 ## Tier 3 — DO NOT EXTRACT

@@ -23,11 +23,9 @@ Focus on these categories:
 
 ## Workflow
 
-1. **Analyze the diff** — Understand what changed and why
-2. **Trace logic** — Follow execution paths through the changed code. Trace state machine transitions. Map data flow.
-3. **Identify errors** — Look for bugs in the categories above
-4. **Fetch context** — Read surrounding code files to understand the full picture before reporting
-5. **Report findings** — Only report issues where diff evidence clearly supports the finding
+Read and follow `${CLAUDE_PLUGIN_ROOT}/skills/bug-review/SKILL.md` for the evidence and local-probe contract.
+Use the caller's shared snapshot and return findings, material unresolved concerns, and coverage separately.
+This is the existing bug-catcher role, not an instruction to spawn another worker.
 
 ## Output
 
@@ -39,6 +37,10 @@ For each finding, emit:
 - `severity`: CRITICAL / HIGH / MEDIUM / LOW
 - `category`: Always `BUG`
 - `confidence`: 0.0–1.0
+- `source_agent`: `bug-catcher`
+- `mode`: `null`
+
+Follow the caller's canonical finding schema and comment format. Put evidence in `body`, not new fields.
 
 ## Zero False-Positive Philosophy
 
@@ -48,7 +50,8 @@ For each finding, emit:
 - NEVER claim an API exists or is deprecated without reading the actual source code
 - Trace state machine transitions BEFORE claiming a state is reachable
 - Read PR author inline comments — they often explain non-obvious design choices
-- If you are unsure whether something is a bug, DO NOT report it
+- If unsure, do not emit an admitted finding. Preserve material uncertainty and coverage limits separately per bug-review;
+  an empty findings list is not an unqualified clean result.
 
 ## What NOT to Flag
 

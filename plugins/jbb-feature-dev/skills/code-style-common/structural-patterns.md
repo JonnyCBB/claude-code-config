@@ -237,7 +237,7 @@ If "unknown" really is a valid runtime outcome, prefer an explicit case that thr
 
 **Language-specific mechanisms**:
 
-- **Java**: switch expressions on enums and sealed types are exhaustive when `default` is omitted. See `java-code-style/modern-java.md`.
+- **Java**: switch expressions on enums and sealed types are exhaustive when `default` is omitted.
 - **Scala**: `match` on a sealed trait/enum is exhaustive when the wildcard `case _ =>` is omitted; do not silence the warning with `@nowarn` or `@unchecked`.
 - **TypeScript**: discriminated unions are exhaustive when the `default` branch assigns the discriminant to `never` (`const _exhaustive: never = x;`). See `typescript-code-style/react-patterns.md`.
 - **Python**: in `match` over an `Enum` or `Literal`, use `case _: assert_never(x)` (`typing.assert_never`, 3.11+) so mypy/pyright flag unhandled variants.

@@ -14,6 +14,7 @@ has precedent in plugins/jbb-feature-dev/hooks/followup_capture.py.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import re
@@ -473,6 +474,20 @@ def _is_busy(exc: BaseException) -> bool:
     return "locked" in str(exc).lower() or "busy" in str(exc).lower()
 
 
+@contextlib.contextmanager
+def _registry(db_path: Path):
+    """Connect, translate any sqlite failure into RegistryUnavailable, close."""
+    import sqlite3
+
+    conn = _connect(db_path)
+    try:
+        yield conn
+    except sqlite3.Error as exc:
+        raise RegistryUnavailable(str(exc), transient=_is_busy(exc)) from exc
+    finally:
+        conn.close()
+
+
 def is_conductor(instance_id: str, db_path: Path) -> Optional[bool]:
     """True/False when the row exists, None when there is no such row.
 
@@ -480,17 +495,10 @@ def is_conductor(instance_id: str, db_path: Path) -> Optional[bool]:
     creation race, so the caller needs another signal; a row saying 0 is a
     confirmed negative.
     """
-    import sqlite3
-
-    conn = _connect(db_path)
-    try:
+    with _registry(db_path) as conn:
         row = conn.execute(
             "SELECT is_conductor FROM instances WHERE id = ?", (instance_id,)
         ).fetchone()
-    except sqlite3.Error as exc:
-        raise RegistryUnavailable(str(exc), transient=_is_busy(exc)) from exc
-    finally:
-        conn.close()
     return None if row is None else bool(row[0])
 
 
@@ -502,6 +510,8 @@ _ROW_COLUMNS = (
     "worktree_path",
     "project_path",
     "tool_data",
+    "tmux_session",
+    "tmux_socket_name",
 )
 
 
@@ -525,11 +535,8 @@ def resolve_session(ref: str, db_path: Path) -> Optional[Dict[str, Any]]:
     the first row would let the guard validate one session's receipt while
     agent-deck destroys another - a silent false allow.
     """
-    import sqlite3
-
     columns = ", ".join(_ROW_COLUMNS)
-    conn = _connect(db_path)
-    try:
+    with _registry(db_path) as conn:
         for sql, args in (
             ("SELECT %s FROM instances WHERE id = ?" % columns, (ref,)),
             ("SELECT %s FROM instances WHERE title = ?" % columns, (ref,)),
@@ -541,18 +548,12 @@ def resolve_session(ref: str, db_path: Path) -> Optional[Dict[str, Any]]:
             "SELECT %s FROM instances WHERE id LIKE ? ESCAPE '\\'" % columns,
             (_escape_like(ref) + "%",),
         ).fetchall()
-        if len(rows) > 1:
-            raise AmbiguousReference(
-                "%r matches %d sessions: %s"
-                % (ref, len(rows), ", ".join(sorted(r[0] for r in rows)))
-            )
-        if rows:
-            return dict(zip(_ROW_COLUMNS, rows[0]))
-        return None
-    except sqlite3.Error as exc:
-        raise RegistryUnavailable(str(exc), transient=_is_busy(exc)) from exc
-    finally:
-        conn.close()
+    if len(rows) > 1:
+        raise AmbiguousReference(
+            "%r matches %d sessions: %s"
+            % (ref, len(rows), ", ".join(sorted(r[0] for r in rows)))
+        )
+    return dict(zip(_ROW_COLUMNS, rows[0])) if rows else None
 
 
 # ---------------------------------------------- fixture registry (for --selftest)
@@ -569,6 +570,8 @@ CREATE TABLE instances (
     tool TEXT NOT NULL DEFAULT 'shell',
     worktree_path TEXT NOT NULL DEFAULT '',
     tool_data TEXT NOT NULL DEFAULT '{}',
+    tmux_session TEXT NOT NULL DEFAULT '',
+    tmux_socket_name TEXT NOT NULL DEFAULT '',
     is_conductor INTEGER NOT NULL DEFAULT 0
 )
 """
@@ -594,7 +597,8 @@ def fixture_registry(rows, directory) -> Path:
         for row in rows:
             conn.execute(
                 "INSERT INTO instances (id, title, project_path, status, tool, "
-                "worktree_path, tool_data, is_conductor) VALUES (?,?,?,?,?,?,?,?)",
+                "worktree_path, tool_data, tmux_session, tmux_socket_name, "
+                "is_conductor) VALUES (?,?,?,?,?,?,?,?,?,?)",
                 (
                     row["id"],
                     row.get("title", "untitled"),
@@ -603,6 +607,8 @@ def fixture_registry(rows, directory) -> Path:
                     row.get("tool", "claude"),
                     row.get("worktree_path", ""),
                     json.dumps(row.get("tool_data", {})),
+                    row.get("tmux_session", ""),
+                    row.get("tmux_socket_name", ""),
                     int(row.get("is_conductor", 0)),
                 ),
             )
@@ -717,25 +723,27 @@ def transcript_exists(row: Dict[str, Any], env: Dict[str, str]) -> bool:
 
 # ----------------------------------------- asking agent-deck for a session's output
 
-# agent-deck lives at /opt/homebrew/bin/agent-deck. A hook inherits whatever PATH
-# its parent had, which in this session includes that directory - but a peer
-# session reported a hook that could not resolve it, so do not rely on PATH alone.
-_AGENT_DECK_FALLBACKS = (
-    "/opt/homebrew/bin/agent-deck",
-    "/usr/local/bin/agent-deck",
-)
+# A hook inherits whatever PATH its parent had, which in this session includes
+# /opt/homebrew/bin - but a peer session reported a hook that could not resolve
+# agent-deck from PATH, so do not rely on PATH alone for either binary.
+_EXTRA_BIN_DIRS = ("/opt/homebrew/bin", "/usr/local/bin")
 
 
-def agent_deck_binary() -> Optional[str]:
+def _resolve_binary(name: str) -> Optional[str]:
     import shutil
 
-    found = shutil.which("agent-deck")
+    found = shutil.which(name)
     if found:
         return found
-    for candidate in _AGENT_DECK_FALLBACKS:
+    for directory in _EXTRA_BIN_DIRS:
+        candidate = os.path.join(directory, name)
         if os.access(candidate, os.X_OK):
             return candidate
     return None
+
+
+def agent_deck_binary() -> Optional[str]:
+    return _resolve_binary("agent-deck")
 
 
 def default_run(argv: Sequence[str], timeout: float):
@@ -773,6 +781,223 @@ def probe_session_output(
             False, reason="could not run agent-deck: %s" % exc, code="unreachable"
         )
     return parse_session_output(done.stdout, tool)
+
+
+# ------------------------------------------- is the session still working?
+
+_TMUX_TIMEOUT = 10.0
+
+
+class Liveness(NamedTuple):
+    """Whether a session's terminal is still advancing.
+
+      "running"  the pane changed between two reads, so it is mid-turn
+      "quiet"    it has a pane that did not change, or no pane at all
+      "unknown"  the question could not be asked
+
+    "unknown" is separate from "quiet" because a checklist that folds them
+    together is the defect this exists to fix: a pane that reads back empty twice
+    is identical twice, and identical is what "finished" looks like.
+
+    agent-deck's own status field is deliberately not consulted. It has reported
+    error for a healthy worker forty minutes into a task, and a genuinely
+    finished session reports idle with substate running while byte-identical
+    across thirty reads - so believing it would make a finished session
+    unremovable in one direction and a live one removable in the other.
+    """
+
+    state: str
+    reason: str = ""
+    stamp: Optional[str] = None
+
+
+def _tmux_base(row) -> Optional[List[str]]:
+    """The argv prefix for this session's tmux server, or None to refuse.
+
+    `tmux -L` is documented as a socket NAME, but tmux accepts a PATH there and a
+    `..` in it escapes the per-user socket directory. This value comes from the
+    agent-deck registry, where `agent-deck add -tmux-socket` writes it verbatim at
+    creation time - so leaving it unconstrained lets whoever created a session
+    choose which tmux server answers the guard that polices removing it, and a
+    server they control can hold a pane byte-stable and an activity stamp
+    constant for as long as it likes.
+    """
+    socket = (row.get("tmux_socket_name") or "").strip()
+    if socket and ("/" in socket or os.sep in socket or socket in (".", "..")):
+        return None
+    return [_resolve_binary("tmux") or "tmux"] + (["-L", socket] if socket else [])
+
+
+# Measured on tmux 3.7c. Every one of these exits 1, and only the first two are
+# facts about the SESSION:
+#   can't find session: X                                     - it is gone
+#   no server running on <path>                               - every pane is gone
+#   error connecting to <path> (No such file or directory)    - says nothing at all
+# Reading the third as the first turns the liveness gate off for every session at
+# once, which is how this module's own parse_session_output describes trap 1: an
+# exit code carries no information, so it is never consulted alone.
+_TERMINAL_ABSENT = ("can't find session", "no server running")
+
+
+def _terminal_state(base, name, runner, timeout) -> str:
+    """ "present", "absent", or "unaskable" - never inferred from the exit code alone.
+
+    The target is named with `-t=<name>`, tmux's EXACT-match form. The plain
+    `-t <name>` form prefix-matches: measured, `-t agentdeck_api-mcp` resolves to
+    `agentdeck_api-mcp-drive_39547e77`, which would answer about the wrong
+    session. Callers may then use the plain form for the read itself, because
+    capture-pane and list-panes both REJECT `=` ("can't find pane: =foo") and an
+    exact name that exists wins over a prefix - but only because this ran first.
+    """
+    result = runner(base + ["has-session", "-t=" + name], timeout)
+    if result.returncode == 0:
+        return "present"
+    detail = (result.stderr or "").lower()
+    return "absent" if any(m in detail for m in _TERMINAL_ABSENT) else "unaskable"
+
+
+def _pane_stamp(base, name, runner, timeout) -> Optional[str]:
+    listed = runner(
+        base + ["list-panes", "-s", "-t", name, "-F", "#{window_activity}"], timeout
+    )
+    if listed.returncode != 0:
+        return None
+    return ",".join(line.strip() for line in listed.stdout.splitlines() if line.strip())
+
+
+def session_liveness(row, run=None, settle: float = 1.5) -> Liveness:
+    """Read the session's terminal twice and report whether anything moved.
+
+    TWO signals, and BOTH must hold still. The pane bytes are what a human
+    verifies and what the work contract documents; `#{window_activity}` is what
+    the guard re-reads at removal time, and the two do not always agree - measured
+    on a pane reprinting the SAME bytes every 0.3s, the capture was identical
+    while the stamp advanced. Certifying on the pane alone would hand the guard a
+    stamp that had already moved, so the checklist would pass, the removal would
+    be refused, and re-running would produce the same pair forever.
+
+    `-S -60` is the capture width the work contract already settled on, not a
+    round number: a narrower capture can catch the terminal between renders and
+    show a bare prompt, which reads as finished. It is also a strict superset of
+    the visible pane, so it can only ever be MORE sensitive to advancement.
+    """
+    import subprocess
+    import time
+
+    name = (row.get("tmux_session") or "").strip()
+    if not name:
+        return Liveness(
+            "quiet",
+            "the registry records no terminal for it, so nothing is running",
+            "",
+        )
+
+    base = _tmux_base(row)
+    if base is None:
+        return Liveness(
+            "unknown",
+            "its registry entry names a tmux socket that is a path, which this "
+            "guard will not follow",
+        )
+    runner = run if run is not None else default_run
+    reads, stamps = [], []
+    try:
+        state = _terminal_state(base, name, runner, _TMUX_TIMEOUT)
+        if state == "absent":
+            return Liveness(
+                "quiet", "its terminal %s is gone, so nothing runs in it" % name, ""
+            )
+        if state == "unaskable":
+            return Liveness(
+                "unknown", "tmux could not say whether %s still exists" % name
+            )
+        for index in range(2):
+            if index:
+                time.sleep(settle)
+            capture = runner(
+                base + ["capture-pane", "-p", "-S", "-60", "-t", name], _TMUX_TIMEOUT
+            )
+            if capture.returncode != 0:
+                return Liveness(
+                    "unknown",
+                    "its terminal could not be read: %s"
+                    % (
+                        (capture.stderr or "").strip()
+                        or "tmux exited %d" % capture.returncode
+                    ),
+                )
+            stamp = _pane_stamp(base, name, runner, _TMUX_TIMEOUT)
+            if stamp is None:
+                return Liveness(
+                    "unknown",
+                    "its terminal's activity clock could not be read, so nothing "
+                    "could be recorded for the guard to re-check at removal time",
+                )
+            reads.append(capture.stdout)
+            stamps.append(stamp)
+    except (OSError, subprocess.SubprocessError) as exc:
+        return Liveness("unknown", "could not run tmux: %s" % exc)
+
+    if stamps[0] != stamps[1]:
+        return Liveness(
+            "running",
+            "its terminal produced output between two reads %.1fs apart, so it is "
+            "mid-turn" % settle,
+        )
+    if reads[0] != reads[1]:
+        return Liveness(
+            "running",
+            "its terminal changed between two reads %.1fs apart, so it is mid-turn"
+            % settle,
+        )
+    if not reads[0].strip():
+        return Liveness(
+            "unknown",
+            "its terminal read back empty twice, which is not evidence that it stopped",
+        )
+    return Liveness(
+        "quiet",
+        "its terminal was byte-identical across two reads %.1fs apart" % settle,
+        stamps[1],
+    )
+
+
+def last_activity_stamp(row, run=None, timeout: float = _TMUX_TIMEOUT) -> Optional[str]:
+    """An opaque token that changes whenever this session's terminal produces a byte.
+
+    "" when there is no terminal to read. That is a fact rather than a failure - a
+    session whose pane is gone cannot produce anything - and it compares equal to
+    itself, so a session that was already gone stays removable. None when the
+    question could not be asked, which refuses.
+
+    `#{window_activity}`, never `#{session_activity}`: measured on a pane
+    repainting in place every 0.3s with no newline, window_activity advanced every
+    second while session_activity never moved once. The obvious-looking variable is
+    the wrong one.
+
+    Every pane is joined, because movement in ANY pane means the session is
+    working. Two reads of the pane say whether it is moving NOW; this says WHEN it
+    last moved, which is the only form of the fact that survives being written
+    down and compared later.
+    """
+    import subprocess
+
+    name = (row.get("tmux_session") or "").strip()
+    if not name:
+        return ""
+    base = _tmux_base(row)
+    if base is None:
+        return None
+    runner = run if run is not None else default_run
+    try:
+        state = _terminal_state(base, name, runner, timeout)
+        if state == "absent":
+            return ""
+        if state == "unaskable":
+            return None
+        return _pane_stamp(base, name, runner, timeout)
+    except (OSError, subprocess.SubprocessError):
+        return None
 
 
 # The verb table above was derived from `agent-deck --help` at this version. If

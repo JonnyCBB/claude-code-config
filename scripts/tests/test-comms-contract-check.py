@@ -30,8 +30,8 @@ FIXTURES = os.path.join(HERE, "fixtures", "comms-contract")
 
 # The single most important strings in the wiring tests: what counts as the
 # conductor, and what does not.
-CONDUCTOR_CWD = "/Users/bethphipps/.local/share/agent-deck/conductor/hq"
-OUTSIDE_CWD = "/Users/bethphipps/src/some-service"
+CONDUCTOR_CWD = "/home/tester/.local/share/agent-deck/conductor/hq"
+OUTSIDE_CWD = "/home/tester/src/some-service"
 
 _spec = importlib.util.spec_from_file_location("comms_contract_check", SUT_PATH)
 sut = importlib.util.module_from_spec(_spec)
@@ -40,7 +40,7 @@ _spec.loader.exec_module(sut)
 # Bootstrap-RED sentinel, matching scripts/tests/test-conductor-signals.sh.
 # Without it, a harness that recorded zero assertions would print "0 passed, 0
 # failed" and exit 0 - green. This repo has NO continuous integration
-# (jbrooksbartlett-sqmi), so this suite is the only gate and it has to prove it
+# (hq-sqmi), so this suite is the only gate and it has to prove it
 # can report a failure:
 #   EXPECT_BOOTSTRAP_RED=1 python3 scripts/tests/test-comms-contract-check.py
 # must exit non-zero and show exactly one FAIL.
@@ -50,20 +50,20 @@ PASS = 0
 FAIL = 0
 
 # A frozen list, so the unit cases do not move when the real queue does. The
-# live-list cases below deliberately use the real thing instead.
+# corpus cases below load their own fixed queue through the live-list path.
 FROZEN = {
-    "jbrooksbartlett-5r44": "bead",
+    "hq-5r44": "bead",
     "5r44": "bead",
-    "jbrooksbartlett-part": "bead",
+    "hq-part": "bead",
     "part": "bead",
-    "jbrooksbartlett-280": "bead",
+    "hq-280": "bead",
     "280": "bead",
-    "jbrooksbartlett-c39": "bead",
+    "hq-c39": "bead",
     "c39": "bead",
     "feature-feat-2026-08-18-comms-check": "session",
-    "jbrooksbartlett-tram": "bead",
+    "hq-tram": "bead",
     "tram": "bead",
-    "jbrooksbartlett-cyi": "bead",
+    "hq-cyi": "bead",
     "cyi": "bead",
 }
 
@@ -134,17 +134,68 @@ else:
 
 
 # ---------------------------------------------------------------------------
-print("\nKNOWN-BAD CORPUS - six verbatim conductor messages from 2026-08-15,")
+print("\nKNOWN-BAD CORPUS - six conductor messages modelled on 2026-08-15,")
 print("the day the rule was broken in essentially every status report.")
 # ---------------------------------------------------------------------------
-live_ids, live_degradations = sut.load_live_identifiers()
-if live_degradations:
-    print("  NOTE partial live list: " + "; ".join(live_degradations))
+CORPUS_BEADS = [
+    {"id": f"hq-{suffix}", "status": status}
+    for suffix, status in (
+        ("3co", "open"),
+        ("qab", "open"),
+        ("71v", "open"),
+        ("o26", "open"),
+        ("201", "open"),
+        ("6eh", "open"),
+        ("544", "open"),
+        ("280", "open"),
+        ("7n7", "open"),
+        ("2x6", "open"),
+        ("8m8", "open"),
+        ("e72", "open"),
+        ("5r44", "in_progress"),
+        ("kty0", "open"),
+        ("g67x", "deferred"),
+        ("0vfp", "open"),
+        ("cyi", "closed"),
+        ("c39", "closed"),
+        ("9oi", "closed"),
+    )
+]
+CORPUS_SESSIONS = [
+    {"title": title}
+    for title in (
+        "sb-plan00-contract",
+        "cyi-composed-workflow-namespaces",
+        "6eh-ci-test-signal",
+        "fix-routing-backwards",
+        "feature-feat-2026-08-18-preclose-guard-8f",
+    )
+]
+
+
+def corpus_run(cmd: list[str]) -> str | None:
+    if cmd == sut.BD_LIST_CMD:
+        return json.dumps(CORPUS_BEADS)
+    if cmd == sut.AGENT_DECK_LIST_CMD:
+        return json.dumps(CORPUS_SESSIONS)
+    return None
+
+
+original_run = sut._run
+sut._run = corpus_run
+try:
+    corpus_ids, corpus_degradations = sut.load_live_identifiers()
+finally:
+    sut._run = original_run
+if corpus_degradations:
+    bad("the corpus queue loads through the live-list path", "; ".join(corpus_degradations))
+else:
+    ok("the corpus queue loads through the live-list path")
 
 for i in range(1, 7):
     name = f"known-bad-2026-08-15-{i}.md"
     text = fixture(name)
-    violations, _ = sut.check(text, live_ids)
+    violations, _ = sut.check(text, corpus_ids)
     if violations:
         kinds = sorted({v.kind for v in violations})
         ok(f"{name} refused ({len(violations)} violations: {', '.join(kinds)})")
@@ -156,7 +207,7 @@ for i in range(1, 7):
 
 # The single worst shape in the corpus: a status table with ids leading rows.
 text = fixture("known-bad-2026-08-15-2.md")
-violations, _ = sut.check(text, live_ids)
+violations, _ = sut.check(text, corpus_ids)
 if any(
     "**The Beads queue has never been pushed" in v.line
     or v.token in ("3co", "qab", "71v")
@@ -168,7 +219,7 @@ else:
 
 # ---------------------------------------------------------------------------
 print("\nCONTRACT TEMPLATES - the four message shapes from section 8 must pass")
-print("clean, instantiated with real live identifiers.")
+print("clean, instantiated with identifiers from the corpus queue.")
 # ---------------------------------------------------------------------------
 for name in (
     "good-template-8.1-status.md",
@@ -177,7 +228,7 @@ for name in (
     "good-template-8.4-ready.md",
 ):
     text = fixture(name)
-    violations, _ = sut.check(text, live_ids)
+    violations, _ = sut.check(text, corpus_ids)
     if violations:
         bad(
             f"{name} passes clean",
@@ -189,7 +240,7 @@ for name in (
 # ---------------------------------------------------------------------------
 print("\nFALSE POSITIVES - real collisions between bead suffixes and English.")
 # ---------------------------------------------------------------------------
-# `jbrooksbartlett-part` is a live bead. All three occurrences of "part" across
+# `hq-part` is a live bead. All three occurrences of "part" across
 # the 2026-08-15 corpus are ordinary English.
 assert_clean(
     "Playwright is collecting, and - the part that matters - all four lint rules exit 1.",
@@ -226,7 +277,7 @@ assert_flags(
 )
 # A bead title may legitimately contain a file path - do not double-flag it.
 assert_clean(
-    "jbrooksbartlett-5r44 - config_admin/client.py:707 writes blank namespaces on "
+    "hq-5r44 - config_admin/client.py:707 writes blank namespaces on "
     "the production write path\nWhat that means: saved configs lose their section label.",
     "a bead title containing a file path is not double-flagged",
 )
@@ -238,7 +289,7 @@ assert_flags(
     "Closing `5r44` now.", "a bare id in prose is refused", kind="bare-identifier"
 )
 assert_clean(
-    "jbrooksbartlett-5r44 - Build the outgoing-message check that enforces the communication contract",
+    "hq-5r44 - Build the outgoing-message check that enforces the communication contract",
     "prose form: id, then the title as filed",
 )
 assert_clean(
@@ -273,10 +324,10 @@ assert_flags(
 )
 # A bead filed after the live list was pulled is still caught, by shape.
 assert_flags(
-    "Closing `jbrooksbartlett-zzz9` now.",
+    "Closing `hq-zzz9` now.",
     "a full-form id absent from the live list is still caught by shape",
     kind="bare-identifier",
-    token="jbrooksbartlett-zzz9",
+    token="hq-zzz9",
 )
 # Contract template 8.3's handle line is a copy-paste target, not prose.
 assert_clean(
@@ -327,7 +378,7 @@ assert_flags(
 )
 
 # ---------------------------------------------------------------------------
-print("\nNOUN vs VERB - the four sentences from jbrooksbartlett-7qau.")
+print("\nNOUN vs VERB - the four sentences from hq-7qau.")
 print("The old check flagged all four. The first three are nouns (false positives); the fourth IS a verb.")
 # ---------------------------------------------------------------------------
 # Case 1: a heading. "second" is an adjective modifying "surface" the noun.
@@ -375,7 +426,7 @@ original_run = sut._run
 sut._run = lambda cmd: None
 try:
     violations, degradations = sut.check(
-        "Closing `jbrooksbartlett-zzz9` now, and its provenance is unclear."
+        "Closing `hq-zzz9` now, and its provenance is unclear."
     )
     if len(degradations) >= 2:
         ok("both unreadable sources are reported as degradations")
@@ -432,7 +483,7 @@ def run_hook(
     )
 
 
-VIOLATING = "Closing `jbrooksbartlett-zzz9` now."
+VIOLATING = "Closing `hq-zzz9` now."
 
 # Out of scope: this hook is registered user-wide, so it fires in every session.
 # It must do nothing, and say nothing, anywhere but the conductor.
@@ -835,7 +886,7 @@ for text, seen, canonical in (
     )
 
 # ---------------------------------------------------------------------------
-print("\nCORPUS - each fixture pins one catch that only the LIVE id list can make,")
+print("\nCORPUS - each fixture pins one catch that only the live id list can make,")
 print("so a broken live-list integration cannot hide behind habit words.")
 # ---------------------------------------------------------------------------
 # Five of six fixtures previously passed on habit words and shape matches alone, so
@@ -845,7 +896,7 @@ for name, expected in (
     ("known-bad-2026-08-15-4.md", {"o26", "201"}),
     ("known-bad-2026-08-15-5.md", {"qab"}),
 ):
-    found_tokens = {v.token for v in sut.check(fixture(name), live_ids)[0]}
+    found_tokens = {v.token for v in sut.check(fixture(name), corpus_ids)[0]}
     hit = expected & found_tokens
     if hit:
         ok(f"{name} pins a live-list catch ({', '.join(sorted(hit))})")
@@ -861,7 +912,7 @@ for name, expected in (
 table_report = fixture("known-bad-2026-08-15-2.md")
 row_led = {
     v.token
-    for v in sut.check(table_report, live_ids)[0]
+    for v in sut.check(table_report, corpus_ids)[0]
     if v.kind == "id-leads-table-row"
 }
 if {"cyi", "c39", "9oi"} <= row_led:

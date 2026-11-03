@@ -2,12 +2,12 @@
 """Render a normalised bug-hunt run model as one self-contained HTML document.
 
 Structure is fixed here rather than left to the caller because a report whose
-shape changes between runs cannot be compared across runs -- and
-design-history-and-failed-approaches.md section 5 records finders substituting
-their own schema four times running when given latitude. The fix that worked was
+shape changes between runs cannot be compared across runs. Measured: finders
+given latitude substituted their own schema four times running, and each
+substitute dropped the column that carried the answer. The fix that worked was
 making the schema mandatory, not asking for adherence.
 
-The layout is **Manifest**, chosen over Ledger in research section 4.7 because
+The layout is **Manifest**, chosen over Ledger because
 the scarce resource is reviewer minutes, run sizes vary from a handful to a
 measured 44 candidates, and a table degrades upward more gracefully than a
 per-finding column. The palette, type and six-column row are ported from the
@@ -45,7 +45,16 @@ import re
 import sys
 from typing import Final
 
-from digest_model import Band, RenderModel, Verdict, _jargon_hits, model_from_dict
+from digest_model import (
+    EXPOSURE_PLACEHOLDERS,
+    Band,
+    RenderModel,
+    Verdict,
+    _is_count,
+    _jargon_hits,
+    component_name,
+    model_from_dict,
+)
 
 # The one attribute value in this document not drawn from an enum or a class
 # name. A static developer-controlled constant, never derived from a finding, so
@@ -85,6 +94,7 @@ body{margin:0;background:var(--ground);color:var(--text);font-family:var(--body)
 .counts .b-low b{color:var(--low)}.counts .b-def b{color:var(--dim)}
 .counts .axis{font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-right:.15rem}
 .counts .v-count b{color:var(--verify)}
+.counts a.gap{color:var(--dim);text-decoration:none;border-bottom:1px dotted currentColor}
 .mast .sub{color:var(--text-2);max-width:62ch;margin:.8rem 0 0;font-size:.95rem}
 .band-why b{color:var(--text-2);font-weight:600}
 .bar{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:1.1rem}
@@ -171,6 +181,19 @@ body{margin:0;background:var(--ground);color:var(--text);font-family:var(--body)
 .c-exp .bar i{position:absolute;top:0;bottom:0;left:0;background:var(--verify)}
 .c-exp .bar i.est{background:var(--imp)}
 .c-exp .bar i.tk{width:1.5px}
+/* Striped rather than solid, for a figure that counts traffic REACHING the
+   code rather than traffic harmed by it. The bar is what a reader scans down
+   118 rows, and a solid fill next to a path figure overstates it in the one
+   channel the labels cannot reach. Same hatch as the absent bar at a heavier
+   weight -- both mean "not a harm measurement". */
+.c-exp .bar i.path{background:repeating-linear-gradient(-45deg,var(--verify) 0 2px,transparent 2px 4px)}
+.c-exp .bar i.est.path{background:repeating-linear-gradient(-45deg,var(--imp) 0 2px,transparent 2px 4px)}
+/* A tick is 1.5px and the hatch has a 4px period, so a striped tick renders
+   either solid or invisible depending on where the pixel lands. It stays a
+   plain tick: at that magnitude the bar is saying 'present, too small to
+   draw', and which KIND of figure it is comes from the word above it. */
+.c-exp .bar i.tk.path{background:var(--verify)}
+.c-exp .bar i.tk.est.path{background:var(--imp)}
 .c-exp .bar u{position:absolute;top:0;bottom:0;width:1px;background:var(--ground);opacity:.55;text-decoration:none}
 /* Hatched, never filled. A filled bar next to an unmeasured share reads as
    100%, which is the misread a reconciler had to correct on this very finding. */
@@ -178,11 +201,60 @@ body{margin:0;background:var(--ground);color:var(--text);font-family:var(--body)
 .c-exp .work{border-top:1px solid var(--rule-2);padding-top:.26rem;margin-top:.26rem;font-family:var(--body);font-size:.67rem;color:var(--text-2);line-height:1.3;text-align:right;overflow-wrap:anywhere}
 .c-exp .work .n{font-family:var(--mono);font-variant-numeric:tabular-nums}
 .c-exp .work .why{display:block;color:var(--dim);font-size:.64rem;margin-top:.12rem;font-style:italic}
+/* WHAT the figure counts, directly under the percentage and above the bar. It
+   sits inside the number's own block rather than down in the working line
+   because it changes what the number MEANS, and the working line is where the
+   things that merely support it live. */
+.c-exp .kind{font-family:var(--body);font-size:.66rem;color:var(--text-2);margin-top:.1rem;font-variant-numeric:normal}
+/* A definition link. Dotted underline and no colour change: these labels are
+   already doing colour work -- MEASURED is --verify, an estimate is --imp -- so
+   recolouring them to say "link" would overwrite the signal they carry. The
+   dotted rule is the one convention for "this word has a definition" that does
+   not compete with it. Inherits its own colour so one rule serves every term
+   in all three of their different treatments. */
+.c-exp a.def,.mhead a.def{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor;padding-bottom:.05rem}
+.c-exp a.def:hover,.mhead a.def:hover{border-bottom-style:solid}
+.c-exp a.def:focus-visible,.mhead a.def:focus-visible{outline:2px solid var(--call);outline-offset:2px;border-bottom-color:transparent}
+.c-exp .work a.def{color:var(--dim)}
+.mhead a.def{border-bottom-color:var(--rule-2)}
 /* A per-finding marker on the always-visible row, following .untiered: a band
    assigned without an exposure figure says so, rather than implying it weighed
    something it did not. Most findings on a real run have no figure. */
 .c-what .noexp{display:inline-block;font-family:var(--mono);font-size:.6rem;letter-spacing:.08em;color:var(--dim);border:1px solid var(--rule-2);padding:.05rem .3rem;margin-top:.3rem}
 .c-eff{font-family:var(--mono);font-size:.92rem;text-align:right;color:var(--text-2);padding-top:.15rem}
+
+/* ---------------------------------------------------------------------
+   The glossary the exposure labels link into.
+   Set as a reference table rather than as prose: a reader arrives here
+   mid-report having clicked one word, wants that one entry, and goes back.
+   So the terms are the scannable thing and each keeps the exact treatment it
+   has in the column -- the harm/path words in body type where the column
+   shows them in body type, the provenance words in mono uppercase in
+   --verify where the column shows them that way. A definition set in a
+   different face from the word it defines reads as being about a different
+   thing.
+   --------------------------------------------------------------------- */
+.gloss{margin:3rem 0 0;border-top:1px solid var(--rule-2);padding-top:1.4rem;scroll-margin-top:1rem}
+.gloss h2{font-family:var(--display);font-size:1.05rem;font-weight:600;margin:0 0 .5rem}
+.gloss>p{max-width:62ch;color:var(--text-2);font-size:.86rem;margin:0 0 1.6rem}
+.gloss h3{font-family:var(--mono);font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin:1.5rem 0 .5rem;font-weight:400}
+.gloss dl{margin:0;display:grid;gap:.1rem}
+.gloss .gl-row{display:grid;grid-template-columns:13rem 1fr;gap:1.2rem;padding:.55rem .6rem;border-top:1px solid var(--rule);scroll-margin-top:2rem}
+.gloss dt{margin:0}
+.gloss dd{margin:0;max-width:60ch;font-size:.87rem;line-height:1.55}
+/* The caveat: quieter than the definition, and always second. What a word does
+   not promise is the half a reader skips, so it is set as its own sentence
+   rather than folded into the first. */
+.gloss dd span{display:block;margin-top:.3rem;color:var(--text-2);font-size:.82rem}
+.gloss .gl-kind{font-family:var(--body);font-size:.92rem;color:var(--text)}
+.gloss .gl-basis{font-family:var(--mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--verify)}
+.gloss .gl-absent{font-family:var(--body);font-size:.82rem;font-style:italic;color:var(--dim);line-height:1.35}
+/* The entry you asked for, marked. Without this, following a link into a
+   multi-row table leaves the reader to find their own row again -- and the
+   scroll lands the target at the top, where a highlight is the only thing that
+   distinguishes it from the rows above. */
+.gloss .gl-row:target{background:var(--surf-2);box-shadow:inset 3px 0 0 var(--call)}
+@media (max-width:640px){.gloss .gl-row{grid-template-columns:1fr;gap:.35rem}}
 
 .detail{padding:1rem 1rem 1.3rem 7.4rem;font-size:.88rem}
 .detail h4{font-family:var(--display);font-weight:600;font-size:.62rem;letter-spacing:.15em;text-transform:uppercase;color:var(--text-2);margin:1.2rem 0 .4rem}
@@ -242,6 +314,14 @@ footer b{color:var(--text)}
 @media print{
   :root{--ground:#fff;--surf:#fff;--surf-2:#f4f4f4;--text:#111;--text-2:#444;--rule:#bbb;--rule-2:#888;--verify:#0a6;--call:#749}
   body{font-size:10.5pt} .bar{display:none} .row{break-inside:avoid}
+  /* A printed page has no links to follow, so the definitions have to be
+     readable where they sit. They already are -- the glossary is ordinary
+     flow content -- but the dotted underlines in the column now point at
+     nothing, so they come off. The masthead gap link does still have its
+     target on the page -- it comes off because nothing is clickable on
+     paper, not because the link is dead. */
+  .c-exp a.def,.mhead a.def,.counts a.gap{border-bottom:none}
+  .gloss{break-before:page} .gloss .gl-row{break-inside:avoid}
 }
 
 /* ---------------------------------------------------------------------
@@ -281,11 +361,11 @@ _SCRIPT: Final[str] = """
   function reveal(){if(!location.hash)return;var t=document.querySelector(location.hash);if(!t)return;
     var e=t.closest('details');while(e){e.open=true;e=e.parentElement&&e.parentElement.closest('details')}}
   window.addEventListener('hashchange',reveal);reveal();
-  // A source link lives inside <summary>, so a click on it would bubble up and
-  // toggle the row as a side effect of opening the file. Stopping propagation
-  // keeps the two actions separate: click the link to read the code, click
-  // anywhere else on the row to expand the evidence.
-  document.querySelectorAll('a.src').forEach(function(a){
+  // A source link and a definition link both live inside <summary>, so a click
+  // on either would bubble up and toggle the row as a side effect. Stopping
+  // propagation keeps the actions separate: click the link to read the code or
+  // the definition, click anywhere else on the row to expand the evidence.
+  document.querySelectorAll('a.src,a.def').forEach(function(a){
     a.addEventListener('click',function(e){e.stopPropagation()});
   });
 })();
@@ -294,10 +374,10 @@ _SCRIPT: Final[str] = """
 # Closed vocabularies. Every value that reaches a class attribute comes from one
 # of these two tables or from a static literal -- never from finding text.
 _BAND_CLASS: dict[Band, str] = {
-    Band.ACT_NOW: "b-act",
-    Band.IMPORTANT: "b-imp",
-    Band.LOW: "b-low",
-    Band.NOT_CHECKED: "b-def",
+    Band.READ_CLOSELY: "b-act",
+    Band.WORTH_A_LOOK: "b-imp",
+    Band.SKIM: "b-low",
+    Band.NOT_TRIAGED: "b-def",
 }
 
 _VERDICT_CLASS: dict[Verdict, str] = {
@@ -341,7 +421,7 @@ def _format_figure(figure: float) -> str:
 # real record rather than by reading the code: most rows produced a bare
 # `UNKNOWN` directly under "no share measured", which is the same nothing said
 # twice and a worse version of the confusion this change exists to remove.
-# `run-record-schema.md`'s `share_absent` section is canonical for the counts.
+# `run-record.md`'s `share_absent` section is canonical for the counts.
 #
 # Matched against the WHOLE value, never a prefix. "not established -- the share
 # of requests was not queried" is the shape the schema documents as correct and
@@ -360,8 +440,13 @@ _BARE_ABSENCE_TOKENS: Final[frozenset[str]] = frozenset(
 )
 
 
+def _normalise_absence(phrase: str) -> str:
+    """Case and trailing punctuation dropped, so a retyped placeholder still matches."""
+    return phrase.strip().strip(".;:-").casefold()
+
+
 def _is_bare_absence(phrase: str) -> bool:
-    return phrase.strip().strip(".;:-").casefold() in _BARE_ABSENCE_TOKENS
+    return _normalise_absence(phrase) in _BARE_ABSENCE_TOKENS
 
 
 _SHARE_ABSENT_COPY: Final[dict[str, tuple[str, str]]] = {
@@ -371,14 +456,174 @@ _SHARE_ABSENT_COPY: Final[dict[str, tuple[str, str]]] = {
 }
 
 
+# ---------------------------------------------------------------------------
+# The glossary, and why every label in the exposure column is a link into it
+# ---------------------------------------------------------------------------
+#
+# A reader asked what MEASURED meant as against ESTIMATED and UNKNOWN, and there
+# was no answer to find: the words were specified as "provenance, not magnitude"
+# and nothing defined the boundary. Worse, replaying the code that set each label
+# on the 2026-09-05 run showed MEASURED marked the figures NOBODY had checked (54
+# of 58) while ESTIMATED marked the checked ones -- the reassuring word was the
+# unaudited one. So this is not a copy exercise bolted onto a working column; the
+# labels only became definable once the pipeline stopped meaning two things by
+# one word.
+#
+# THE SURFACE IS AN ANCHOR, NOT A TOOLTIP. Hover was the obvious answer and it
+# excludes keyboard and touch readers, and prints as nothing. A `popover` button
+# reaches both but buys "the viewport does not move" at the price of a support
+# cliff, a print override, and a third interactive element inside <summary>. An
+# ordinary link needs no script, is keyboard-reachable because it IS a link,
+# taps on a phone, survives printing because the glossary prints with the page,
+# and is already how this report addresses its own band sections. The existing
+# hashchange handler opens any <details> around the target as a side benefit.
+#
+# ONE ENTRY PER TERM, TARGETED BY MANY ROWS. A definition repeated per row would
+# be one copy per row of the same few sentences; every label on every row points
+# at the same handful of ids. No count is written here on purpose --
+# `test_glossary_covers_exactly_the_renderable_vocabulary` pins the set in both
+# directions, so a number stated in prose beside it can only go out of step.
+#
+# Each entry is two parts, and the second is the point: what the word means, then
+# what it does NOT promise. That shape is the whole lesson of the defect -- a
+# reader who learns only that MEASURED means "queried in production" will read it
+# as "checked", which is exactly the misreading that shipped.
+_GLOSSARY_ID: Final[str] = "words"
+
+# What the column prints for each kind of figure. The words are the reader's, not
+# the schema's: `HARM_SHARE` is a value in a record and "harm share" is a thing a
+# person can be told the meaning of. Declared here because `_GLOSSARY` below
+# takes its terms from it -- the link and its target are coupled by string
+# equality, and `_defined` degrades to plain text on a mismatch, so deriving
+# them from one source is what stops that degrading silently.
+_FIGURE_KIND_COPY: Final[dict[str, str]] = {
+    "HARM_SHARE": "harm share",
+    "PATH_EXPOSURE": "path exposure",
+}
+
+_KIND_TERM = _FIGURE_KIND_COPY.__getitem__
+
+_GLOSSARY: Final[tuple[tuple[str, str, tuple[tuple[str, str, str], ...]], ...]] = (
+    (
+        "kind",
+        "What the number counts",
+        (
+            (
+                _KIND_TERM("HARM_SHARE"),
+                "The share of traffic this problem actually damages.",
+                "Someone confirmed the problem was real, then measured it again "
+                "against what was confirmed. This is the only figure here that "
+                "has been both measured and checked.",
+            ),
+            (
+                _KIND_TERM("PATH_EXPOSURE"),
+                "How much traffic reaches the affected code.",
+                "An upper bound, not a harm rate: some of that traffic may be "
+                "perfectly fine. Nobody has checked how much of it is damaged, "
+                "so this is the most that could be said.",
+            ),
+        ),
+    ),
+    (
+        "basis",
+        "How it was obtained",
+        (
+            (
+                "MEASURED",
+                "The figure came from a query against production.",
+                "It says where the number came from, not how much to trust it. "
+                "Read it together with the line above: a measured path exposure "
+                "is still not a measure of harm.",
+            ),
+            (
+                "ESTIMATED",
+                "The figure was derived rather than queried.",
+                "Usually because a production figure turned out to count the "
+                "wrong population, and this is what could be defended in its "
+                "place. The reasoning is in the expanded row.",
+            ),
+            # No entry for UNKNOWN, and its absence is provable rather than an
+            # oversight: `_render_shareless` prints a provenance word only above
+            # a figure, and the schema refuses UNKNOWN beside one -- so the
+            # column cannot show the word. `test_glossary_covers_exactly_the_
+            # renderable_vocabulary` fails if that ever stops being true. A
+            # glossary that defines words a reader never meets is the same kind
+            # of noise as a column that shows words nobody defined.
+        ),
+    ),
+    (
+        "absent",
+        "Why there is no number",
+        (
+            (
+                _SHARE_ABSENT_COPY["NOT_QUERIED"][1],
+                "Nobody looked, or no metric was named that could answer it.",
+                "The population is often known even here, and it is shown "
+                "underneath. What is missing is the share of it that is harmed.",
+            ),
+            (
+                _SHARE_ABSENT_COPY["NO_INSTRUMENT"][1],
+                "Nothing in production separates a damaged request from a healthy one.",
+                "That is a reason to care rather than a gap in this report: the "
+                "problem would not show up in monitoring if it were happening "
+                "right now.",
+            ),
+            (
+                _SHARE_ABSENT_COPY["NOT_REQUEST_SCOPED"][1],
+                "The code runs on a timer or in the background, so there is no "
+                "population of requests to be a share of.",
+                "A zero from an instrument like that is not a measured zero. "
+                "The question does not apply rather than going unanswered.",
+            ),
+        ),
+    ),
+)
+
+# Term -> anchor id, built from the table above so a link and its target cannot
+# disagree. Ids are derived from the closed vocabulary and never from finding
+# text, the same rule the class-attribute tables follow.
+# Term -> (anchor id, definition). One structure rather than two comprehensions
+# over the same table: the anchor and the hover text are read one line apart in
+# `_defined`, and a second dict was a second thing to keep in step.
+_GLOSSARY_ANCHORS: Final[dict[str, tuple[str, str]]] = {
+    term: (f"{_GLOSSARY_ID}-{group}-{index}", definition)
+    for group, _, entries in _GLOSSARY
+    for index, (term, definition, _caveat) in enumerate(entries)
+}
+
+
+def _defined(term: str, css_class: str) -> str:
+    """A label in the column, linked to its definition in the glossary.
+
+    Falls back to plain text for a term with no entry rather than emitting a
+    link to nowhere. That case means the vocabulary grew and the glossary did
+    not, which the test suite refuses -- but a dead anchor in a shipped report
+    would be a worse way to find out.
+    """
+    entry = _GLOSSARY_ANCHORS.get(term)
+    label = html.escape(term)
+    if entry is None:
+        return f'<span class="{css_class.strip()}">{label}</span>'
+    anchor, definition = entry
+    classes = " ".join(filter(None, (css_class.strip(), "def")))
+    # The definition doubles as hover text. Hover is a bonus for a mouse and
+    # never the route the acceptance bar depends on, but given it is there it may
+    # as well carry the definition rather than "What does X mean?" -- three of
+    # the terms are sentences, and that phrasing does not survive them.
+    return (
+        f'<a class="{classes}" href="#{anchor}" '
+        f'title="{html.escape(definition)}">{label}</a>'
+    )
+
+
 # Words that make a bug title a bug title. Highlighting these is what lets a
 # reader scan a 44-row manifest and see what each finding actually claims,
 # rather than reading four near-identical sentences in full.
 #
 # A fixed lexicon plus a code-identifier pattern, deliberately: the alternative
 # was asking the orchestrator to mark its own emphasis, which adds a schema
-# field the requirements did not ask for and which design-history section 5
-# says agents reword when given latitude. A closed list cannot drift.
+# field the requirements did not ask for and which agents were measured
+# rewording when given latitude. A closed list cannot drift.
 _EMPHASIS_TERMS: Final[frozenset[str]] = frozenset(
     {
         "accepts",
@@ -509,7 +754,7 @@ def _render_where(finding) -> str:
 def _render_observed(finding) -> str:
     """The evidence block, rendered for EVERY finding regardless of band.
 
-    The row's symptom line is shown only on Act Now (see Finding.symptom_collapsed),
+    The row's symptom line is shown only on Read closely (see Finding.symptom_collapsed),
     and before this block existed there was nowhere else it appeared -- so for
     Important, Low and Not-checked findings a required, validated field reached
     the reader NOWHERE. The three quiet groups are most of a run: on the
@@ -583,7 +828,8 @@ def _render_exposure(exposure) -> str:
     The schema carries both denominators as prose because both are true and the
     choice between them silently decides priority. This cell shows the path
     denominator, which is the one that tells a reader whether this matters to the
-    users who hit it; the full pair is in the expansion.
+    users who hit it. The expansion carries the pair only where this cell cannot
+    -- see `_render_exposure_detail`.
 
     **The noun is never supplied here.** "0.072%" is a share of searches in one
     service and of something else entirely in the next, so a hardcoded unit would
@@ -592,7 +838,7 @@ def _render_exposure(exposure) -> str:
     lives on>` -- and this used to match the leading `X%` and discard the rest.
 
     That discarded remainder was the whole meaning. Measured: a first-time reader
-    met a bare `0.072%` beside an Act Now row, could not tell what it was a share
+    met a bare `0.072%` beside a Read-closely row, could not tell what it was a share
     of, and named this column as the part of the report they could not understand.
     A number that small next to that band does not merely fail to inform, it reads
     as an argument against the band, and the phrase that would resolve it was one
@@ -616,34 +862,59 @@ def _render_share(exposure) -> str:
     share = exposure.share
     pct = 100.0 * share.numerator / share.denominator
     est = "" if exposure.basis == "MEASURED" else " est"
+    # WHAT the number counts sits above HOW it was obtained, because it is the
+    # bigger claim and the one that was missing. On the measured run 52 figures
+    # said how much traffic reaches the code, in a column that reads as how much
+    # traffic is harmed; the record's own assembler called them "path exposure,
+    # not harm" in a comment and no reader ever saw the distinction.
+    kind = _FIGURE_KIND_COPY.get(share.figure_kind)
+    kind_html = f'<div class="kind">{_defined(kind, "k")}</div>' if kind else ""
     return (
         f'<div class="pct"><span class="f">{_format_pct(pct)}</span>'
-        f'<span class="mk{est}">{html.escape(exposure.basis)}</span></div>'
-        f"{_render_bar(pct, exposure.basis)}"
+        f"{_defined(exposure.basis, f'mk{est}')}</div>"
+        f"{kind_html}"
+        f"{_render_bar(pct, exposure.basis, share.figure_kind)}"
         f'<div class="work"><span class="n">{_format_figure(share.numerator)}</span>'
         f' of <span class="n">{_format_figure(share.denominator)}</span> '
         f"{html.escape(share.unit)} {html.escape(share.of)}</div>"
     )
 
 
-def _render_bar(pct: float, basis: str) -> str:
+def _render_bar(pct: float, basis: str, kind: str) -> str:
     """Linear, gridded at the quarters, and never full unless the share is.
 
     Right-aligned tabular figures spanning four orders of magnitude do not rank
     at a glance -- 0%, 0.00464%, 0.564% and 7.18% all read as "small" until you
     count decimal places. The bar is the second encoding that fixes exactly
     that, and it is the reason a percentage is worth adding at all.
+
+    **A PATH-EXPOSURE BAR IS STRIPED, NOT SOLID**, and that is the whole
+    reason `kind` reaches this function. The bar is the most scannable thing
+    in the column -- a reader going down 118 rows reads bars, not words --
+    and a solid fill asserts "this much is harmed". For a figure that
+    measures how much traffic REACHES the code that is an overstatement, and
+    it was the overstatement on 52 rows of the measured run. The word above
+    the number says which kind it is; without this the bar says otherwise,
+    louder.
+
+    Deliberately the same hatch as the absent bar at a heavier weight: both
+    mean "not a harm measurement", and inventing a fourth texture for a
+    neighbouring idea is how a legend starts.
     """
     est = "" if basis == "MEASURED" else " est"
+    path = " path" if kind == "PATH_EXPOSURE" else ""
     grid = '<u style="left:25%"></u><u style="left:50%"></u><u style="left:75%"></u>'
     if pct == 0:
         fill = ""
     elif pct < 0.5:
         # Narrower than a pixel in this column. A tick states presence without
         # overstating magnitude; a minimum-width fill would lie about it.
-        fill = f'<i class="tk{est}"></i>'
+        fill = f'<i class="tk{est}{path}"></i>'
     else:
-        fill = f'<i class="{est.strip()}" style="width:{min(pct, 100.0):.4g}%"></i>'
+        fill = (
+            f'<i class="{(est + path).strip()}" '
+            f'style="width:{min(pct, 100.0):.4g}%"></i>'
+        )
     return f'<div class="bar">{fill}{grid}</div>'
 
 
@@ -658,12 +929,10 @@ def _render_shareless(exposure) -> str:
     question does not apply. Rendering all three as one word is what made a
     reader ask how the column could say "not measured" and then print a figure.
 
-    The prose denominators still render here, unchanged, because they are what
-    reaches the reader today and the rubric requires both. What is new is that
-    `basis` travels with them: it previously printed only inside the
-    percentage-led branch, and 0 of 82 path denominators on the measured run led
-    with a percentage -- so MEASURED reached the reader on none of the 15
-    findings that had earned it.
+    Both prose denominators render here when they SAY something. `basis` travels with them: it
+    previously printed only inside the percentage-led branch, and 0 of 82 path
+    denominators on the measured run led with a percentage -- so MEASURED
+    reached the reader on none of the 15 findings that had earned it.
     """
     reason = exposure.share_absent or "NOT_QUERIED"
     headline, generic = _SHARE_ABSENT_COPY.get(
@@ -671,12 +940,11 @@ def _render_shareless(exposure) -> str:
     )
     detail = (exposure.share_absent_detail or generic).strip()
     parts: list[str] = []
-    phrase = exposure.path_denominator.strip()
-    if phrase and _is_bare_absence(phrase):
-        # The headline states the absence and names its reason. Repeating the
-        # producer's bare token underneath adds nothing and reads as a second,
-        # competing claim.
-        phrase = ""
+    # ONE implementation of "this denominator says nothing", shared with the
+    # expansion, or one branch prints what the other drops. `_is_bare_absence`
+    # alone is strictly weaker: reword `EXPOSURE_PLACEHOLDERS["path_denominator"]`
+    # outside the token set and the two disagree.
+    phrase = _adds_something(exposure.path_denominator, "path_denominator")
     if phrase:
         match = _PERCENT.match(phrase)
         basis_class = "" if exposure.basis == "MEASURED" else ' class="est"'
@@ -689,27 +957,165 @@ def _render_shareless(exposure) -> str:
             )
         else:
             parts.append(f"<em>{html.escape(phrase)}</em>")
-        # UNKNOWN is deliberately not printed. A provenance word under an absent
-        # figure asserts an estimate exists where none does, and one run shipped
-        # `n/a` above `ESTIMATED` on all 76 rows, which read as having measured
-        # nothing at all. The headline above already states the absence.
-        if exposure.basis != "UNKNOWN":
-            parts.append(f"<small{basis_class}>{html.escape(exposure.basis)}</small>")
-    # Both denominators, always, because the rubric requires both and because
-    # they can point in OPPOSITE directions. Measured on a real report: the
-    # column rendered "100% of process terminations on the production branch"
-    # while dropping the component denominator "0% of request traffic", so the
-    # reader saw the number that argues for urgency and not the one that argues
-    # against it. Across four reports the component denominator reached the
-    # column on 0 of 62 checked findings.
-    component = exposure.component_denominator.strip()
+        # A PROVENANCE WORD APPEARS ONLY ABOVE A FIGURE, and `match` is what says
+        # whether this cell has one. It previously appeared whenever `basis` was
+        # not UNKNOWN, which put `MEASURED` directly over "not established for
+        # this path" -- and now that every label links to a definition reading
+        # "the figure came from a query against production", that pairing is not
+        # merely odd but false. One earlier run shipped `n/a` above `ESTIMATED`
+        # on all 76 rows and it read as having measured nothing at all.
+        #
+        # THE UNKNOWN CONJUNCT BELOW IS STILL LOAD-BEARING. It reads as
+        # redundant -- UNKNOWN means no numerator was established -- and it is
+        # not: nothing ties `basis` to the PROSE in `path_denominator`, so a
+        # record carrying basis UNKNOWN, share null and "0.5% of requests on
+        # /api/foo" validates today and arrives here with `match` truthy.
+        # Delete the conjunct as redundant and UNKNOWN prints over a figure.
+        if match and exposure.basis != "UNKNOWN":
+            # The class stays on the <small>, not on the link inside it: the
+            # column's own rules key off `small.est`, and moving it inward would
+            # silently drop the dimmed treatment that distinguishes an estimate.
+            parts.append(f"<small{basis_class}>{_defined(exposure.basis, '')}</small>")
+    # Both denominators whenever both SAY something, because they can point in
+    # OPPOSITE directions. Measured on a real report: the column rendered "100%
+    # of process terminations on the production branch" while dropping the
+    # component denominator "0% of request traffic", so the reader saw the
+    # number that argues for urgency and not the one that argues against it.
+    # Across four reports the component denominator reached the column on 0 of
+    # 62 checked findings.
+    #
+    # THAT RULE IS ABOUT A FIGURE, NOT A PLACEHOLDER. `_adds_something`, not a
+    # bare `.strip()`: routing only `path_denominator` through it printed "not
+    # established for this problem" on 15 of 15 shareless rows of a real run.
+    component = _adds_something(
+        exposure.component_denominator, "component_denominator"
+    )
     if component:
         parts.append(f'<em class="cden">{html.escape(component)}</em>')
+    # THE GENERIC SENTENCE IS THE DEFINED TERM, not the headline: three reasons
+    # share two headlines, so "no share measured" cannot resolve to one entry
+    # while "no instrument can measure this" names exactly one.
+    #
+    # Where the producer wrote its own `share_absent_detail`, that sentence still
+    # renders first and the linked generic one follows it. The specific sentence
+    # is about this finding; the link is what tells a reader what the CATEGORY
+    # means, and it is the category that was undefined.
+    # `why`, not `reason`: `reason` above holds the reason CODE, and rebinding
+    # it to a list of rendered spans made any later read of the code silently
+    # get HTML.
+    why = [f'<span class="why">{_defined(generic, "q")}</span>']
+    if detail != generic:
+        why.insert(0, f'<span class="why">{html.escape(detail)}</span>')
     return (
         f'<div class="pct"><span class="none">{html.escape(headline)}</span></div>'
         '<div class="bar absent"></div>'
-        f'<div class="work">{"".join(parts)}'
-        f'<span class="why">{html.escape(detail)}</span></div>'
+        f'<div class="work">{"".join(parts)}{"".join(why)}</div>'
+    )
+
+
+def _adds_something(text: str, field: str) -> str:
+    """The text, or "" when it is the producer saying nothing.
+
+    Two ways to say nothing and both reach the page: the exact placeholder
+    `exposure_block.py` writes when the resolver produced no figure, and a bare
+    absence token from a producer that phrased its own.
+    """
+    # The two overlap on `path_denominator`, whose placeholder IS a bare absence
+    # token. Kept as one condition so that is visible rather than sequential --
+    # read as two returns, either guard looks safe to delete and only one is.
+    stripped = (text or "").strip()
+    placeholder = EXPOSURE_PLACEHOLDERS[field]
+    if not stripped or _is_bare_absence(stripped):
+        return ""
+    # NORMALISED, because `_is_bare_absence` two lines up already is and an exact
+    # `==` beside it is the drift nobody sees. Measured: `"Not established for
+    # this problem"` and a `note` missing its full stop both PRINTED where the
+    # canonical spelling is dropped, and `run-record.md` invites producers to retype.
+    if _normalise_absence(stripped) == _normalise_absence(placeholder):
+        return ""
+    # PREFIX TOO, but ONLY where the placeholder is a COMPLETE SENTENCE: a
+    # producer composing onto it opens with the whole sentence, so equality
+    # misses it.
+    #
+    # THE SENTENCE TEST KEEPS THE RULE OFF THE TWO DENOMINATORS, whose
+    # placeholders are bare phrases a producer's own wording legitimately BEGINS
+    # WITH -- a plain prefix match sent "not established for this path" to the
+    # always-visible column as "for this path".
+    if placeholder.endswith(".") and stripped.startswith(placeholder):
+        # LEADING separators only. Stripping both ends takes the terminal period
+        # too, and the remainder then reaches the reader stopping mid-thought --
+        # what `_complete_prose` refuses in the record but cannot see here.
+        remainder = stripped[len(placeholder) :].lstrip(" .;:-").strip()
+        return remainder or ""
+    return stripped
+
+
+def _render_exposure_detail(exposure) -> str:
+    """The expansion's Exposure block -- rendered ONLY where it adds something.
+
+    It used to render unconditionally, putting placeholder prose inside rows whose
+    own column showed a figure. Each line is now kept only where the column cannot
+    already carry it:
+
+    * With a figure the column shows the percentage and its working and NEITHER
+      denominator, so both may add something here.
+    * Without one `_render_shareless` already prints both denominators and the
+      reason, so repeating them here is duplication.
+    * `note` renders in neither branch, so it is the one line that can add
+      something either way.
+    """
+    paragraphs = []
+    if exposure.share is not None:
+        lines = [
+            text
+            for text in (
+                _adds_something(exposure.path_denominator, "path_denominator"),
+                _adds_something(
+                    exposure.component_denominator, "component_denominator"
+                ),
+            )
+            if text
+        ]
+        if lines:
+            joined = " &middot; ".join(html.escape(line) for line in lines)
+            paragraphs.append(f"<p>{joined}</p>")
+    note = _adds_something(exposure.note, "note")
+    if note:
+        paragraphs.append(f"<p>{html.escape(note)}</p>")
+    return f"<h4>Exposure</h4>{''.join(paragraphs)}" if paragraphs else ""
+
+
+def _render_glossary() -> str:
+    """The definitions every label in the exposure column links to.
+
+    Static: it says the same thing on every run, so it is a literal here rather
+    than a field in the record. That is deliberate beyond convenience -- these
+    words describe how the PIPELINE reached a number, which is a property of the
+    skill and not of the component being searched, and a per-run copy of it is a
+    copy that drifts from the code that sets the labels.
+
+    Every term is set exactly as it appears in the column it explains -- same
+    face, same size, same colour role -- so a reader arriving from a number
+    recognises the entry as the same object rather than as prose about it.
+    """
+    groups = []
+    for group, heading, entries in _GLOSSARY:
+        rows = "".join(
+            f'<div class="gl-row" id="{_GLOSSARY_ANCHORS[term][0]}">'
+            f'<dt class="gl-{group}">{html.escape(term)}</dt>'
+            f"<dd>{html.escape(definition)} "
+            f"<span>{html.escape(caveat)}</span></dd></div>"
+            for term, definition, caveat in entries
+        )
+        groups.append(f"<h3>{html.escape(heading)}</h3><dl>{rows}</dl>")
+    return (
+        f'<section class="gloss" id="{_GLOSSARY_ID}">'
+        "<h2>What the words mean</h2>"
+        "<p>Every label in the Exposure column links here. Each entry says what "
+        "the word means, and then what it does not promise &mdash; the two are "
+        "easy to run together, and a figure read as more certain than it is "
+        "sets the wrong priority.</p>"
+        f"{''.join(groups)}</section>"
     )
 
 
@@ -718,7 +1124,7 @@ def _render_unexposed_band_flag(finding) -> str:
 
     The band is a guide and the priority call belongs to the reader, so the row
     owes them the inputs the guide actually had. Measured on the character-pro
-    run: Act Now 0, Important 0, Low 1, Not checked 81 -- and the single banded
+    run: 0 read closely, 0 worth a look, 1 skim, 81 not triaged -- and the single banded
     finding carries `basis: UNKNOWN`, with its own `band_reason` ending "Exposure
     UNKNOWN and undecidable with current telemetry". So the one band that run
     produced was assigned without the input, and nothing on the row said so.
@@ -737,7 +1143,7 @@ def _render_unexposed_band_flag(finding) -> str:
     column came to discard real impact statements while the page looked whole.
     """
     band = getattr(finding, "band", None)
-    if band is None or band is Band.NOT_CHECKED:
+    if band is None or band is Band.NOT_TRIAGED:
         return ""
     if finding.exposure.share is not None:
         return ""
@@ -750,7 +1156,7 @@ def _render_row(finding) -> str:
     The symptom line is the amendment research section 4.3 made to the Manifest
     spec: one line of *actual evidence* in the always-visible row, not a glyph
     and not a summary, because that is what lets a reader trust or dismiss
-    without expanding. It is dropped below Act Now, which the model has already
+    without expanding. It is dropped below Read closely, which the model has already
     decided -- see Finding.symptom_collapsed.
     """
     symptom = (
@@ -788,8 +1194,9 @@ def _render_row(finding) -> str:
 
 def _render_detail(finding) -> str:
     """The expansion, in the order the requirements document fixes: what was
-    observed, then why we believe this, then exposure with both denominators,
-    then the fix prompt, then the post-fix verification block.
+    observed, then why we believe this, then exposure -- only where it carries
+    something the column cannot, see `_render_exposure_detail` -- then the fix
+    prompt, then the post-fix verification block.
 
     The evidence sits directly under Source and above the reasoning on purpose:
     a reader deciding whether to trust a finding wants the output first and the
@@ -816,10 +1223,7 @@ def _render_detail(finding) -> str:
         f"<p>{html.escape(finding.mechanism.trail)}</p></div>"
         f"<div><h5>Intent checked blind</h5>"
         f"<p>{html.escape(finding.intent.trail)}</p></div></div>",
-        "<h4>Exposure</h4>",
-        f"<p>{html.escape(finding.exposure.path_denominator)} &middot; "
-        f"{html.escape(finding.exposure.component_denominator)}</p>"
-        f"<p>{html.escape(finding.exposure.note)}</p>",
+        _render_exposure_detail(finding.exposure),
     ]
     if finding.fix_prompt:
         parts += [
@@ -847,7 +1251,7 @@ def _render_introduced(finding) -> str:
     disclosure, because it is the one piece of history a reader reaches for
     first: the change that put the line there, and the discussion around it.
 
-    No author, ever, and no owning squad. `run-record-schema.md` is canonical
+    No author, ever, and no owning team. `run-record.md` is canonical
     for that rule and for why it is not negotiable.
     """
     prov = finding.provenance
@@ -884,31 +1288,25 @@ def _render_introduced(finding) -> str:
 def _render_method(finding) -> str:
     """How this finding was checked, behind a disclosure.
 
-    Collapsed by default on purpose. It answers a question that only some
-    readers have -- it exists because someone watching this report presented
-    asked whether the checking included re-running the code from before the
-    change -- and a reader who does not have that question should not have to
-    scroll past the answer.
+    **Inside the block, every line states what happened OR that it did not
+    happen** -- one that showed only the flattering half would be an
+    advertisement, and a reader cannot calibrate on evidence they see only when
+    it is good.
 
-    Every line states what happened OR that it did not happen. A block that
-    appeared only when the method looked thorough would be an advertisement, and
-    a reader cannot calibrate on evidence that is only shown when it is good.
+    **The block needs a recorded method AND a finding somebody checked.** Drop the
+    verdict half and the fabricated blocks come back: one run wrote `method` on 0
+    of 5 checked findings and 46 of 46 UNCHECKED, every one the empty
+    `{"before_after": null, "history_read": []}`, which renders as "reproduced by
+    running the code locally" about candidates nobody opened.
     """
     method = finding.method
-    if method is None:
-        # Rendered rather than omitted, and the schema promises exactly this.
-        # An omitted block makes "nobody recorded how this was checked" look
-        # identical to "this report predates the block existing", which is the
-        # same confusion `permalink_unlinked_reason` exists to prevent one field
-        # over. Measured the other way round: the first build returned "" here
-        # while the schema claimed the opposite, and the gap was invisible until
-        # someone opened a report and asked where the section had gone.
-        return (
-            '<details class="method"><summary>How this was checked</summary>'
-            "<ul><li>Nobody recorded how this finding was checked. That is a gap "
-            "in the run rather than a statement about the finding.</li></ul>"
-            "</details>"
-        )
+    if method is None or finding.verdict is Verdict.NOT_CHECKED:
+        # NOTHING RECORDED MEANS NOTHING RENDERED. This used to be a generic
+        # "nobody recorded how this finding was checked", and one run wrote it
+        # onto all 108 findings -- including 8 whose own expansion quotes the
+        # reproduction that checked them. The ambiguity it was added for is
+        # answered by `Why we believe this`, which renders unconditionally.
+        return ""
     items = [
         "<li>Reproduced by running the code locally, by an agent that was not "
         "told how confident the original report was or how serious it claimed "
@@ -957,9 +1355,19 @@ def _render_history_entry(entry) -> str:
 
 _MHEAD: Final[str] = (
     '<div class="mhead"><span>Verdict</span><span>Finding</span>'
-    '<span class="h-where">Where</span><span class="r">Exposure</span>'
+    '<span class="h-where">Where</span>'
+    f'<span class="r"><a class="def" href="#{_GLOSSARY_ID}">Exposure</a></span>'
     '<span class="r h-eff">Effort</span></div>'
 )
+
+
+def _band_anchor(band: Band) -> str:
+    """The id `_render_band` gives a band's section.
+
+    One definition, because the masthead links to one of these: a link and its
+    target derived separately are a link and its target that can disagree.
+    """
+    return f"band-{band.value.replace(' ', '-')}"
 
 
 def _render_band(band: Band, findings: list, model: RenderModel) -> str:
@@ -976,7 +1384,7 @@ def _render_band(band: Band, findings: list, model: RenderModel) -> str:
     the band whose order it describes, the shortfall on the band that was skipped,
     and the UNTIERED gloss only on a band that actually contains one.
     """
-    anchor = band.value.replace(" ", "-")
+    anchor = _band_anchor(band)
     # The unchecked group's header must say WHY, in the always-visible line.
     # Inside the fold it is worthless: a skimmer reads a bare "not checked" as
     # "checked and found fine", which is the opposite of what happened.
@@ -986,7 +1394,7 @@ def _render_band(band: Band, findings: list, model: RenderModel) -> str:
     # this happens: a candidate skipped for cost is a scheduling fact about the
     # run, while one skipped because its group was never reached is a severity
     # judgement, and stating the wrong one is worse than stating neither.
-    if band is Band.NOT_CHECKED:
+    if band is Band.NOT_TRIAGED:
         why = "These were never looked at"
         if model.shortfall:
             reason = str(model.shortfall["reason"]).rstrip(".!?")
@@ -995,7 +1403,7 @@ def _render_band(band: Band, findings: list, model: RenderModel) -> str:
             ". Not because anyone decided they were unimportant. "
             "Each one is written up in full in the report folder."
         )
-    elif band is Band.ACT_NOW:
+    elif band is Band.READ_CLOSELY:
         why = "Ordered only where the order can be justified in writing."
     else:
         why = "Listed in a fixed internal order. The order does not rank them."
@@ -1013,8 +1421,8 @@ def _render_band(band: Band, findings: list, model: RenderModel) -> str:
         )
     if not findings:
         return (
-            f'<section id="band-{html.escape(anchor)}">'
-            f'<div class="band {_BAND_CLASS[band]}"><h2>{html.escape(_BAND_LABEL[band])}</h2>'
+            f'<section id="{html.escape(anchor)}">'
+            f'<div class="band {_BAND_CLASS[band]}"><h2>{html.escape(band.value)}</h2>'
             f'<span class="hr"></span><span class="n">0</span></div>'
             f'<p class="band-why">Nothing in this group.</p></section>'
         )
@@ -1022,17 +1430,17 @@ def _render_band(band: Band, findings: list, model: RenderModel) -> str:
     # actively misleading: order here is fingerprint-ascending, which this page
     # says two inches away is not a severity judgement, so any sample reads as a
     # top-N the run never computed.
-    if band is Band.NOT_CHECKED and len(findings) > _NOT_CHECKED_SHOWN:
+    if band is Band.NOT_TRIAGED and len(findings) > _NOT_CHECKED_SHOWN:
         return (
-            f'<section id="band-{html.escape(anchor)}">'
-            f'<div class="band {_BAND_CLASS[band]}"><h2>{html.escape(_BAND_LABEL[band])}</h2>'
+            f'<section id="{html.escape(anchor)}">'
+            f'<div class="band {_BAND_CLASS[band]}"><h2>{html.escape(band.value)}</h2>'
             f'<span class="hr"></span><span class="n">{len(findings)}</span></div>'
             f'<p class="band-why">{why}</p>{_render_spill(findings)}</section>'
         )
     rows = "".join(_render_row(f) for f in findings)
     return (
-        f'<section id="band-{html.escape(anchor)}">'
-        f'<div class="band {_BAND_CLASS[band]}"><h2>{html.escape(_BAND_LABEL[band])}</h2>'
+        f'<section id="{html.escape(anchor)}">'
+        f'<div class="band {_BAND_CLASS[band]}"><h2>{html.escape(band.value)}</h2>'
         f'<span class="hr"></span><span class="n">{len(findings)}</span></div>'
         f'<p class="band-why">{why}</p>'
         f'<div class="group">{_MHEAD}{rows}</div></section>'
@@ -1045,7 +1453,7 @@ _NOT_CHECKED_SHOWN = 5
 def _render_spill(spilled: list) -> str:
     """The whole unchecked list, collapsed, grouped by file.
 
-    `references/bounded-verification.md` requires every unchecked candidate to
+    `references/run-loop.md` requires every unchecked candidate to
     appear by name so a partial run cannot be mistaken for a complete one. A
     hundred-plus rendered rows meets that letter and defeats its purpose: the
     reader stops long before the end, and the unchecked tail visually swamps the
@@ -1175,23 +1583,6 @@ def _render_coverage(model: RenderModel) -> str:
     )
 
 
-#: What each band is CALLED on the page. The enum value stays "Not checked" -- it is
-#: the schema value that run records and reference files cite -- but the digest can
-#: no longer print it, because `Verdict.NOT_CHECKED` prints the identical words and
-#: means something else entirely.
-#:
-#: The band means "left outside the verification bound, so no urgency was assigned".
-#: The verdict means "nobody established whether this is real". Printing both as
-#: "Not checked" made the masthead read "0 not checked" on a run where 31 of 31
-#: findings were unverified -- see _render_counts.
-_BAND_LABEL: Final[dict[Band, str]] = {
-    Band.ACT_NOW: "Act Now",
-    Band.IMPORTANT: "Important",
-    Band.LOW: "Low",
-    Band.NOT_CHECKED: "Not triaged",
-}
-
-assert set(_BAND_LABEL) == set(Band), "every band needs a display label"
 
 
 def _render_counts(model: RenderModel) -> str:
@@ -1199,7 +1590,7 @@ def _render_counts(model: RenderModel) -> str:
 
     Asked for in exactly this shape by a reader who skipped the old headline
     entirely and said what they wanted instead: the component's name, then
-    "3 act now, 2 important, 10 low", then the list.
+    "3 read closely, 2 worth a look, 10 skim", then the list.
 
     **Counted from `grouped`, never from the record.** The numbers this replaces
     were written into the run record as prose and went stale the first time a
@@ -1207,18 +1598,18 @@ def _render_counts(model: RenderModel) -> str:
     disagree with the section it summarises.
 
     Every band shows, including empty ones, for the same reason `_render_band`
-    renders an empty band: "0 act now" is a result, and a band that vanishes when
+    renders an empty band: "0 read closely" is a result, and a band that vanishes when
     empty makes a clean component and an unsearched one look alike.
     """
     bands = " &middot; ".join(
         f'<span class="{_BAND_CLASS[band]}"><b>{len(model.grouped[band])}</b> '
-        f"{html.escape(_BAND_LABEL[band].lower())}</span>"
+        f"{html.escape(band.value.lower())}</span>"
         for band in Band
     )
 
     # The verdict axis, which this line omitted entirely until 2026-08-28.
     #
-    # `Band.NOT_CHECKED` and `Verdict.NOT_CHECKED` are different things sharing one
+    # `Band.NOT_TRIAGED` and `Verdict.NOT_CHECKED` are different things sharing one
     # string: the band means "left outside the verification bound", the verdict means
     # "nobody established whether this is real". Counting only bands, the masthead
     # printed "0 not checked" on a run where 31 of 31 findings carried the NOT CHECKED
@@ -1232,10 +1623,31 @@ def _render_counts(model: RenderModel) -> str:
     findings = [f for band in Band for f in model.grouped[band]]
     total = len(findings)
     checked = sum(1 for f in findings if f.verdict is not Verdict.NOT_CHECKED)
+    # IT NAMES THE GAP AND NEVER THE CAUSE: a shortfall is a scheduling fact on
+    # one run and a severity judgement on the next, and asserting the wrong one
+    # is worse than asserting neither.
+    # The record's `reason` states the cause, in the band this links to.
+    #
+    # `+ len(model.discarded)`: `grouped` excludes discarded findings, so
+    # `checked` alone under-counts what the run completed and over-states the gap.
+    completed = checked + len(model.discarded)
+    selected = model.shortfall.get("selected") if model.shortfall else None
+    unstarted = selected - completed if _is_count(selected) else 0
+    gap = ""
+    if unstarted > 0:
+        gap = (
+            f' &middot; <a class="gap" href="#{_band_anchor(Band.NOT_TRIAGED)}">'
+            f"{unstarted} of the {selected} picked to check were never started</a>"
+        )
+    elif model.shortfall and checked < total:
+        gap = (
+            f' &middot; <a class="gap" href="#{_band_anchor(Band.NOT_TRIAGED)}">'
+            f"why the other {total - checked} were not</a>"
+        )
     return (
-        f'<span class="axis">urgency</span> {bands} '
+        f'<span class="axis">scrutiny</span> {bands} '
         f'&middot; <span class="axis">verification</span> '
-        f'<span class="v-count"><b>{checked} of {total}</b> verified</span>'
+        f'<span class="v-count"><b>{checked} of {total}</b> verified</span>{gap}'
     )
 
 
@@ -1262,13 +1674,14 @@ def _subject(model: RenderModel) -> str:
     differently: the second invites the reader to check the arithmetic before they
     have seen a single finding.
     """
+    # THE FALLBACK IS A LABEL, NEVER `str(comp)`. The old branch looked up `"id"`,
+    # `.get` returned None on the `{"name": ...}` shape, and `or comp`
+    # handed a dict to `str()`: the heading read
+    # `Bug report: {'name': 'character-pro', 'tier': '2'}`.
     if len(model.components) == 1:
-        comp = model.components[0]
-        # components may be dicts (with 'id', 'tier', etc.) or plain strings.
-        # str() on a dict renders the Python repr, which is not a title.
-        if isinstance(comp, dict):
-            return str(comp.get("id") or comp)
-        return str(comp)
+        name = component_name(model.components[0])
+        if name:
+            return name
     return model.scope_label
 
 
@@ -1348,7 +1761,8 @@ def render(model: RenderModel) -> str:
         f'<div class="bar"><button class="btn" id="ex" type="button">Expand all</button>'
         f'<button class="btn" id="co" type="button">Collapse all</button></div>'
         f"</header>"
-        f"{bands}{_render_discards(model.discarded)}{_render_coverage(model)}"
+        f"{bands}{_render_glossary()}"
+        f"{_render_discards(model.discarded)}{_render_coverage(model)}"
         f"{_render_footer(model)}"
         f"</div><script>{_SCRIPT}</script></body></html>"
     )
@@ -1404,7 +1818,7 @@ def _self_scan(page: str, model: RenderModel) -> list[str]:
     return [
         f"the rendered page shows wording no reader can define: {word}. "
         "It did not come from the record, so it is hardcoded in this file -- "
-        "run-record-schema.md has what to write instead."
+        "run-record.md has what to write instead."
         for word in _jargon_hits(text)
     ]
 

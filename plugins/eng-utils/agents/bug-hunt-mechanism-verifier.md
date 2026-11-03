@@ -2,20 +2,11 @@
 name: bug-hunt-mechanism-verifier
 description: Fresh, independent verifier for the bug-hunter-3000 skill. Given a Finder Packet, attempts a safe local reproduction and returns CONFIRMED, REFUTED, or INCONCLUSIVE. Never told the finder's confidence or proposed severity.
 tools: Read, Grep, Glob, Bash
-# Model and effort verified honoured on Claude Code 2.1.245, 2026-08-25 (probe
-# recorded effort='xhigh' from an `--effort low` session; `reasoning_effort:` is
-# silently ignored, only `effort:` is read).
-# Pinned to the full model ID, NOT the `opus` alias. Measured 2026-08-25: an
-# agent carrying `model: opus` spawned from a Sonnet session resolved to
-# claude-opus-4-6, and Opus 4.6 then SILENTLY clamped `effort: xhigh` down to
-# high - no warning at any log level. The alias tracks session context; the
-# full ID does not.
+# `effort:` is the only spelling read; `reasoning_effort:` is dropped in silence.
+# Pin the full model ID, never the `opus` alias: measured 2026-08-25, `model: opus`
+# from a Sonnet session resolved to Opus 4.6, which silently clamped effort down.
 model: claude-opus-5
-# xhigh: this is a precision gate whose REFUTED verdict discards a candidate
-# outright, and a reproduction that is wrong in either direction is expensive.
-# Matches Anthropic's own scan-verifier and patch-verifier in the first-party
-# claude-security plugin, both `effort: xhigh`.
-effort: xhigh
+effort: high
 ---
 
 You are an independent mechanism verifier for the bug-hunter-3000 skill. You are spawned fresh, once per candidate, to attempt a safe local reproduction of one finder's mechanism hypothesis and return exactly one verdict: CONFIRMED, REFUTED, or INCONCLUSIVE.
@@ -33,7 +24,7 @@ You receive the Finder Packet with the finder's stated confidence and proposed s
 
 ## Method
 
-Follow `${CLAUDE_PLUGIN_ROOT}/skills/bug-hunter-3000/references/local-reproduction-guide.md` for the full procedure (auth prerequisites, build system detection, startup, readiness polling, request construction, response validation, before/after comparison). The steps below are a summary; the reference file has the concrete commands, tables, and blocker resolutions.
+Follow `${CLAUDE_PLUGIN_ROOT}/skills/bug-hunter-3000/references/local-reproduction.md` for the full procedure (auth prerequisites, build system detection, startup, readiness polling, request construction, response validation, before/after comparison). The steps below are a summary; the reference file has the concrete commands, tables, and blocker resolutions.
 
 1. Build and start the real component locally.
 2. If startup fails, work through the reference file's "Common local startup blockers" table before giving up.

@@ -21,7 +21,7 @@ FAIL=0
 
 # Bootstrap-RED sentinel, matching the convention in plugins/*/tests/verify-*.sh.
 # Without it a harness that recorded zero assertions would print "0 passed,
-# 0 failed" and exit 0 - green. This repo has no CI (jbrooksbartlett-sqmi), so
+# 0 failed" and exit 0 - green. This repo has no CI (hq-sqmi), so
 # this suite is the only gate and it has to prove it can report a failure.
 #   EXPECT_BOOTSTRAP_RED=1 bash scripts/tests/test-conductor-signals.sh
 # must exit non-zero and show exactly one FAIL.
@@ -180,7 +180,7 @@ D40=$(days_ago_iso 40)
 
 # Fixtures are written in QUOTED heredocs and dated afterwards through these
 # placeholders. An unquoted heredoc would expand the fixtures' own backticks:
-# "Closes `jbrooksbartlett-fire1`." ran as command substitution and produced
+# "Closes `hq-fire1`." ran as command substitution and produced
 # "Closes ." - still valid JSON, so the validator below could not see it, and
 # four signal-1 assertions went red for a reason nowhere near the code.
 date_the_fixtures() {
@@ -227,44 +227,44 @@ mkdir -p "$REPO"
 #   quiet3 already closed, named by a merged PR with a closure verb          -> SHOULD STAY SILENT
 cat >"$FIX/bd-list.json" <<'JSON'
 [
-  {"id":"jbrooksbartlett-fire1","status":"in_progress","dependent_count":0,
+  {"id":"hq-fire1","status":"in_progress","dependent_count":0,
    "title":"silent auth failure reports success",
    "description":"A revoked token yields DRAFT_CREATED with no experiment.","notes":""},
-  {"id":"jbrooksbartlett-fire2","status":"in_progress","dependent_count":0,
+  {"id":"hq-fire2","status":"in_progress","dependent_count":0,
    "title":"composed workflow namespaces resolve blank",
    "description":"Namespaces fold wrong.","notes":"Do not close it until PR #77 merges."},
-  {"id":"jbrooksbartlett-quiet1","status":"open","dependent_count":0,
+  {"id":"hq-quiet1","status":"open","dependent_count":0,
    "title":"follow-up filed by the fire1 PR",
    "description":"Cache the gRPC channel per provider call.","notes":""},
-  {"id":"jbrooksbartlett-quiet2","status":"open","dependent_count":1,
+  {"id":"hq-quiet2","status":"open","dependent_count":1,
    "title":"work still in review",
    "description":"Not merged yet.","notes":""},
-  {"id":"jbrooksbartlett-quiet3","status":"closed","dependent_count":0,
+  {"id":"hq-quiet3","status":"closed","dependent_count":0,
    "title":"already closed",
    "description":"Done.","notes":""},
-  {"id":"jbrooksbartlett-quiet4","status":"open","dependent_count":0,
+  {"id":"hq-quiet4","status":"open","dependent_count":0,
    "title":"partially addressed, deliberately still open",
    "description":"Master is red from two distinct causes.",
    "notes":"All nine PASSED in PR #55's green build, but the other half is untouched."},
-  {"id":"jbrooksbartlett-quiet5","status":"open","dependent_count":0,
+  {"id":"hq-quiet5","status":"open","dependent_count":0,
    "title":"a merged PR that explicitly does not resolve it",
    "description":"The JUnit report is still absent.",
    "notes":"*** THE JUnit FIX (PR #66) DOES NOT RESOLVE THIS BEAD. Leave it standing. ***"},
-  {"id":"jbrooksbartlett-quiet6","status":"open","dependent_count":0,
+  {"id":"hq-quiet6","status":"open","dependent_count":0,
    "title":"raised against a PR that did not fix it",
    "description":"A2A transport has no equivalent check.",
    "notes":"Raised by independent review as M6 against PR #42. NOT fixed on that branch."},
-  {"id":"jbrooksbartlett-quiet7","status":"open","dependent_count":0,
+  {"id":"hq-quiet7","status":"open","dependent_count":0,
    "title":"the natural English negation on the bead side",
    "description":"Still broken.",
    "notes":"This is NOT resolved by PR #77. Not closed by PR #77 either - the branch was abandoned."},
-  {"id":"jbrooksbartlett-quiet8","status":"open","dependent_count":0,
+  {"id":"hq-quiet8","status":"open","dependent_count":0,
    "title":"judged and deliberately kept open",
    "description":"Half of it landed.","notes":"RESOLVED BY PR #91, but only the first half."},
-  {"id":"jbrooksbartlett-quiet9","status":"open","dependent_count":7,
+  {"id":"hq-quiet9","status":"open","dependent_count":7,
    "title":"a parent whose children are still open",
    "description":"Seven children remain.","notes":""},
-  {"id":"jbrooksbartlett-fire3","status":"open","dependent_count":0,
+  {"id":"hq-fire3","status":"open","dependent_count":0,
    "title":"a clear declaration plus an unrelated denial elsewhere",
    "description":"The gates do not run on master.",
    "notes":"Two neutral checks and nothing can resolve which. WHY PR #77 matters is separate. *** RESOLVED BY switchboard PR #77. ***"}
@@ -273,35 +273,35 @@ JSON
 
 # quiet8 is a hit the conductor has judged and chosen to keep open.
 cat >"$FIX/bd-acked.json" <<'JSON'
-[{"id":"jbrooksbartlett-quiet8"}]
+[{"id":"hq-quiet8"}]
 JSON
 
 cat >"$FIX/gh-merged.json" <<'JSON'
 [
   {"number":42,"mergedAt":"@D3@","headRefName":"feature/fix-toolset",
-   "title":"fix(c4s): a toolset that fails to load must not report DRAFT_CREATED",
-   "body":"Closes `jbrooksbartlett-fire1`.\n\nFollow-up filed: jbrooksbartlett-quiet1 covers channel caching.\n\nAlso raised in review: jbrooksbartlett-quiet6, out of scope here."},
+   "title":"fix(drafts): a toolset that fails to load must not report DRAFT_CREATED",
+   "body":"Closes `hq-fire1`.\n\nFollow-up filed: hq-quiet1 covers channel caching.\n\nAlso raised in review: hq-quiet6, out of scope here."},
   {"number":77,"mergedAt":"@D2@","headRefName":"feature/fix-namespaces",
    "title":"fix: resolve composed-workflow namespaces",
-   "body":"Namespace folding, per jbrooksbartlett-fire2. No closure verb anywhere in this body.\n\nAlso touches jbrooksbartlett-quiet7 and jbrooksbartlett-fire3."},
+   "body":"Namespace folding, per hq-fire2. No closure verb anywhere in this body.\n\nAlso touches hq-quiet7 and hq-fire3."},
   {"number":91,"mergedAt":"@D1@","headRefName":"feature/already-done",
    "title":"chore: tidy",
-   "body":"Closes jbrooksbartlett-quiet3. Related: jbrooksbartlett-quiet8.\n\ncannot close jbrooksbartlett-quiet9: 7 open child issue(s); close children first"},
+   "body":"Closes hq-quiet3. Related: hq-quiet8.\n\ncannot close hq-quiet9: 7 open child issue(s); close children first"},
   {"number":55,"mergedAt":"@D2@","headRefName":"feature/partial",
-   "title":"test(ci): join the xdist group (PARTIAL fix for jbrooksbartlett-quiet4)",
-   "body":"> **This is a PARTIAL fix. It does not close jbrooksbartlett-quiet4.**\n\nRefs: jbrooksbartlett-quiet4 (stays open)"},
+   "title":"test(ci): join the xdist group (PARTIAL fix for hq-quiet4)",
+   "body":"> **This is a PARTIAL fix. It does not close hq-quiet4.**\n\nRefs: hq-quiet4 (stays open)"},
   {"number":66,"mergedAt":"@D1@","headRefName":"feature/junit",
    "title":"ci: emit a JUnit report",
-   "body":"Touches the same area as jbrooksbartlett-quiet5."}
+   "body":"Touches the same area as hq-quiet5."}
 ]
 JSON
 
 # bd show tells the truth about dependents where bd list does not.
 cat >"$FIX/bd-show.json" <<'JSON'
 [
-  {"id":"jbrooksbartlett-fire1","dependent_count":6},
-  {"id":"jbrooksbartlett-fire2","dependent_count":2},
-  {"id":"jbrooksbartlett-fire3","dependent_count":0}
+  {"id":"hq-fire1","dependent_count":6},
+  {"id":"hq-fire2","dependent_count":2},
+  {"id":"hq-fire3","dependent_count":0}
 ]
 JSON
 
@@ -313,34 +313,34 @@ JSON
 
 OUT=$(run_sut "$REPO" ok)
 
-assert_contains "$OUT" "jbrooksbartlett-fire1" \
+assert_contains "$OUT" "hq-fire1" \
   "fires on a bead whose merged PR declares it closed"
 assert_contains "$OUT" "#42" \
   "names the merged PR that is the evidence"
-assert_contains "$OUT" "jbrooksbartlett-fire2" \
+assert_contains "$OUT" "hq-fire2" \
   "fires on a bead mutually cited with a merged PR"
 assert_contains "$OUT" "#77" \
   "names the mutually cited PR"
-assert_not_contains "$OUT" "jbrooksbartlett-quiet1" \
+assert_not_contains "$OUT" "hq-quiet1" \
   "stays silent on a bead a merged PR merely MENTIONS as a follow-up"
-assert_not_contains "$OUT" "jbrooksbartlett-quiet3" \
+assert_not_contains "$OUT" "hq-quiet3" \
   "stays silent on a bead that is already closed"
-assert_not_contains "$OUT" "jbrooksbartlett-quiet4" \
+assert_not_contains "$OUT" "hq-quiet4" \
   "stays silent when the merged PR says it does NOT close the bead"
-assert_not_contains "$OUT" "jbrooksbartlett-quiet5" \
+assert_not_contains "$OUT" "hq-quiet5" \
   "stays silent when the bead says the merged PR does NOT resolve it"
-assert_not_contains "$OUT" "jbrooksbartlett-quiet6" \
+assert_not_contains "$OUT" "hq-quiet6" \
   "stays silent on a bead raised against a PR that did not fix it"
-assert_not_contains "$OUT" "jbrooksbartlett-quiet7" \
+assert_not_contains "$OUT" "hq-quiet7" \
   "stays silent on the natural English negation: 'This is NOT resolved by PR #77'"
-assert_not_contains "$OUT" "jbrooksbartlett-quiet8" \
+assert_not_contains "$OUT" "hq-quiet8" \
   "stays silent on a hit already labelled signal1-ack"
 # Verbatim from switchboard PR #30, which quotes a UI error in its body. Found
 # by running against the live queue; "not" inside "cannot" is preceded by a
 # letter, so the word-boundary guard alone does not catch it.
-assert_not_contains "$OUT" "jbrooksbartlett-quiet9" \
+assert_not_contains "$OUT" "hq-quiet9" \
   "stays silent on 'cannot close <id>: 7 open child issue(s)'"
-assert_contains "$OUT" "jbrooksbartlett-fire3" \
+assert_contains "$OUT" "hq-fire3" \
   "a denial in one clause does not veto a declaration in another"
 assert_contains "$OUT" "1  complete-but-open .......... 3" \
   "counts exactly the three beads that should fire"
@@ -359,14 +359,14 @@ printf '\nSIGNAL 1 - an unmerged PR is not evidence of completion\n'
 cat >"$FIX/gh-merged.json" <<'JSON'
 [
   {"number":42,"mergedAt":null,"headRefName":"feature/fix-toolset",
-   "title":"fix(c4s): a toolset that fails to load must not report DRAFT_CREATED",
-   "body":"Closes `jbrooksbartlett-fire1`."}
+   "title":"fix(drafts): a toolset that fails to load must not report DRAFT_CREATED",
+   "body":"Closes `hq-fire1`."}
 ]
 JSON
 OUT=$(run_sut "$REPO" ok)
 assert_equals "$(signal_value "$OUT" 1)" "0" \
   "a PR declaring closure but not merged does not fire the signal"
-assert_not_contains "$OUT" "jbrooksbartlett-fire1" \
+assert_not_contains "$OUT" "hq-fire1" \
   "stays silent while the PR is unmerged"
 
 # And a PR merged before the window must age out rather than linger.
@@ -380,7 +380,7 @@ window_fixture() { # <date placeholder, substituted by date_the_fixtures>
   cat >"$FIX/gh-merged.json" <<'JSON'
 [
   {"number":42,"mergedAt":"@DATE@","headRefName":"feature/fix-toolset",
-   "title":"old","body":"Closes `jbrooksbartlett-fire1`."}
+   "title":"old","body":"Closes `hq-fire1`."}
 ]
 JSON
   sed -i '' "s/@DATE@/$1/" "$FIX/gh-merged.json"
@@ -401,7 +401,7 @@ assert_equals "$(signal_value "$OUT" 1)" "0" \
 # ---------------------------------------------------------------------------
 
 printf '\nSIGNAL 1 - an unreadable repo is a gap, not a clean zero\n'
-# GHE was unreachable for ~16 hours on 2026-08-15/16. A signal that reports 0
+# The git host was unreachable for ~16 hours on 2026-08-15/16. A signal that reports 0
 # because it could not read anything is worse than no signal.
 printf 'not json\n' >"$FIX/gh-merged.json"
 OUT=$(CONDUCTOR_SIGNALS_REPOS="$REPO" CONDUCTOR_SIGNALS_STATE_DIR="$WORK/state" \
@@ -472,7 +472,7 @@ assert_contains "$OUT" "2  dispatchable-now ........... 0" \
   "the contract's swap-free veto suppresses the signal"
 assert_contains "$OUT" "swapouts delta 0" \
   "reports the live swapouts delta alongside the contract reading"
-assert_contains "$OUT" "jbrooksbartlett-cjxs" \
+assert_contains "$OUT" "hq-cjxs" \
   "names the open bead when the two capacity readings disagree"
 
 printf '\nSIGNAL 2 - an unreadable capacity read is a veto, not a pass\n'
@@ -592,7 +592,7 @@ write_resources both <<'JSON'
 {"mem_free_pct":58,"swap_free_mb":9000,"load1":3.34,"swapouts_delta":0,"sampled":true}
 JSON
 OUT=$(run_sut "$REPO" both)
-assert_not_contains "$OUT" "jbrooksbartlett-cjxs" \
+assert_not_contains "$OUT" "hq-cjxs" \
   "stays silent about the disagreement when there is none"
 
 # ---------------------------------------------------------------------------
@@ -832,7 +832,7 @@ JSON
 # THE CONTROL: a non-numeric LOAD_MAX disables the load guard
 # ---------------------------------------------------------------------------
 #
-# This is the destructive defect (analogous to jbrooksbartlett-lngd). A machine
+# This is the destructive defect (analogous to hq-lngd). A machine
 # at load 14.2 -- well above the default threshold of 9 -- with free capacity
 # and ready work. At LOAD_MAX=9, the load veto fires and signal 2 is 0 (tested
 # above in "the load threshold vetoes above 9"). With LOAD_MAX=abc:

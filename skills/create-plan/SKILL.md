@@ -1,7 +1,7 @@
 ---
 name: create-plan
 description: Create detailed implementation plans through an interactive, iterative process. Use when the user needs to plan a feature, refactor, or technical task before implementation.
-argument-hint: [file-path] [--non-interactive]
+argument-hint: "[file-path] [--non-interactive]"
 ---
 
 # Implementation Plan
@@ -74,12 +74,9 @@ Then wait for the user's input.
    Before asking the user any questions, use specialized agents to research in parallel:
    - Use the **codebase-explorer** agent to find all files related to the ticket/task and understand how the current implementation works
    - If relevant, use the **thoughts-explorer** agent to find and analyze any existing thoughts documents about this feature
-   - Use the **web-search-researcher** agent if:
-     - The task references internal tools, libraries, or infrastructure
-     - Linked documents need authenticated access (Google Docs, Slides, etc.)
-     - Slack discussions might provide relevant context or decisions
-     - Examples in other internal repos might inform the approach
-   - Use the **web-search-researcher** agent for external documentation and resources when there is no internal equivalent, or to supplement web-search-researcher findings with official docs
+   - Use the **codebase-explorer** agent as well if examples in other local or public repos might inform the approach
+   - Use the **web-search-researcher** agent for external documentation and resources: third-party tools, libraries, infrastructure and official docs
+   - If linked documents need authenticated access (Google Docs, Slides, etc.) or a chat discussion holds relevant decisions, read them with an authenticated tool you have, or ask the user for the content
 
 2b. **Check for operational context**:
 
@@ -171,9 +168,6 @@ Reference: See `skills/shared-references/agent-verification-pattern.md` for the 
 
    **For codebase investigation:**
    - **codebase-explorer** - To find files, understand implementation details, and find similar features
-
-   **For internal documentation and context:**
-   - **web-search-researcher** - To find internal docs, implementations, and Slack discussions
 
    **For external documentation and resources:**
    - **web-search-researcher** - To find official docs, best practices, and upstream docs

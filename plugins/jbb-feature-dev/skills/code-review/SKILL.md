@@ -6,7 +6,7 @@ description: >
   style (language reviewers), test quality (test reviewers), holistic review
   (general-code-reviewer), domain expertise (domain agents), and a post-review pipeline
   (review-calibrator, review-deduplicator). Use when the user asks to "review my code",
-  "review this PR", "code review", or says "/code-review". Replaces /pr-review.
+  "review this PR", "code review", or says "/code-review".
 argument-hint: "[pr-number-or-branch] [--all-severities] [--strict-severity] [--severity LEVELS] [--incremental] [--non-interactive]"
 ---
 
@@ -14,7 +14,9 @@ argument-hint: "[pr-number-or-branch] [--all-severities] [--strict-severity] [--
 
 Conduct a comprehensive code review using specialized agents and a post-review calibration/dedup pipeline.
 
-**IMPORTANT**: This is a review command. DO NOT make any code changes. Only provide constructive, actionable recommendations.
+**IMPORTANT**: This is a read-only review command, including for the caller's own work. Reviewers report findings; the caller applies accepted findings only within its edit authorization. Reviewing a colleague's PR never authorizes edits, commits, branch switches, or posting comments.
+
+Use this skill's existing specialist agents and post-review agents for independent assessment. Do not add an outer wrapper solely to invoke the skill. A session that implements or simplifies the change may coordinate and apply findings, but must not assess or grade its own work. If an independent assessment agent is unavailable, record that pass as blocked rather than replacing it with implementer self-review.
 
 ## Arguments
 
@@ -22,81 +24,88 @@ Conduct a comprehensive code review using specialized agents and a post-review c
 - `--all-severities`: Show all findings including LOW/MEDIUM for all agents
 - `--strict-severity`: Keep only HIGH+CRITICAL for ALL agents including code simplification and test reviewers (overrides the default MEDIUM+ and ALL-severity exemptions)
 - `--severity LEVELS`: Comma-separated severity levels to include (e.g., `--severity MEDIUM,HIGH,CRITICAL`)
-- `--incremental`: Review only new commits since the last /code-review run on this PR. Outputs "New findings" separately from "Previously identified".
-- `--non-interactive`: Never prompt. Resolve the review scope automatically (see Phase 1 step 1) and record the resolved scope in the review document. Pipeline callers such as `/orchestrate-feature-dev` pass this because there is no user present to answer a prompt — without it, an unresolvable scope would stall the whole pipeline on a question nobody sees.
+- `--incremental`: Review changes since the prior recorded snapshot, including relevant local work for a local scope. Outputs "New findings" separately from "Previously identified".
+- `--non-interactive`: Never prompt. Resolve the review scope automatically (see Phase 1 step 1) and record the resolved scope in the review document. Unattended callers pass this when no user can answer a prompt; unresolved scope must report blocked rather than stall on an unseen question.
 
 **Default severity behavior**: MEDIUM+HIGH+CRITICAL for most agents, **except** code style and test reviewers which keep ALL severities (test reviewers skip LOW findings they consider unhelpful). Use `--strict-severity` to enforce HIGH+CRITICAL across every dimension.
 
+## Review effort policy
+
+This section is canonical for callers selecting code-review effort. Select it after implementation and any simplification, from the actual diff and consequences, not an intake risk label. Reassess after material changes.
+
+| Actual change and risk | Requested effort |
+| --- | --- |
+| A few locally verifiable, low-risk lines | low |
+| Ordinary module work | medium |
+| Production writes or weakened checks | high |
+| Security boundaries or behavior that cannot be verified locally | xhigh, only if supported |
+
+Use the highest applicable risk. Use `max` only when explicitly requested. Effort controls reasoning depth; model selection chooses the model. Preserve the specialist roster and dual language modes at every effort level. Follow `${CLAUDE_PLUGIN_ROOT}/skills/shared-references/model-selection-guide.md` for model selection rather than replacing specialists with one stronger reviewer.
+
+Check the installed Claude Code controls with `claude --help` before applying effort. When it advertises `--effort`, a caller starting a review session can set that session's effort with this flag. Use only levels supported by that installation and selected model; use `high` and record the limitation when `xhigh` is unavailable. Do not invent an `effort` parameter on the Agent tool, confuse its `model` parameter with effort, or treat prompt wording as a runtime setting. For an existing session or child agent, verify the documented control or inheritance before claiming effort is applied. If no supported control exists, retain the configured setting and report the requested effort as unapplied.
+
+Record the diff-based reason, requested effort, effective setting or limitation, and model separately in the review document and agent brief.
+
 ## Phase 1: Context Gathering (parallel)
 
-1. **Determine what to review**: If the user provided a PR number or branch, use that. Otherwise resolve the scope from the current branch.
+1. **Establish objective and boundaries**: Confirm repository root, branch, worktree, PR or supplied base, and ownership. State the objective and acceptance criteria from the conversation, PR body, linked task, or approved plan. Follow objective links once with available tools; list sources and unavailable context. Do not select an unrelated plan because it is newest. Investigate affected code, callers, consumers, tests, and existing helpers before judging alignment.
 
-   If `--non-interactive` is set, never ask — resolve automatically (current branch, else the working-tree diff per step 2) and record the resolved scope in the review document. Only in interactive mode, with no resolvable scope, may you ask the user.
+   Resolve missing scope from the current branch and task's actual target branch, not a guessed `master` or `main`. Honor a supplied base. In interactive mode, ask if the objective or target remains unclear. With `--non-interactive`, record unresolved scope as blocked; if only the objective is unavailable, mark it unknown and omit the alignment verdict. Record out-of-scope dirty work without editing it.
 
-2. **Sync to the PR's latest code**: Before capturing ANY diff, ensure local files match the PR head. This is critical — review agents read on-disk files, and a stale working tree produces false findings.
-   - For PRs: `git fetch origin pull/{{PR_NUMBER}}/head:pr-{{PR_NUMBER}}-review && git checkout pr-{{PR_NUMBER}}-review` (or `gh pr checkout {{PR_NUMBER}}` if on GitHub.com). Verify with `git log --oneline -1` that the HEAD matches the PR's latest commit.
-   - For branches: `git fetch origin && git checkout {{BRANCH}} && git pull`
-   - **Only then** capture the diff. For PRs: `gh pr diff {{PR_NUMBER}}`. For branches, resolve the scope explicitly rather than handing agents a live revision expression:
+2. **Capture the actual review input without changing the checkout**:
+   - **PR review**: Read PR metadata, base/head SHAs, and `gh pr diff {{PR_NUMBER}}`. Verify on-disk files match that head and have no local changes in scope before giving them to agents. If they do not match, read source at the recorded PR head through repository tools, or have the caller supply an isolated matching checkout. Never switch branches, pull, stash, or overwrite dirty work to perform a review. A colleague's PR stays read-only. Local changes are not part of a remote PR unless explicitly requested as a separate local scope.
+   - **Local branch or working-tree review**: Use the supplied base SHA, or record the merge base with the verified target branch once. Inspect the cumulative diff from that base through the current working tree, including staged and unstaged changes even when committed changes also exist. List untracked files separately and read relevant ones in full. Do not substitute the implementer's summary for these inputs.
 
-     Resolve the base and the file list in **one** command block, then record the resolved values — a shell variable does not survive into a later Bash call, so anything that needs `BASE` again must read it back from the review document rather than expecting the variable to still exist:
+     After substituting the recorded base SHA, capture the candidate file lists in one block. Shell state does not persist across tool calls:
 
      ```bash
-     BASE=$(git merge-base origin/master HEAD)          # pin once
-     FILES=$(git diff --name-only "$BASE"..HEAD)        # committed range
-     MODE="committed range"
-     if [ -z "$FILES" ]; then
-       FILES=$(git diff HEAD --name-only)              # fall back: uncommitted, staged + unstaged
-       MODE="working tree"
+     BASE=$(git rev-parse --verify '{{RECORDED_BASE_SHA}}^{commit}') || exit 1
+     FILES=$(git diff --name-only "$BASE" --) || exit 1
+     UNTRACKED=$(git ls-files --others --exclude-standard) || exit 1
+     MODE="local diff"
+     if [ -z "$FILES" ] && [ -z "$UNTRACKED" ]; then
+       MODE="none"
      fi
-     if [ -z "$FILES" ]; then
-       MODE="none"                                     # nothing committed AND nothing uncommitted
-     fi
-     printf 'MODE=%s\nBASE=%s\nFILES:\n%s\n' "$MODE" "$BASE" "$FILES"
+     printf 'MODE=%s\nBASE=%s\nFILES:\n%s\nUNTRACKED:\n%s\n' "$MODE" "$BASE" "$FILES" "$UNTRACKED"
+     git diff --binary "$BASE" --
      ```
 
-     **`MODE=none` is a stop, not a pass.** It means there is genuinely nothing to review — no commits ahead and a clean tree. Report it as such and do not run Phase 2. Never emit a 0 Critical / 0 Major result for this case: a caller's severity gate cannot tell that apart from a real clean review, which is precisely how an unreviewed change advances a pipeline. Distinguishing the three modes is the whole point of resolving scope explicitly.
+     Filter these candidates to the objective and explicit scope, and log exclusions. If only irrelevant untracked files remain, there is nothing in scope to review. **An empty scope is a stop, not a pass**: never emit a clean severity count for an unreviewed change.
 
-     Two further things this buys, both of which were real failures:
+   - **Record a shared snapshot**: Save root, branch, target branch, mode, objective, acceptance criteria, base/head SHAs, resolved file list, exact diff, and relevant untracked file contents or content hashes in the review artifact. For untracked files, construct added-file hunks for anchoring findings. All agents use this same snapshot, not a live revision expression. Record the effort decision from the policy above after inspecting these inputs.
 
-     - **One pinned range for every agent.** A live `origin/master...HEAD` expression is re-evaluated by each agent, so if master advances mid-review they disagree about what they are reviewing. Observed twice: master moved while 7 agents ran 10-17 minutes each, and findings were raised against files that were never in the branch.
-     - **An empty committed range is not an empty change.** A branch 0 commits ahead of `origin/master` is the normal state inside an orchestrator worktree, where review runs before the work is committed — the diff is in the working tree. This mirrors `/simplify`'s Phase 0 fallback. Skipping it is worse than failing loudly: the review examines nothing, reports 0 Critical / 0 Major, and a caller's severity gate reads that as a pass and advances.
-
-   - **State the resolved scope in the review document**: which mode was used (PR / committed range / working tree), the base SHA (or the PR head SHA for the PR path), and the resolved file list. A reader cannot otherwise tell a clean review from an empty one, and Phase 3 Step 0 reads these values back to detect a moving tree.
-   - If checkout would lose uncommitted work, stash first and restore after the review
-
-   **2b. Check for file exclusion config** (Gap 2): Look for `.gosling.yaml` or `.code-review.yaml` in the repo root. If found, read `exclude_files` glob patterns and filter the diff to remove matching files before any review agents see them. Log which files were excluded.
+   **2b. Check for file exclusion config** (Gap 2): Look for `.code-review.yaml` in the repo root. If found, read `exclude_files` glob patterns and filter the diff to remove matching files before any review agents see them. Log which files were excluded.
 
    **2c. Check for large PR** (Gap 3): Estimate token count of the diff. If the diff exceeds ~50K tokens:
    - Warn the user: "This is a large PR (~N tokens). Review quality may be reduced."
    - Suggest splitting: Analyze the diff for independent modules/directories and suggest logical split points
-   - Create a finding: file_path="(PR-level)", severity=MEDIUM, category=BEST_PRACTICE, body="Large PR: this PR changes N files across M directories. Consider splitting into smaller, focused PRs for more effective review."
+   - Do not create a quality finding from size alone. Explain concrete responsibility or review-coverage problems if the diff demonstrates them.
    - Continue with the review (do not abort)
 
    **2d. Check for incremental mode** (Gap 7): If `--incremental` flag is set:
    - Search `~/.claude/thoughts/shared/reviews/` for a previous review document matching this PR number
-   - If found: identify the git commit range reviewed last time, compute the diff of only NEW commits since that point
+   - If found: identify the prior reviewed snapshot and compute changes since it. Include relevant staged, unstaged, and untracked work for a local scope, even when no new commit exists. If the prior local snapshot is unavailable, review the full current scope and state that limit.
    - Store the FULL PR diff separately (for repo-rules-reviewer)
    - Replace the default diff with the incremental diff for most Phase 2 agents
    - Pre-compute `changed_locations_since_prior`: a map of files and line ranges modified since the last review commit. Pass this to the deduplicator in Phase 3.
    - Store the prior review findings for the deduplicator
    - If no previous review found: warn and proceed normally
 
-   **2e. Discover repo-specific coding guidelines** (Gap 1): Search the repository for GOSLING.md and other coding guideline sources:
-   - Check for GOSLING.md at repo root and subdirectories
+   **2e. Discover repo-specific coding guidelines** (Gap 1): Search the repository for AGENTS.md, CLAUDE.md and other coding guideline sources:
+   - Check for AGENTS.md and CLAUDE.md at repo root and subdirectories
    - Search for: CONTRIBUTING.md, style guides, .editorconfig, lint configs, README sections about coding standards
    - Store discovered guidelines for: (a) the repo-rules-reviewer agent, (b) all other review agents as informational context
 
    **2f. Fetch human PR review comments** (Gap 5): If reviewing a PR:
-   - Fetch existing human review comments via `gh api repos/{owner}/{repo}/pulls/{number}/comments --hostname github.com`
-   - Also fetch review-level comments via `gh api repos/{owner}/{repo}/pulls/{number}/reviews --hostname github.com`
+   - Fetch existing human review comments via `gh api repos/{owner}/{repo}/pulls/{number}/comments` (add `--hostname <host>` for a GitHub Enterprise repo)
+   - Also fetch review-level comments via `gh api repos/{owner}/{repo}/pulls/{number}/reviews` (same host rule)
    - Store for the deduplicator in Phase 3
 
 3. **Identify languages**: Analyze diff for file extensions. Look up in `${CLAUDE_PLUGIN_ROOT}/skills/shared-references/language-agent-registry.md`
 4. **Detect domains**: Follow the detection procedure in `${CLAUDE_PLUGIN_ROOT}/skills/shared-references/domain-agent-registry.md` — check changed file names/paths against file triggers first (deterministic), then check diff content for strong and corroborating signals
 5. **Spawn context agents in parallel**:
-   - `codebase-explorer` (subagent_type: `Explore`): Find patterns, conventions, CLAUDE.md in the target repo. **Critically**: identify sibling implementations — other classes/methods in the same package or system that implement the same interface, extend the same base class, or follow the same architectural pattern as the code under review (e.g., other handlers in the same service, other endpoints in the same API). Read their key methods to understand what patterns they follow (error handling, graceful degradation, field usage, logging practices).
-   - `jbb-feature-dev:web-search-researcher` (if unfamiliar internal tooling detected): Research organisation-specific best practices
-   - `jbb-feature-dev:web-search-researcher` (if a service is identified): Gather operational context (SLOs, deployment health)
+   - `codebase-explorer` (subagent_type: `Explore`): Find patterns, conventions, CLAUDE.md, and reusable helpers, types, constants, and components in the target repo. Compare repeated decision rules within the new diff as well as existing code. **Critically**: identify sibling implementations — other classes/methods in the same package or system that implement the same interface, extend the same base class, or follow the same architectural pattern as the code under review (e.g., other handlers in the same service, other endpoints in the same API). Read their key methods to understand what patterns they follow (error handling, graceful degradation, field usage, logging practices).
+   - `jbb-feature-dev:web-search-researcher` (if a third-party framework or library is central to the change): Research its current documented best practices
 6. **Read shared reference files**: Load these into context for injection into Phase 2 prompts:
    - `${CLAUDE_PLUGIN_ROOT}/skills/code-review/references/false-positive-guidance.md`
    - `${CLAUDE_PLUGIN_ROOT}/skills/code-review/references/position-anchoring.md`
@@ -113,20 +122,38 @@ Conduct a comprehensive code review using specialized agents and a post-review c
 
 Construct prompts for each agent, injecting:
 
-- The diff
+- The recorded root, branch, target branch, base/head SHAs, objective, acceptance criteria, and scope boundaries
+- The actual diff, including relevant uncommitted and untracked work for a local scope
+- The effort decision and effective runtime setting or limitation, separate from model selection
 - Context findings from Phase 1 (patterns, conventions, ops context)
 - Sibling implementation context from Phase 1 (if found) — include file paths and key patterns (error handling, field usage, graceful degradation) so agents can flag inconsistencies between the new code and established sibling patterns
 - Shared reference content (false-positive guidance, position anchoring, severity rubric, comment format, finding schema)
+
+Each agent confirms its root and branch, reads full changed files plus relevant callers and siblings, and reports evidence against the shared snapshot. Record the actual assessor, input state, instructions actually read, and evidence in the existing review document. A finding quotes the changed line, names the violated rule or contract, states the concrete consequence, and suggests a fix. Zero findings is valid; do not pad. Separate missing evidence from a clean result.
+
+Parallel work is source inspection. Only bug-catcher may run safe isolated local probes under
+[bug-review](../bug-review/SKILL.md); include that contract in its brief, without spawning another bug worker.
+Other reviewers return proposed build/test commands instead of running them against shared outputs.
+After assessments, the coordinator runs needed shared checks once, sequentially and without changing reviewed source,
+or arranges explicit safe serialization. Keep existing calibrator source checks; they do not build or run tests.
+
+### Code-quality assessment contract
+
+Assign these checks to the existing reviewers below, without adding a separate assessment wrapper:
+
+- **bug-catcher**: Trace accepted boundary inputs through coupled calculations, thresholds, classifications, callers, and consumers. Check malformed present data and unknown values do not silently become normal absence or weaker checks. Compare changed behavior with error messages, comments, schema/proto contracts, and actual input formats. A passing test does not disprove a demonstrated bug.
+- **general-code-reviewer**: Check objective alignment and scope, including missing behavior and unrequested features or refactors. Check hidden assumptions about units, ordering, uniqueness, and absent values. Identify unused abstractions, impossible-state fallbacks, symptom fixes, and duplicated framework guarantees. Report performance only with a concrete consequence at realistic scale.
+- **language experts, test-review**: Check whether subtly broken behavior still passes, assertions weaken, mocks replace the unit under test, or fixtures add dead setup. Prefer assertions on existing scenarios where sufficient. Flag tests of static mappings, configuration, language internals, or framework behavior rather than conditional business behavior.
+- **language experts, code-style-review**: Search existing code and the new diff for reusable helpers, types, constants, and matching decision rules. Name both duplicate locations; share the operation only when semantics match. Check collection mutability against contracts and callers. Make decisions visible through meaningful names, types, and focused structure, not dense expressions, shortest code, line counts, or helpers that merely rename syntax. Judge comments with surrounding logic; use the mode's naming/comment boundaries and preserve tool directives and necessary contracts.
 
 Spawn review agents in parallel:
 
 - **`jbb-feature-dev:bug-catcher`** (always) -- Bug detection specialist
 - **`jbb-feature-dev:security-reviewer`** (always) -- OWASP security analysis
-- **`jbb-feature-dev:repo-rules-reviewer`** (always) -- repo-declared rules from guideline files (graceful degradation to aika-codex if unavailable)
 - **Language expert agent** (per detected language, from language-agent-registry: `jbb-feature-dev:python-expert`, `jbb-feature-dev:typescript-expert`) -- spawned TWICE in parallel per language: once with test-review mode framing, once with code-style-review mode framing. See "Dual parallel spawn pattern" below.
-- **`jbb-feature-dev:general-code-reviewer`** (always) -- Holistic review with ops context. Additionally check: (1) Did any existing file grow by more than 200 new lines? (2) Are any new files already over 500 lines? (3) Does each changed file maintain a single clear responsibility? If a plan was provided in the PR description, verify the changes follow the planned file structure.
+- **`jbb-feature-dev:general-code-reviewer`** (always) -- Holistic review with ops context and the objective/scope checks above. Check clear responsibilities and comprehension, not file length as a proxy for quality. If an approved plan supplies file boundaries, verify those boundaries against the actual change.
 - **Domain experts** (if detected from domain-agent-registry; spawned in parallel ALONGSIDE language experts when both apply — overlapping language + workflow domain coverage spawns BOTH the language expert AND the matching workflow domain expert concurrently)
-- **`jbb-feature-dev:repo-rules-reviewer`** (always, but returns empty if no guidelines found) -- Enforces repo-specific coding rules from GOSLING.md and other discovered guidelines. Pass the discovered guidelines from Phase 1 step 2e as the agent's primary input. Pass guidelines as informational context to ALL other review agents as well. **Incremental mode note**: repo-rules-reviewer always receives the FULL PR diff (not the incremental diff), because repo rules apply to all changed code regardless of when commits were made.
+- **`jbb-feature-dev:repo-rules-reviewer`** (always, but returns empty if no guidelines found) -- Enforces repo-specific coding rules from AGENTS.md, CLAUDE.md and other discovered guidelines. Pass the discovered guidelines from Phase 1 step 2e as the agent's primary input. Pass guidelines as informational context to ALL other review agents as well. **Incremental mode note**: repo-rules-reviewer always receives the FULL PR diff (not the incremental diff), because repo rules apply to all changed code regardless of when commits were made.
 
 ### Dual parallel spawn pattern
 
@@ -137,45 +164,44 @@ For each language detected in scope, spawn the corresponding `{language}-expert`
 
 Both invocations MUST run concurrently (single message containing both Agent tool calls). Each emits its own per-mode block schema. Downstream `review-deduplicator` (Phase 3 Step 3) consolidates overlapping findings between the two passes and merges adjacent-line duplicates.
 
+**Set the `mode` field on every finding as you collect it** — `test-review` or `code-style-review`, per `finding-schema.md`. You set it, not the agent: both invocations report the same `source_agent` (e.g. `python-expert`), so the agent cannot know which one it is. Every other agent's findings carry `mode: null`. A finding collected without `mode` loses its ALL-severity exemption at Step 2; see `finding-schema.md` `### mode` for the defect this caused.
+
 **Skill-injection canary** (issue #25834): the silent skill-injection failure mode in plugin issue #25834 means a spawned agent may receive an empty skill body without any error surfaced. Each mode-framed prompt MUST include a canary token (e.g., `MODE_CANARY=test-review-v1`) that the agent is instructed to echo verbatim in its first output line. The orchestrator verifies the echo before accepting findings; absence of the canary indicates the skill content did not reach the agent and the invocation is retried with explicit inline content rather than skill reference.
 
-When both a language expert and a workflow domain expert apply to the same diff (e.g., Java + the serving layer ML serving), spawn BOTH in parallel — they cover orthogonal axes (general language quality vs. workflow-specific best practices) and their findings are merged by the deduplicator.
+When both a language expert and a workflow domain expert apply to the same diff (e.g., Python + ML model training code), spawn BOTH in parallel — they cover orthogonal axes (general language quality vs. workflow-specific best practices) and their findings are merged by the deduplicator.
 
 All agents MUST emit findings using the schema defined in `finding-schema.md`:
 
 ```
-file_path, position, body, severity, category, confidence, source_agent
+file_path, position, body, severity, category, confidence, source_agent, mode
 ```
 
-Wait for all review agents to complete. Collect all findings into a consolidated list.
+Wait for all review agents to complete. Collect findings, material unresolved concerns, and coverage separately.
+Keep every candidate's outcome and evidence in the existing review document through calibration, filtering,
+deduplication, and quality checking, including reasons for removal and links to surviving duplicates.
+A severity filter controls presentation, not validity or resolution. Return these outcomes to the caller;
+code-review remains read-only and does not apply recommendations.
+Report an incomplete review, not an unqualified clean verdict, while material concerns or required coverage remain unresolved.
 
 ## Phase 3: Post-Review Pipeline (sequential)
 
 ### Step 0: Re-verify the review scope
 
-Phase 2 agents run for 10-17 minutes each, so the tree can move underneath them. Before calibrating, confirm the findings describe the code that was actually reviewed.
+Before calibration, compare the current input with the Phase 1 snapshot. Read recorded values from the artifact, not shell variables from earlier calls.
 
-Read the base SHA and file list back from the review document — Phase 1 recorded them there for exactly this purpose. Do not expect a `BASE` shell variable to still exist: Phase 1 ran in a different Bash invocation, minutes earlier, and shell state does not persist across tool calls.
+For local scope, repeat Phase 1's capture with the same recorded base SHA. Compare HEAD, exact diff contents, relevant untracked contents or hashes, and file list. A same-file edit matters even when names and HEAD stay unchanged. Do not recompute a moving target branch's merge base as a replacement for the pinned base.
 
-**If Phase 1 resolved a committed range or working tree** (the branch path):
-
-```bash
-git merge-base origin/master HEAD        # compare to the SHA recorded in the review doc
-git diff --name-only <recorded-SHA>..HEAD   # compare to the recorded file list
-```
-
-**If Phase 1 resolved a PR**, there is no merge-base to re-check — the scope came from `gh pr diff`. Re-verify by re-listing the PR's files instead, and confirm the PR head has not advanced:
-
-```bash
-gh pr view <PR_NUMBER> --json headRefOid --jq .headRefOid   # compare to the head recorded in Phase 1
-gh pr diff <PR_NUMBER> --name-only
-```
-
-If the base or PR head moved, or files appeared that agents were never given, drop findings whose files are outside the reviewed scope and note the drop in the review document. Findings against files that were never in the branch are worse than noise — they read as real defects and cost a reviewer's trust. In one observed case two findings rested entirely on such phantom content and survived only because two reviewers' diffs were cross-checked by hand during consolidation.
+For a PR, re-read its base/head SHAs and diff through the same repository tools. If the reviewed input changes, repeat affected assessments against a fresh shared snapshot before a current-scope verdict. If that is unavailable, mark the review incomplete. Drop findings outside the reviewed scope, but never treat dropping stale findings as proof the new content is reviewed.
 
 ### Step 1: Calibration
 
-Spawn **`jbb-feature-dev:review-calibrator`** with ALL findings from Phase 2.
+Spawn **`jbb-feature-dev:review-calibrator`** with ALL findings from Phase 2, the objective, scope, and shared snapshot. Supply the same assessment brief to the deduplicator and quality checker; the implementer never substitutes its own grade for these agents.
+
+Also supply unresolved concerns, coverage limits, and probe evidence as context, not admitted findings.
+Preserve the calibrator's false-positive and confidence checks. Require evidence for an invalid premise or
+inapplicability when rejecting a candidate. Missing context or execution is a limit, not disproof.
+Retain consequential NEEDS-CONTEXT or insufficient-evidence candidates as material unresolved concerns, not admitted findings.
+Carry those concerns separately through later filters; their absence from findings cannot establish clean coverage.
 
 The calibrator performs adversarial verification (reads actual code to validate each finding) and calibration (categorizes, filters false positives, normalizes severity, assigns confidence).
 
@@ -187,9 +213,14 @@ Apply severity filter based on `source_agent` and flags:
 
 **Default behavior** (no flags):
 
-- For findings from **code style reviewers** (agents whose name contains `code-style`): keep ALL severities including ENHANCEMENT
-- For findings from **test reviewers** (agents whose name contains `test-reviewer`): keep ALL severities including ENHANCEMENT, but skip LOW findings the reviewer considers unhelpful (e.g., testing static mappings, framework behavior, or language implementation details)
-- For all other agents: keep MEDIUM, HIGH, and CRITICAL findings
+- `mode == "code-style-review"`: keep ALL severities including ENHANCEMENT
+- `mode == "test-review"`: keep ALL severities including ENHANCEMENT, but skip LOW findings recommending tests
+  that only restate static mappings, static configuration, language internals, or framework/library behavior
+  (e.g., `case X -> "Y"` returns `"Y"`). Keep findings recommending removal or replacement of those tests.
+  Tests of conditional business behavior that could realistically have bugs are valuable.
+- `mode == null` (every other agent): keep MEDIUM, HIGH, and CRITICAL findings
+
+**Compare `mode` by equality against those two literal values.** Never match a substring, and never key off the agent name — `finding-schema.md` `### mode` records why both fail, and that a substring fix silently works for one mode and not the other.
 
 **Flag overrides**:
 
@@ -240,9 +271,15 @@ Write to `~/.claude/thoughts/shared/reviews/review_{{PR_NUMBER}}_{{DATE}}.md`:
 
 [2-3 sentences summarizing findings]
 
+## Objective, scope, and review effort
+
+[Objective and acceptance criteria, sources, root/branch/worktree, target branch, ownership, mode, pinned base/head SHAs, reviewed files, exclusions, and snapshot location]
+
+[Diff-based risk reason, requested effort, effective runtime setting or limitation, and model]
+
 ## Do the code changes align with the PR objective?
 
-["Yes" or "No" with explanation]
+[Aligned / partially aligned / not aligned, with evidence; unknown if the objective is unavailable]
 
 ## Highlights
 
@@ -254,7 +291,6 @@ Write to `~/.claude/thoughts/shared/reviews/review_{{PR_NUMBER}}_{{DATE}}.md`:
 | ------------------------------------- | ----------------- | --------------- |
 | bug-catcher                           | Completed         | N findings      |
 | security-reviewer                     | Completed         | N findings      |
-| repo-rules-reviewer                | Completed/Skipped | N findings      |
 | [language]-expert (code-style-review) | Completed         | N findings      |
 | [language]-expert (test-review)       | Completed         | N findings      |
 | general-code-reviewer                 | Completed         | N findings      |
@@ -262,6 +298,12 @@ Write to `~/.claude/thoughts/shared/reviews/review_{{PR_NUMBER}}_{{DATE}}.md`:
 | review-calibrator                     | Completed/Skipped | Filtered M of N |
 | review-deduplicator                   | Completed/Skipped | Deduped to K    |
 | quality-checker                       | Completed/Skipped | Removed M of N  |
+
+## Candidate outcomes and coverage limits
+
+[Every recorded candidate's outcome and reason, including rejected, filtered, duplicate, skipped, and blocked candidates.
+Keep material unresolved concerns and missing execution/context separate from admitted findings.
+For each Review Source above, record the actual assessor, input state, instructions actually read, and evidence.]
 
 ## Incremental Review Status
 
@@ -299,7 +341,7 @@ Write to `~/.claude/thoughts/shared/reviews/review_{{PR_NUMBER}}_{{DATE}}.md`:
 [Findings]
 ```
 
-Each finding includes: `- Recommendation [i] - \`file_path:line\``
+Each finding includes: `- Recommendation [i] - \`file_path:line\``, the quoted line, rule or contract, consequence, and suggested fix. List blocked assessments and verification limits before any clean verdict. Return findings to the caller; do not apply them. For a colleague's PR, provide an approval recommendation with reasons and draft comments only, never post them.
 
 ## Combined-invocation fallback
 
@@ -309,8 +351,8 @@ When parallel-spawn flakiness blocks the dual-invocation pattern (issue #7406), 
 spawn {language}-expert ONCE with prompt = test-review framing + "---END-PASS-1---" + code-style-review framing
 receive single response containing both pass outputs
 split response on "---END-PASS-1---"
-route pass-1 half to review-deduplicator tagged source_agent={language}-expert mode=test-review
-route pass-2 half to review-deduplicator tagged source_agent={language}-expert mode=code-style-review
+route pass-1 half to review-deduplicator with source_agent={language}-expert, mode="test-review"
+route pass-2 half to review-deduplicator with source_agent={language}-expert, mode="code-style-review"
 ```
 
 Wall-clock cost: ~2× single-pass duration (sequential rather than concurrent). Activated only by explicit operator decision (e.g., `/code-review --combined-invocation`); never automatic. Reference: parallel-spawn flakiness tracked in issue #7406; verify the skill-injection canary from issue #25834 still echoes correctly in the combined prompt.
@@ -322,11 +364,11 @@ Wall-clock cost: ~2× single-pass duration (sequential rather than concurrent). 
 - Phase 1 MUST complete before Phase 2 (context informs review)
 - Phase 2 agents run in parallel; Phase 3 agents run sequentially
 - All review agent prompts MUST include Phase 1 findings and shared reference content
-- Finding schema is the contract between Phase 2 and Phase 3
+- Finding schema is the contract between Phase 2 and Phase 3; `mode` is set by the orchestrator on collection, not by the agent
 - Severity filter is applied between calibration and deduplication
 - File path and line number references enable automated PR comment submission via `/crit-pr-review`
 - For sub-agent model selection guidance, see `${CLAUDE_PLUGIN_ROOT}/skills/shared-references/model-selection-guide.md`
 - Repo-rules-reviewer findings bypass the severity filter (always included)
 - Quality checker runs as a single-pass gate after deduplication
-- `--incremental` reviews only new commits since the last review for this PR
-- File exclusions from .gosling.yaml/.code-review.yaml are applied before Phase 2
+- `--incremental` uses the prior recorded snapshot; missing snapshot evidence requires a full current-scope review
+- File exclusions from .code-review.yaml are applied before Phase 2

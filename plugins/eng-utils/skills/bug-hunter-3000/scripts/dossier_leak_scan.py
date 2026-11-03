@@ -4,7 +4,7 @@ Blindness scanner for Behavior Dossiers produced by the bug-hunter-3000
 skill.
 
 The dossier handed to the intent-verifier deliberately withholds the finder's
-conclusion (see references/behavior-dossier-and-verdict-schema.md section 2).
+conclusion (see references/verdicts-and-bands.md section 1).
 Withholding is easy to get wrong in ways that are invisible on a read-through:
 a heading can leak a verdict as effectively as a sentence, and on one measured
 run the field name `Defect site:` did exactly that -- five of seven
@@ -85,7 +85,16 @@ _LEAKS: tuple[tuple[re.Pattern[str], str], ...] = (
         "DISPOSITION",
     ),
     # A band, which is orchestrator judgement the verifier must not inherit.
-    (re.compile(r"(?i)\b(?:Act-Now|Important|Low)\s*(?:band|severity)\b"), "BAND"),
+    # Both namings on purpose. The bands were renamed, and a packet or a hand-written
+    # note can still carry the old words -- a dead name in this list costs nothing,
+    # a missing live one costs the blindness the gate exists to protect.
+    (
+        re.compile(
+            r"(?i)\b(?:Read\s+closely|Worth\s+a\s+look|Skim|Not\s+triaged"
+            r"|Act-Now|Act\s+Now|Important|Low)\s*(?:band|severity)\b"
+        ),
+        "BAND",
+    ),
     # An ORPHANED VALUE: a withheld field's value left behind when only its label
     # was deleted. `Confidence: high` becomes a bare `high` on its own line, which
     # every label-keyed pattern above misses -- and so did the strip's own
@@ -128,7 +137,9 @@ def main(argv: list[str] | None = None) -> None:
         if target.is_dir()
         else [target]
     )
-    files = [p for p in files if p.read_text(errors="replace").strip()]
+    # A path that does not exist is NO_INPUT, not a leak. Without the is_file()
+    # guard a typo raised FileNotFoundError and exited 1 -- the LEAKED code.
+    files = [p for p in files if p.is_file() and p.read_text(errors="replace").strip()]
 
     if not files:
         # An empty directory is not a clean sweep. It means the check did not run,

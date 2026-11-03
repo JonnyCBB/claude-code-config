@@ -12,7 +12,8 @@ You are a review deduplicator. You receive calibrated findings from multiple rev
 
 You receive:
 
-- A list of calibrated findings (each with file_path, position, body, severity, category, confidence, source_agent)
+- A list of calibrated findings (each with file_path, position, body, severity, category, confidence, source_agent, mode)
+  - `mode` is `test-review`, `code-style-review`, or `null`. When you merge findings, keep a non-null `mode` over `null` — the merged finding is entitled to the more permissive severity treatment of the pass that raised it. Dropping `mode` during a merge silently downgrades the finding.
 - Existing human review comments on the PR (if any)
 - Prior review findings from previous /code-review runs on this PR (if any)
 
@@ -33,6 +34,8 @@ For findings in the SAME file:
 - If two findings are >90% identical in meaning (same issue, same location), merge them
 - Keep the finding with the highest severity
 - Combine source_agent attributions: "Found by: bug-catcher, security-reviewer"
+- Carry the non-null `mode` onto the merged finding, even when the finding you kept as the base
+  has `mode: null`. Severity decides the base; `mode` is not inherited from it.
 - If recommendations differ, keep the more specific one
 
 ### Step 3: Cross-file deduplication
@@ -59,6 +62,7 @@ For findings in the SAME file, about the SAME issue, within 20 lines of each oth
 - Keep the highest severity
 - Set position to the first occurrence
 - Combine descriptions if they add different context
+- Carry the non-null `mode` onto the merged finding, independently of which finding won on severity
 
 ### Step 6: Prior review deduplication
 

@@ -1,43 +1,28 @@
 #!/usr/bin/env python3
 """Build a Behavior Dossier from a Finder Packet, withholding every conclusion.
 
-WHY THIS EXISTS
----------------
-There was a script to CHECK a dossier (`dossier_leak_scan.py`) and no script to BUILD
-one. SKILL.md said "Build the dossier, then PROVE it withholds", and building it was an
-inline prose step -- so every run reimplemented the withholding rules by hand, from the
-closed five-item list in `references/behavior-dossier-and-verdict-schema.md` section 2,
-under time pressure.
+Two passes, and the order is the point:
 
-Measured 2026-08-29 on the character-pro run: **7 of 8 dossiers failed the gate**, 18
-leaks, and the run stopped there without verifying a single candidate. The largest cause
-was that the hand-rolled stripper never removed the appendix -- 11 of the 18 leaks were
-the word "refuted" inside the Coverage record's sweep table, where the finder describes
-hypotheses it considered and discarded. The finder contract puts that content below a
-`--- APPENDIX ---` marker precisely so it can be separated mechanically, and nothing was
-using the marker.
+1. **Build by ALLOWLIST, never by blocklist.** Only the five permitted items in
+   `references/verdicts-and-bands.md` section 1 are emitted. A blocklist fails on the
+   field nobody anticipated.
+2. **Then re-run the gate's OWN pattern set** over the result, imported from
+   `dossier_leak_scan` rather than restated. A builder validated against a different
+   set than the one that gates it drifts, and the drift surfaces as a blocked run
+   three stages later.
 
-That is the same defect as `index_to_disk` before it: a step a run ACTS on, specified
-only in prose, reimplemented differently and wrongly each time.
+Everything at and below the `--- APPENDIX ---` marker is dropped before either pass.
+The finder contract puts considered-and-discarded hypotheses there precisely so they
+can be separated mechanically.
 
-WHY THE DOSSIER MATTERS MORE THAN MOST ARTEFACTS
-------------------------------------------------
-The intent-verifier's whole value is that it is blind. It answers "what current contract
-or product intent explains this behavior?" without knowing anyone thinks it is a bug. One
-leaked word -- "refuted", "incorrectly", a severity label -- turns an independent second
-axis into an expensive echo of the first, and nothing downstream can detect that it
-happened. The gate exists because the failure is silent.
+Usage:
+    python3 build_dossier.py --packet <packet.md> --fingerprint <fp> --out <dossier.md>
 
-THE APPROACH: allowlist, then re-check with the gate's own patterns
--------------------------------------------------------------------
-Two passes, deliberately.
-
-1. **Build by ALLOWLIST, never by blocklist.** Only the five permitted items are emitted.
-   The schema is explicit that there is "no 'everything neutral-looking, minus a
-   blocklist' reading", and a blocklist is what fails on the field nobody anticipated.
-2. **Then run the gate's own pattern set** over the result. Importing the patterns rather
-   than restating them is the point: a builder validated against a different set than the
-   one that gates it drifts, and the drift shows up as a blocked run three stages later.
+Exit codes:
+    0  written, and it re-scanned clean
+    1  REFUSED -- content survived the re-scan, so nothing was written. Fix the
+       packet or report the candidate as unverifiable; do not work around this.
+    2  usage error
 """
 
 from __future__ import annotations
@@ -53,8 +38,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import dossier_leak_scan  # noqa: E402
 from index_packets import APPENDIX_MARKER, _sections  # noqa: E402
 
-#: The closed five-item list, section 2 of
-#: references/behavior-dossier-and-verdict-schema.md. Each entry maps a permitted dossier
+#: The closed five-item list, section 1 of
+#: references/verdicts-and-bands.md. Each entry maps a permitted dossier
 #: item to the Finder Packet field names that may satisfy it. Anything not named here does
 #: not travel -- including fields tagged NEUTRAL, because eligible is not the same as
 #: included.

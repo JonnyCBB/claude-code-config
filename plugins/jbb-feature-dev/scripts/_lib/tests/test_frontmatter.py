@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """Unit tests for scripts/_lib/frontmatter.py.
 
-The shared utility now has 3+ consumers (validate_consolidation,
-validate_plan_b_contract_artifacts, validate_plan_c_orchestrator); pin its
-contract directly so a regression in any consumer surfaces here first.
+The shared utility serves validate_consolidation; pin its contract directly
+so a regression in a consumer surfaces here first.
 """
 
 from __future__ import annotations

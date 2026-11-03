@@ -15,8 +15,8 @@ Power analysis and experiment sizing.
 
 Before sizing an experiment from the rough table below, know that two techniques can reduce the sample size/duration needed for a given MDE:
 
-- **Sequential testing** is a current, mainstream, first-class capability — EP's own Golden Path glossary lists "Sequential testing" as a selectable "Horizon Strategy" (vs. "Fixed horizon testing"), letting you observe results at any time rather than waiting for a fixed sample. Available in mainstream confidence-interval libraries via an always-valid / sequential correction method.
-- **CUPED** (variance reduction) is real and available in the same class of library, but treat it as less mature than sequential testing: current best-practices documentation frames it as still being evaluated internally ("the field is still at the stage of comparing how effective variance reduction techniques have been... arguing for their adoption"), even though it's marketed as a fully mainstream feature externally. Try it, but don't assume it's uniformly deployed for every metric yet.
+- **Sequential testing** is a current, mainstream, first-class capability — many experimentation platforms offer it as a selectable strategy (vs. fixed-horizon testing), letting you observe results at any time rather than waiting for a fixed sample. Available in mainstream confidence-interval libraries via an always-valid / sequential correction method.
+- **CUPED** (variance reduction) is real and available in the same class of library, but treat it as less mature than sequential testing: practitioner guidance often frames it as still being evaluated, even where it is marketed as a fully mainstream feature. Try it, but don't assume it's uniformly deployed for every metric yet.
 
 The rough table below doesn't account for either technique — a team using sequential testing or CUPED may need meaningfully less sample/duration than it suggests.
 
@@ -39,24 +39,24 @@ The rough table below doesn't account for either technique — a team using sequ
 | Engagement (common) | Medium N |
 | Revenue (high variance) | Needs large N |
 
-## EP/C4S Sample Size Calculator
+## Platform Sample Size Calculator
 
-Use the built-in calculator in the EP or C4S UI (both platforms have one):
+Use the built-in calculator in your experimentation platform UI, if it has one:
 
 1. Enter baseline metric value
 2. Enter minimum detectable effect
 3. Get required sample size
 
-**Not universal**: some teams can't use the built-in calculator. User Protection's own documentation states it doesn't account for their aggressive post-hoc exposure filtering, and they size manually via a stats library instead. If your experiment applies unusual exposure filtering, check whether the built-in calculator's assumptions still hold before trusting its output.
+**Not universal**: some teams can't use the built-in calculator. It may not account for aggressive post-hoc exposure filtering; teams that apply such filtering size manually via a stats library instead. If your experiment applies unusual exposure filtering, check whether the built-in calculator's assumptions still hold before trusting its output.
 
 ## Diagnosing Delayed or Ramping Effects: DSE Curves vs. Exploratory Analysis
 
 Two distinct (don't conflate them) newer capabilities help diagnose how an effect evolves over the course of an experiment, useful when a metric looks flat early but you suspect it's still ramping:
 
-- **DSE (days-since-exposure) Curves**: a Surfaces-DS-team-built Streamlit app for visualizing how experiment effects evolve, stabilize, or decay over time by days-since-exposure.
-- **Exploratory Analysis**: a built-in C4S platform feature (a feature-flagged, org-wide-enabled section on the experiment results page) for ad-hoc metric calculation beyond your predefined success/guardrail/exploratory metrics.
+- **DSE (days-since-exposure) Curves**: a visualization of how experiment effects evolve, stabilize, or decay over time by days-since-exposure.
+- **Exploratory Analysis**: a platform feature (often a section on the experiment results page) for ad-hoc metric calculation beyond your predefined success/guardrail/exploratory metrics.
 
-These are two different tools built by different teams — don't assume one replaced the other.
+These are two different tools — don't assume one replaced the other.
 
 ## Running Underpowered
 

@@ -1,25 +1,31 @@
 ---
 name: verify-implementation
 description: >
-  Generate reproducible verification evidence that an implementation plan was correctly
-  executed. Produces before/after comparisons, happy path demonstrations, edge case tests,
-  and structured evidence documents at ~/.claude/thoughts/shared/verification/.
+  Generate reproducible verification evidence against a task objective, acceptance criteria,
+  or implementation plan. Produces before/after comparisons, behavioral examples, and
+  structured evidence documents at ~/.claude/thoughts/shared/verification/.
   Use when asked to "verify the plan", "generate verification evidence", "run verification",
-  or at the /verify-implementation step in the workflow after /polish-code and /commit.
+  or verify an implementation. No formal plan, polish step, or commit is required.
 ---
 
 # Verify
 
-Generate reproducible evidence that an implementation plan was correctly executed.
+Generate reproducible evidence that an implementation meets its objective and acceptance criteria.
 
-## Step 1: Locate Plan
+## Step 1: Establish the Verification Contract
 
-- If plan path provided as argument, use it
-- Otherwise find most recent plan in `~/.claude/thoughts/shared/plans/` matching the current branch topic
-- Otherwise check `git log --oneline -20` for plan references
-- Otherwise ask user
+Use the supplied plan, task objective, and acceptance criteria. A formal plan is not required.
+If no source was supplied, inspect branch-linked plan references and task context; ask only if the objective remains unknown.
+Read the source completely. Confirm it belongs to this repository and task, not merely the newest file with a similar topic.
+In the steps below, "plan" includes the task objective and acceptance criteria; map outcomes by meaning when headings differ.
+Record the repository root, branch, target branch, base commit, and current head. Include uncommitted changes in the verified diff.
+Use the existing evidence document to record the actual assessor, input state, instructions actually read, and evidence.
+Do not claim that earlier evidence verifies edits made after its capture.
 
-Read the plan completely before proceeding.
+Honor any caller requirement for independent assessment. An independent assessor does not implement the changes it verifies.
+If this skill already runs in a fresh assessor worker, perform verification there; do not spawn another verifier solely for independence.
+Otherwise, when independence is required, delegate assessment to a fresh worker with the objective, criteria, repository, base, and working-tree scope.
+The implementer's own results can inform that worker, but cannot replace its assessment. Report a blocker if no independent worker is available.
 
 If a requirements doc path is provided (via `--requirements <path>` or as a second argument),
 read it fully. The requirements doc is optional — if not provided, skip all
@@ -28,18 +34,24 @@ in the evidence document).
 
 ## Live Testing Philosophy
 
-Live testing — starting the service locally and sending real requests — is the strongest
-form of verification evidence. It proves the implementation works end-to-end in a way
-that static code analysis and unit tests cannot.
+Verify the changed behavior directly through a relevant local interface. For a service,
+start it locally and call the changed endpoint. For UI changes, use a browser against the local application.
+For a library, run a focused executable example or behavioral test with actual inputs and outputs.
+For documentation or build-only changes, inspect the changed instructions or run the relevant local build or validation command;
+do not start an unrelated service.
 
-**Default**: ALWAYS attempt live testing.
-**Exception**: Only skip when technically impossible (no runnable service exists).
-**When skipped**: Document exactly why with specifics in the evidence document.
-**When successful**: ALWAYS include in the verification report:
+Keep verification local-only, including dependencies. Use existing local fixtures, fakes,
+or emulators where appropriate, and state what they do not verify. Do not call deployed
+or production services as a workaround. Do not copy secrets or weaken authentication automatically.
 
-- Raw/verbatim logging of every request sent and response received
-- Comprehensive reproduction instructions (prerequisites, build, startup, health check,
-  all test request commands, cleanup)
+Record commands, expected outcomes, actual output, and reproducible setup and cleanup.
+If a required local check cannot run, record the exact blocker and the criterion left unverified.
+An unavailable check is not a passing check.
+Before declaring an environmental blocker, trace the actual error through the local code and configuration.
+Missing implementation is FAIL, not an unavailable prerequisite. A permission denial needs the exact error
+and a request for the missing user action, not an assumption that verification is impossible.
+When a fix addresses a failed live scenario, repeat that scenario's setup, inputs, and action locally;
+a passing unit test alone does not confirm timing, state, or event-ordering behavior.
 
 ## Step 2: Parse Plan for Testable Assertions
 
@@ -54,7 +66,8 @@ Read the plan and extract testable assertions from these sections:
 - `## Testing Strategy` — test scenarios, edge cases, integration tests
 - `## What We're NOT Doing` — negative assertions (verify these didn't happen)
 
-Categorize extracted assertions as: command-based, behavioral, or negative.
+Categorize extracted assertions as: command-based, behavioral, structural, or negative.
+Structural outcomes include reuse, simpler control flow, naming, and comment changes; inspect them against their stated objective.
 
 ## Step 2b: Parse Requirements for Verifiable Criteria (if requirements doc provided)
 
@@ -77,15 +90,18 @@ Categorize each criterion by verification method:
 
 ## Step 3: Analyze Code Changes
 
-Identify what changed relative to the base branch:
+Use the base commit recorded in Step 1, honoring any task-supplied base. If no base was
+supplied, establish it from the task's actual target branch and record the resolved commit;
+ask if the target is ambiguous. Do not assume `origin/master` or silently substitute another base.
 
-```bash
-BASE_BRANCH=$(git merge-base --fork-point origin/master HEAD 2>/dev/null || echo "origin/master")
-git diff --name-only $BASE_BRANCH...HEAD
-git diff --stat $BASE_BRANCH...HEAD
-```
+Compare that commit directly with the current working tree, not only with HEAD or a
+three-dot committed diff. Git's diff against a commit includes tracked staged and unstaged
+changes. Inspect repository status and separately list and read relevant untracked files,
+which Git diff does not include. Record excluded unrelated files and why they are outside
+this task. Include modified, added, and deleted files in the scope summary.
 
-Summarize: files modified, files added, files deleted. Note the scope of changes.
+Record the actual comparison commands and working-tree state with the evidence. If that
+state changes during verification, identify affected checks and rerun them.
 
 ## Step 4: Objective Alignment Check
 
@@ -94,10 +110,20 @@ Compare the code changes (Step 3) against the plan's Overview and Desired End St
 For each desired end state item:
 
 - Identify the implementation evidence (file paths, code changes)
-- Mark as PASS (evidence exists), FAIL (no evidence), or GAP (partial)
+- Mark implementation alignment as PASS (evidence exists), FAIL (contradictory evidence), or GAP (missing/partial).
+  This is not a behavioral verdict; link required execution evidence before claiming verification PASS.
 
 Flag any **drift** — code changes that don't map to any plan item.
 Flag any **gaps** — plan items without corresponding implementation.
+
+Independently check ALL recorded review and simplification candidates against the final diff and evidence,
+including applied, rejected, filtered, duplicate, skipped, and blocked outcomes, not only admitted findings.
+Check each outcome's reason: an evidence-backed invalid premise or inapplicability can justify rejection;
+low priority alone cannot justify leaving a valid, safe, in-scope recommendation unapplied.
+Verify structural outcomes by source inspection as well as runtime outcomes by direct local checks.
+Keep unsafe fixes and unresolved design/scope decisions blocked, without weakening tests or contracts.
+Record this assessment in the existing objective alignment/evidence sections. Unresolved required recommendations,
+material concerns, or required coverage gaps prevent PASS, even when no bug finding is admitted.
 
 ## Step 4b: Requirements Alignment Check (if requirements doc provided)
 
@@ -108,10 +134,11 @@ For each acceptance criterion from Step 2b:
    test scenario(s) will directly verify this criterion. A live test that exercises the
    GIVEN/WHEN/THEN path is stronger evidence than code inspection alone.
 3. **Assign status**:
-   - PASS: Verified by live test scenario (strongest) or code evidence (sufficient)
-   - FAIL: No evidence found
-   - GAP: Partial evidence — code exists but no live test covers it
-   - DEFERRED: Cannot be verified locally (e.g., requires production metrics)
+   - PASS: Direct local evidence meets the criterion; inspection alone suffices only for an inspection-based criterion
+   - FAIL: Observed behavior contradicts the criterion
+   - GAP: Missing or partial evidence, including required behavior supported only by code inspection
+   - BLOCKED: A required local check cannot run; include its exact prerequisite or error
+   - DEFERRED: Cannot be verified locally (e.g., requires production metrics); do not send production requests
 
 For scope items:
 
@@ -128,9 +155,8 @@ For v1, the following domains produce verification examples:
 - **Backend API** — gRPC/REST services with request/response verification
 - **Infrastructure/Skills** — file existence, content matching, command output verification
 
-All domains may trigger Step 8 (Live Service Testing) — see Step 8 for the mandatory
-live testing policy. Domain detection informs the verification approach but does NOT
-gate whether live testing is attempted.
+Use the changed behavior, not the domain label, to select the relevant local interface
+in Step 8. A runnable service elsewhere in the repository does not make service testing relevant.
 
 ## Step 6: Verification Strategy Selection
 
@@ -142,8 +168,8 @@ Based on plan content, determine which example types to include:
 | **Before/After**         | Filtering, removal, transformation, behavioral changes                                                                                 | As warranted                                                                          |
 | **Edge Cases**           | Special inputs, boundary conditions, format variations                                                                                 | As warranted                                                                          |
 | **Failure Modes**        | Error handling, timeouts, retries, fallbacks                                                                                           | As warranted                                                                          |
-| **Live Service Testing** | Always, unless technically impossible (no runnable service exists — e.g., pure library, data pipeline, or infrastructure-only changes) | Agent determines count based on code complexity, branching paths, and plan objectives |
-| **Regression**           | Always                                                                                                                                 | Existing test suites must pass                                                        |
+| **Direct Local Verification** | Always, using an interface relevant to the change | Service request, local browser interaction, executable library example, or relevant document/build validation |
+| **Regression**           | Relevant existing checks | Select suites that cover the affected behavior; record blockers |
 
 Use agent judgement to determine relevance — do not rely on rigid keyword matching.
 
@@ -151,33 +177,25 @@ Document the selected strategy and rationale in the evidence document.
 
 ## Step 7: Execute Automated Verification
 
-Run each command from the plan's `#### Automated Verification:` sections across all phases.
-Record PASS/FAIL for each with the command output.
+Collect the required local commands from the plan's automated verification sections and existing formatter/lint checks.
+Use `${CLAUDE_PLUGIN_ROOT}/skills/shared-references/language-agent-registry.md` to identify relevant existing test
+suites from changed languages and test files. Deduplicate overlapping commands and scenarios
+across Steps 7–9; reuse results from the same verified state rather than rerunning suites.
 
-Also run test suites identified via `${CLAUDE_PLUGIN_ROOT}/skills/shared-references/language-agent-registry.md`:
-
-- Detect languages from changed file extensions
-- Find test files using the Test File Detection patterns
-- Execute the appropriate test commands
-
-If a command fails, capture the error output and continue with remaining commands.
+Run the selected commands and record their output, exit status, and expected result.
+If a command fails, capture the error and continue with independent checks. Attribute the
+failure to the change or establish an independent cause before calling it unrelated.
+A successful test count alone does not demonstrate the changed behavior; retain the
+scenario-level evidence required in Step 9.
 
 ## Step 8: Live Service Testing
 
-> **Mandatory by default.** Live testing is the DEFINITIVE way to verify that an
-> implementation works. The agent MUST attempt to start the service locally and run
-> live requests against it. Only skip this step when it is technically impossible —
-> for example, the changes are to a pure library with no runnable service, a data
-> pipeline that cannot be run locally, or infrastructure-only files with no service
-> component.
->
-> When live testing is skipped, the evidence document MUST include a section explaining
-> exactly WHY with specifics (not just "not applicable" — state what was checked and
-> why no service exists to test).
+Start a local service when its changed behavior requires request/response verification.
+For other changes, use the relevant local interface defined in Live Testing Philosophy
+and Step 9. Record the selected interface and rationale; do not substitute an unrelated endpoint.
 
-Read `references/live-testing-guide.md` for the full procedure.
-
-The agent starts the service itself — do NOT ask the user to start it.
+For service checks, read `references/live-testing-guide.md`. Start the service yourself
+using the repository's documented local setup. Verify dependencies are local before sending requests.
 
 ### Direct Testing Requirement
 
@@ -186,38 +204,23 @@ different, pre-existing endpoint as a proxy. Testing `SendMessage` to "validate 
 underlying dependencies" when the PR adds a `Search` RPC does not verify the new code
 path and produces misleading evidence.
 
-If the service cannot be started locally (e.g., missing secrets, infrastructure
-dependencies):
-
-1. **Investigate and resolve** — common blockers have known solutions (see
-   "Common Local Startup Blockers" in `references/live-testing-guide.md`):
-   - Secret-store lookup failure → use the local secret-override setting in user conf
-   - PubSub → run `gcloud beta emulators pubsub start`
-   - NLS resolution → set `apollo.domain` to a real environment
-   - Service auth → prefer an in-process integration test with a fake gRPC stub;
-     disabling `serviceauth.enabled` in `-user.conf` requires explicit user
-     permission (auto-mode classifies it as auth-weakening)
-2. **If unresolvable**, stop and ask the user:
-   - Explain what is blocking direct testing
-   - Propose workarounds (e.g., testing a related endpoint, calling the deployed
-     service if the branch is deployed)
-   - Get explicit confirmation before proceeding with any workaround
-3. **If a workaround is used**, the evidence document MUST:
-   - Label the section "Live Service Testing (Workaround)" not "Live Service Testing"
-   - State clearly what was tested and why it is NOT a direct test of the new code
-   - Explain what the workaround does and does not verify
-   - List what remains unverified and would need direct testing post-deploy
+If local startup is blocked, inspect the error and documented local test setup.
+Use an existing in-process integration test or local fake only if it exercises the changed
+behavior directly. Record its limits, especially any untested transport or authentication behavior.
+Do not copy secrets, change global credentials, weaken authentication, or route to remote services.
+If no safe local route exists, report the exact error, attempted local remedies, and unverified
+criteria as BLOCKED. Ask for the missing prerequisite when user action is required; continue
+independent checks without claiming that they replace the blocked check.
 
 ### Phase 1: Service Startup
 
-1. Auth pre-flight check (ADC, service account impersonation, if applicable)
-2. Detect build system and Main class
-3. Build the project
-4. Start the service as a background process
-5. Poll for readiness (up to 60 seconds via gRPC health check)
-6. On failure: consult "Common Local Startup Blockers" in `references/live-testing-guide.md`,
-   attempt fixes, and retry. If still failing after investigation: capture error, record
-   as FAIL, proceed to Step 9
+1. Inspect documented local configuration, authentication, and dependency targets.
+2. Detect the relevant build target and entry point.
+3. Build only if an earlier check has not already produced the required artifacts.
+4. Start the service locally; retain its process handle and logs.
+5. Check readiness with a bounded timeout using the service's documented local interface.
+6. On failure, inspect the error and safe local remedies in the guide. Record a behavior
+   failure as FAIL or an unavailable prerequisite as BLOCKED, then continue independent checks.
 
 ### Phase 2: Test Scenario Generation
 
@@ -230,51 +233,40 @@ dependencies):
 
 ### Phase 3: Execute Scenarios
 
-- Before/After scenarios: capture after → checkout base → build → start → capture before → compare → return to feature branch
+- Before/After scenarios: capture after in the unchanged feature checkout, then capture before
+  in a separate baseline worktree at the recorded base commit. Follow the guide's isolation procedure.
 - Standard scenarios: construct request → send → capture response → validate (objective alignment, field presence, values) → record PASS/FAIL
 
 ### Phase 4: Record Results and Cleanup
 
-- Stop the service (`kill $SERVICE_PID`)
+- Stop only the service processes started for verification, using retained process handles.
+- Preserve feature checkout changes and report retained baseline worktrees; deletion requires explicit authorization.
 - Format: summary table + expandable details per scenario (see output-template.md)
 
-## Step 9: Execute Verification Examples and Generate Script
+## Step 9: Execute and Record Verification Examples
 
-For each example type selected in Step 6:
+For each example type selected in Step 6, reuse existing repository commands and evidence
+from Steps 7–8. Execute only missing scenarios. Record each unique execution once and link
+it to every criterion it covers. Rerun only when the verified state changes or a check needs confirmation.
+After later fixes, independently refresh affected candidate conclusions and scenarios, including structural outcomes;
+do not rerun the entire implementation/review chain. Reuse unaffected evidence with its original provenance.
 
-1. Build a standalone verification script at:
-   `~/.claude/thoughts/shared/verification/scripts/verify-DESCRIPTION.sh`
-   following the structure in `references/script-template.sh`
-2. Execute the script and capture output
-3. Record results for the evidence document
+A wrapper script is optional. Create one outside the repository only when existing commands
+cannot express the required sequence clearly. Do not use `references/script-template.sh`.
+If needed, record its path and full reproduction commands. It must retain actual command
+output and exit status, compare results with explicit expectations, list failed and blocked
+checks, and return nonzero for any required failed, blocked, or missing check.
 
-Create the `scripts/` directory if it doesn't exist:
-
-```bash
-mkdir -p ~/.claude/thoughts/shared/verification/scripts
-```
-
-### Script Structure Requirements
-
-Each check in the verification script MUST include:
-
-- **Description**: A natural language sentence explaining what scenario is being verified (e.g., "SKILL.md has valid YAML frontmatter with name field")
-- **Expected outcome**: What the successful result looks like (e.g., "Frontmatter contains name: verify")
-- **PASS/FAIL output**: Using the `run_check` function from `references/script-template.sh`
-
-The script MUST:
-
-- Run ALL checks even if some fail (don't stop on first failure)
-- Print a summary at the end listing total/passed/failed counts
-- List failed checks by name in the summary
-- Exit with code 1 if any check failed, 0 if all passed
+Zero required checks executed cannot produce PASS, even when a command or wrapper exits zero.
+Record this as PARTIAL with the missing coverage. PASS requires every required criterion to
+have relevant passing evidence, not merely a successful command exit.
 
 ### Before/After Examples
 
 Read `references/domain-strategies.md` for domain-specific before/after procedures:
 
 - **Infrastructure/Skills**: Compare file contents and command outputs between base and feature branch
-- **Backend API**: Capture responses from running service, then checkout base branch to capture baseline
+- **Backend API**: Capture local responses in the feature checkout and isolated baseline worktree
 
 ### Happy Path / Edge Cases / Failure Modes
 
@@ -283,13 +275,21 @@ Read `references/domain-strategies.md` for domain-specific before/after procedur
 
 ### Per-Check Recording
 
-For each check, record (in both the script output AND the evidence document):
+For each scenario, connect the objective to precise setup, inputs, action, expected output, and observed output.
+Cover relevant boundary, failure, and unchanged-behavior scenarios as well as the happy path.
+For coupled calculations, include accepted inputs where their limits differ; check that their advice remains consistent.
+For libraries without a runnable service, execute the changed behavior through a focused example or behavioral test.
+Include its actual input and output, not only a test name or pass count.
+A reviewer must understand what the evidence proves without opening the code or a local report.
+Distinguish observed results from expectations, code inspection, and unverified claims.
+
+For each check, record in the evidence document (and optional wrapper output):
 
 - **Description** — natural language sentence: what scenario is being verified
 - **Expected outcome** — what success looks like
-- **Command** — exact command executed
-- **Actual result** — what was observed
-- **Verdict** — PASS/FAIL with the description repeated for identification
+- **Command** — exact command executed and working directory; for UI checks, include browser actions and local URL
+- **Actual result** — observed output and exit status, or browser observations and screenshots, with sensitive values explicitly redacted
+- **Verdict** — PASS/FAIL/BLOCKED with the description repeated for identification
 
 ## Step 10: Generate Evidence Document
 
@@ -304,24 +304,30 @@ mkdir -p ~/.claude/thoughts/shared/verification
 
 Follow the template in `references/output-template.md`. The document includes:
 
-- Header with plan reference, branch, commit, and date
-- Plan objective (from Overview)
+- Header with objective/criteria/plan source, repository root, branch, target branch, recorded base, head, working-tree scope, and date
+- Task objective and acceptance criteria (from the supplied source)
+- Actual assessor, independence when required, input state, instructions actually read, and evidence
 - Verification strategy (from Step 6)
-- Objective alignment results table (from Step 4)
+- Objective alignment results table, including every recorded candidate outcome and remaining concerns/coverage limits (from Step 4)
 - Automated verification results table (from Step 7)
 - All verification examples with assertions (from Step 9)
 - Test suite results table
 - Negative assertions (from "What We're NOT Doing")
 - Summary table with category counts
-- Verdict: **PASS** (all pass), **FAIL** (any critical failure), or **PARTIAL** (non-critical failures)
-- Reproduction instructions referencing the verification script
-- Raw request/response transcripts appendix (mandatory for Backend API — see output-template.md)
+- Verdict: **PASS** only when all required criteria have passing evidence and at least one required check executes;
+  **FAIL** when a required check demonstrates incorrect behavior; otherwise **PARTIAL** for blocked, deferred, or missing coverage
+- Reproduction instructions using exact existing commands, with an optional wrapper only when needed
+- Actual inputs and outputs for direct behavioral checks, including local request/response transcripts for service scenarios
 
 ## Step 11: Report Results
 
+Write the user-facing report in ASD-STE100 Simplified Technical English (STE). Give findings first, then open questions.
+Use active voice, one idea per sentence, at most 20 words per instruction and 25 per description.
+Define technical terms on first use. Keep paths, identifiers, and verbatim output exact.
+
 Present to the user:
 
-- The verdict (PASS / FAIL / PARTIAL)
+- The verdict (PASS / FAIL / PARTIAL) and its meaning for the task objective
 - Summary table from the evidence document
 - Path to the full evidence document
 - If any FAIL: highlight what needs attention and suggest next steps

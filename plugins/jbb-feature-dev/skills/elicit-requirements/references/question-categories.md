@@ -125,7 +125,7 @@ Examples:
 ### 8. Non-Functional Requirements
 
 **Wave**: 2
-**Why research can't answer**: /operational-context gets current metrics; humans know the TARGET for new features.
+**Why research can't answer**: research can read current metrics; humans know the TARGET for new features.
 **Example**: "Any specific latency budget, throughput target, or availability requirement for this feature?"
 **Skip if**: Task is internal tooling with no SLO, or operational context doc already specifies targets.
 
@@ -173,7 +173,7 @@ Generate 2-4 questions from the most relevant dimensions above, adapting wording
 **12. Timeout & Latency Budget**
 **Wave**: 3
 "What's the latency budget for this new codepath? How does it fit within the upstream timeout?"
-**Skip if**: /operational-context already specifies latency constraints.
+**Skip if**: an operational context document already specifies latency constraints.
 
 **13. Error Response Design**
 **Wave**: 3

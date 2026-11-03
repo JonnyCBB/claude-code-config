@@ -3,7 +3,7 @@
 
 Contract: ~/.claude/docs/conductor-communication-contract.md
 Notes:    ~/.claude/docs/conductor-communication-check.md
-Bead:     jbrooksbartlett-5r44
+Bead:     hq-5r44
 
 WHAT THIS IS FOR
 The contract's core rule - "a bare identifier from the conductor is never
@@ -22,7 +22,7 @@ which then re-issues a corrected message.
 Honest limitation, verified empirically: the Stop hook fires AFTER the text has
 been streamed to the terminal. This corrects the record inside the same turn; it
 does not prevent the first display. No hook event can gate assistant text before
-display - only tool calls can be gated pre-display (see jbrooksbartlett-g67x).
+display - only tool calls can be gated pre-display (see hq-g67x).
 
 SELF-SCOPING
 This hook is registered user-wide in ~/.claude/settings.json, so it fires in
@@ -65,8 +65,11 @@ DEFAULT_BEADS_DIR = os.path.join(os.path.expanduser("~"), "beads-hq", ".beads")
 # Shared patterns and vocabularies
 # --------------------------------------------------------------------------
 
+BEAD_PREFIX = os.environ.get("COMMS_CHECK_BEAD_PREFIX", "hq")
 FULL_FORM_RE = re.compile(
-    r"(?<![A-Za-z0-9_-])jbrooksbartlett-[a-z0-9]+(?:\.[0-9]+)?(?![A-Za-z0-9_-])"
+    r"(?<![A-Za-z0-9_-])"
+    + re.escape(BEAD_PREFIX)
+    + r"-[a-z0-9]+(?:\.[0-9]+)?(?![A-Za-z0-9_-])"
 )
 WORD_RE = re.compile(r"[A-Za-z][A-Za-z'/-]*")
 MARKUP_RE = re.compile(r"[`*_|#>\[\]()]")
@@ -101,7 +104,7 @@ bd agent-deck git gh tmux cd claude python3 python bash sh jq curl make npm uv o
 
 # Labels that mark a bare handle rather than prose, as in template 8.3's
 # "Watch it: session <name> | ...".
-HANDLE_LABELS = frozenset("watch session tmux branch worktree pr url chirp".split())
+HANDLE_LABELS = frozenset("watch session tmux branch worktree pr url".split())
 
 # A first mention needs a real description; a later mention in the same message
 # may drop to a short plain name (contract section 2). Both still need the name
@@ -181,7 +184,7 @@ def _is_noun_usage(masked: str, start: int, end: int,
     it suggests verb usage. Called only for habit words with a non-empty
     skip_after set -- currently only "surface".
 
-    COST ASYMMETRY (jbrooksbartlett-7qau): a false positive (flagging a noun,
+    COST ASYMMETRY (hq-7qau): a false positive (flagging a noun,
     blocking a correct message) costs a re-send and erodes trust in the check.
     A false negative (missing a verb) is minor. Unambiguous verb forms (-ing,
     -ed) always flag. Ambiguous forms (base, plural) require the ABSENCE of
@@ -324,7 +327,7 @@ SHAPE_KINDS = (
 # demanding a description at every mention is how a check earns itself a
 # disabling. So a path is flagged only when it stands completely alone - in a
 # table cell or as a whole bullet - which is the shape that actually left him
-# with nothing to read. Tracked for widening in jbrooksbartlett-0vfp.
+# with nothing to read. Tracked for widening in hq-0vfp.
 # The leading segment is BOUNDED and lazy. An unbounded greedy `+` before a
 # mandatory `/` is quadratic - the engine retries the slash search from every
 # reduced prefix at every offset. Measured before this fix: 200,000 characters of
@@ -493,7 +496,7 @@ def load_live_identifiers() -> tuple[dict[str, str], list[str]]:
 
 # Bead suffixes are 3-4 characters, so they collide with ordinary English and
 # with bare numbers. Measured against the live queue on 2026-08-18: of 450
-# beads, `part` is a real suffix (`jbrooksbartlett-part`) and eleven suffixes are
+# beads, `part` is a real suffix (`hq-part`) and eleven suffixes are
 # pure digits (`280`, `201`, `848`, `867`, ...). In six real 2026-08-15 conductor
 # messages, all three occurrences of "part" were ordinary English ("the part
 # that matters") and every genuine bead reference was written inside backticks.

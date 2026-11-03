@@ -40,7 +40,6 @@ assert_not_contains "$F" "API/Interface.*Public API modifications" "API/Interfac
 # --- Verification embedding rewritten for nested collapsibles ---
 # Anchored on specific phrases the GREEN step commits to producing.
 assert_contains "$F" "Verification details" "Verification details Level-1 collapsible documented (literal phrase)"
-assert_contains "$F" "ls -t ~/.claude/thoughts/shared/verification" "verification report detection bash preserved"
 assert_contains "$F" "Acceptance [Cc]riteria [Vv]erification" "Acceptance Criteria mapping included in Level-1"
 # Level-2 nesting: assert that a <details> tag occurs at least twice (Level-1 + Level-2 in the
 # example). Brittleness is acceptable here because the GREEN step renders both literally.

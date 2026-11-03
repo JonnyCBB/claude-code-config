@@ -107,7 +107,7 @@ _PATTERNS: tuple[tuple[re.Pattern[str], SecretCategory], ...] = (
     # flagged -- only addresses outside ATTRIBUTION_SAFE_DOMAIN are.
     (
         # Also skips GCP service accounts. They match the address shape but name
-        # no person, and one in a component's locus.yaml blocked a candidate's
+        # no person, and one in a component's cache config blocked a candidate's
         # portfolio file on a measured run.
         re.compile(
             r"[a-zA-Z0-9._%+-]+@(?!" + ATTRIBUTION_SAFE_DOMAIN + r"\b)"
@@ -139,7 +139,7 @@ _PATTERNS: tuple[tuple[re.Pattern[str], SecretCategory], ...] = (
             r"(?!test|example|dummy|placeholder|xxx|unknown|null|none)"
             # An opaque identifier contains at least one digit; a Java class name
             # usually does not, and is not followed by nothing. Without both
-            # guards, prose like "the user ID (ReasonedHybridFeedPage.java:193)"
+            # guards, prose like "the user ID (RankedHybridFeedPage.java:193)"
             # matched, because that class name is 22 characters of the value
             # class -- and on a measured run that false positive cost a verified
             # candidate its portfolio file entirely, since a blocked write is

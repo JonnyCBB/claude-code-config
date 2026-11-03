@@ -10,12 +10,10 @@ Read this file when Steps 4-6 instruct you to `Read references/verification-and-
 - [Synthesis Instructions (Step 5)](#synthesis-instructions-step-5)
 - [Research Completeness Review (Step 6)](#research-completeness-review-step-6)
 - [Evaluator Sub-Agent](#evaluator-sub-agent)
-- [Completeness Review Format](#completeness-review-format)
 - [Completeness Evaluation Criteria](#completeness-evaluation-criteria)
 - [Adequate Answer Flow](#adequate-answer-flow)
 - [Inadequate Answer Flow](#inadequate-answer-flow)
 - [Maximum Iterations Rule](#maximum-iterations-rule)
-- [State Machine for Research Flow](#state-machine-for-research-flow)
 
 ---
 
@@ -26,15 +24,16 @@ Before proceeding to synthesis, verify ALL of the following and show this checkl
 ```
 ## Step 4 Validation Checklist
 
-Reviewing agent commitments from Step 2 against actual agents spawned:
+Reviewing Step 2 question-to-role assignments against delivered evidence:
 
-- For each question that mentioned "codebase-explorer":
-  - Have I spawned the codebase-explorer agent? If NO -> STOP and spawn it now
-
-- Cross-check against Agent Type Verification from Step 2:
-  - All agent types listed there must be spawned before synthesis
-  - Count: [X agent types listed, Y agent types spawned]
-  - If X != Y: STOP and spawn missing agents
+- Match every stable question ID and assigned role from Step 2 to a delivered report and
+  its evidence. Include approved Direct-question answers separately.
+- Verify the actual agent type, task ID, artifact, source coverage, and unresolved IDs for
+  each assignment. Equal planned/spawned counts do not prove assignment coverage or delivery.
+- Stop if no researcher delivers. A zero-delivery run is never valid, even when counts match.
+  Revisit questions classified Direct only because the coordinator already read something.
+- Apply SKILL.md's bounded delivery recovery to missing assignments. If mandatory delivery
+  remains missing, save an incomplete checkpoint; do not substitute self-review.
 
 **If any checkbox is unchecked, return and complete missing items before synthesis.**
 ```
@@ -54,13 +53,13 @@ ONLY AFTER all research agents complete:
 - Call `TaskList` — verify all research agent tasks show `completed` before synthesis starts
 - Call `TaskUpdate` to mark the Step 5 task as `in_progress` (if not already done)
 - Compile all sub-agent results (codebase, thoughts and external documentation findings)
-- Prioritize live codebase and latest documentation findings as primary source of truth
+- Choose direct sources for each claim: live systems for state, code for implementation,
+  original records for decisions, and public sources for external facts
 - Use ~/.claude/thoughts/ findings as supplementary historical context
 - Connect findings across different components
 - Include specific file paths and line numbers for reference
 - Verify all ~/.claude/thoughts/ paths are correct
 - Highlight patterns, connections, and architectural decisions
-- Identify specific service/component names mentioned in findings (for operational-context recommendation)
 - Answer the user's specific questions with concrete evidence
 - **Validate assumptions from Step 2**: For each assumption listed in the research plan:
   - CONFIRMED: Evidence supports the assumption
@@ -80,13 +79,13 @@ ONLY AFTER all research agents complete:
 
 ## Evaluator Sub-Agent
 
-Step 6 uses a dedicated evaluator sub-agent instead of self-evaluation because models
-reliably skew positive when grading their own work — a standalone evaluator with a mildly
-skeptical disposition catches gaps that self-evaluation misses.
-
 ### Evaluator Prompt Template
 
-Pass this prompt to the evaluator sub-agent (model: sonnet, no tools):
+Pass this prompt to the evaluator sub-agent (model: sonnet). The prompt tells it not to use
+tools; its tool roster need not be empty. Deliver the full plan, synthesis, cumulative
+ID/budget ledgers, and the canonical `## Materiality Filter` text from
+`references/grounding-pass.md` inline. Expand policy blocks; file paths do not deliver
+policy to a judge that must not read files. Check the assembled prompt for missing or truncated input.
 
 ```
 You are the Completeness Evaluator for a research document. Your job is to judge whether
@@ -117,12 +116,28 @@ inadequate findings proceed to documentation.
 identified gaps have been addressed]
 [/IF]
 
+## Cumulative Ledgers
+
+[CUMULATIVE_LEDGERS — stable IDs, assignments, evidence, classifications, corrections,
+prior outcomes, and remaining run-budget counters]
+
+## Materiality Filter
+
+[MATERIALITY_FILTER — the complete canonical section from references/grounding-pass.md,
+verbatim, not a paraphrase or path]
+
 ## Instructions
+
+Assess only the complete supplied evidence. Do not retrieve sources or call tools. Reject
+missing input; report evidence limits. This verdict checks supplied evidence, not independent
+empirical reproduction. Match question, criterion, claim, and flag IDs to evidence; list
+missing, duplicate, or substituted IDs. Counts are secondary. Retain IDs in every output row
+and assign stable IDs to new gaps and Needs Verification flags.
 
 Produce your evaluation using EXACTLY this format:
 
 ### Success Criteria Evaluation
-- [ ] Criterion 1: [MET/NOT MET] — Evidence: [brief summary]
+- [ ] Criterion [stable criterion ID]: [MET/NOT MET] — Evidence: [linked claim/source IDs and brief summary]
 ... (for each criterion from the research plan)
 
 ### Assumption Validation
@@ -131,13 +146,14 @@ Produce your evaluation using EXACTLY this format:
 
 ### Per-Question Assessment
 
-Question 1: [Question text]
+Question [stable question ID]: [Question text]
    Status: ADEQUATELY ANSWERED / NEEDS MORE INFO
    Evidence: [Brief summary of what was found OR what's missing]
    Confidence: [High/Medium/Low]
    Needs Verification: [YES/NO — flag YES if claims about tool behavior, API responses,
    or configuration effects have not been empirically verified. Do NOT attempt verification
    yourself — flag it for the grounding pass (Step 8).]
+   Verification flag ID: [stable ID linked to the question, claim, and required evidence]
 
 ... (for each question from the research plan)
 
@@ -145,14 +161,13 @@ Question 1: [Question text]
 
 PROCEED — all questions adequately answered AND all success criteria met
 OR
-ITERATE — a NEEDS MORE INFO gap exists that is material (resolving it could change a
-conclusion, recommendation, or tier classification — apply the Materiality Filter from
-`references/grounding-pass.md`'s `## Materiality Filter` section). A NEEDS MORE INFO gap
-that is not material does not justify ITERATE — note it as an Open Question instead.
+ITERATE — a NEEDS MORE INFO gap passes the supplied canonical Materiality Filter, or
+required decisive evidence is missing or self-reported only. A non-material gap does not
+justify ITERATE; record its ID and limit for Step 8 classification instead.
 
 [If ITERATE:]
 Missing information needed:
-1. [Specific gap identified] — [why it is material]
+1. [stable gap ID and originating IDs] [Specific gap identified] — [why it is material]
 
 Additional subagents to spawn:
 1. [subagent-type] to answer: [specific question about the gap]
@@ -177,59 +192,15 @@ After spawning the evaluator and receiving its verdict:
 - **Model**: sonnet
 - **Tools**: none — the evaluator receives only text, no file access, no MCP tools, no
   codebase exploration
-- **Input**: research plan (Step 2) + synthesized findings (Step 5) + prior evaluation
-  (iteration 2+ only)
+- **Input**: full research plan + synthesis + canonical materiality + cumulative ID/evidence
+  and budget ledgers + prior evaluation (iteration 2+ only), delivered inline
 
-## Completeness Review Format
+## Displaying the Verdict
 
-Output this section for the user to see:
-
-```
-## Research Completeness Review (Iteration N of 4)
-
-### Success Criteria Evaluation
-Evaluating success criteria from Step 2:
-- [ ] Criterion 1: [MET/NOT MET] — Evidence: [brief summary]
-- [ ] Criterion 2: [MET/NOT MET] — Evidence: [brief summary]
-... (for each criterion)
-
-### Assumption Validation
-- Assumption 1: [CONFIRMED/INVALIDATED/UNCERTAIN] — [brief evidence]
-- Assumption 2: [CONFIRMED/INVALIDATED/UNCERTAIN] — [brief evidence]
-
-### Per-Question Assessment
-Reviewing whether all questions from Step 2 have been adequately answered:
-
-Question 1: [Question text]
-   Status: ADEQUATELY ANSWERED / NEEDS MORE INFO
-   Evidence: [Brief summary of what was found OR what's missing]
-   Confidence: [High/Medium/Low from agent's Confidence Assessment]
-   Needs Verification: [YES/NO — flag YES when evidence describes tool behavior,
-   API responses, or configuration effects that have not been empirically verified]
-
-Question 2: [Question text]
-   Status: ADEQUATELY ANSWERED / NEEDS MORE INFO
-   Evidence: [Brief summary of what was found OR what's missing]
-   Confidence: [High/Medium/Low from agent's Confidence Assessment]
-   Needs Verification: [YES/NO — flag YES when evidence describes tool behavior,
-   API responses, or configuration effects that have not been empirically verified]
-
-... (for each question)
-
-### Decision
-
-PROCEED — all questions adequately answered AND all success criteria met
-OR
-ITERATE — a NEEDS MORE INFO gap exists that is material (see the Materiality Filter in
-`references/grounding-pass.md`). Non-material gaps are documented as Open Questions instead.
-
-[If ITERATE:]
-Missing information needed:
-1. [Specific gap identified] — [why it is material]
-
-Additional subagents to spawn:
-1. [subagent-type] to answer: [specific question about the gap]
-```
+Output the evaluator's verdict verbatim under the header
+`## Research Completeness Review (Iteration N of 4)`. The body is the evaluator's own
+output — it already carries the required format, because its prompt above specifies it.
+Do not re-render, re-order or summarize it.
 
 ## Completeness Evaluation Criteria
 
@@ -238,15 +209,15 @@ For EACH question from step 2, evaluate:
 - Do the subagent findings provide sufficient information to answer this question?
 - Are there gaps, ambiguities, or missing details?
 - Would the user be satisfied with the answer based on current information?
-- For findings that describe tool behavior, API responses, or configuration effects: the evaluator flags `Needs Verification: YES` in the Per-Question Assessment. The evaluator does not attempt verification itself (it has no tools). Verification is resolved in Step 8 (grounding pass), where the grounding agent can use the explicit flags alongside its existing detection heuristics.
+- For findings that describe tool behavior, API responses, or configuration effects: the evaluator flags `Needs Verification: YES` in the Per-Question Assessment. The evaluator does not attempt verification itself (it is told not to use tools). Verification is resolved in Step 8 (grounding pass), where the grounding agent can use the explicit flags alongside its existing detection heuristics.
 
 ## Adequate Answer Flow
 
 If ALL questions are adequately answered AND all success criteria are met:
 
 - Call `TaskUpdate` to mark the Step 6 task as `completed`
-- Proceed to Step 7 (review phase)
-- Note: For Simple complexity research, Step 7 may be skipped — proceed to Step 8 (grounding pass)
+- Proceed to Step 7. The review phase runs at every complexity; complexity chooses the
+  reviewer roster, never whether the phase happens.
 
 ## Inadequate Answer Flow
 
@@ -266,128 +237,16 @@ If ANY questions are inadequately answered:
 
 ## Maximum Iterations Rule
 
-- Maximum 4 rounds. Continue iterating only while a remaining gap passes the Materiality
-  Filter defined in `references/grounding-pass.md`'s `## Materiality Filter` section (would
-  addressing it change a conclusion, recommendation, or tier classification). At 4 rounds,
-  stop regardless of remaining material gaps and document them as "Open Questions" (same
-  fallback as before).
+- Maximum 4 rounds for completeness and, separately, for persona review. Continue only
+  while required gaps pass the canonical Materiality Filter in
+  `references/grounding-pass.md`. Bounds stop execution, not pass gates: remaining material
+  evidence gaps or blocking review items require an incomplete draft checkpoint with IDs,
+  attempts, evidence, and next actions, not a completed document.
 - This is the single canonical location for the round bound — other steps (Step 6/7 in
   `SKILL.md`, the Iteration Mechanism in `references/review-personas.md`) point here rather
   than re-stating the number, to avoid two independently-hardcoded values drifting apart.
-- Only proceed to step 7 when all questions are adequately answered, no remaining gap passes
-  the Materiality Filter, OR you have completed 4 rounds
-- Track iteration count and display it in the "Research Completeness Review" header
-
-## State Machine for Research Flow
-
-```
-┌─────────────────────────┐
-│ Questions Identified    │
-│ (Step 2)                │
-└────────────┬────────────┘
-             │
-             │ TaskCreate: agents as "pending"
-             │ DO NOT add synthesis yet
-             v
-┌─────────────────────────┐
-│ Spawn Agents (Step 3)   │◄────────────────┐
-│ Mark agents "in_progress"│                 │
-└────────────┬────────────┘                  │
-             │                                │
-             v                                │
-┌─────────────────────────┐                  │
-│ All Agents Complete?    │                  │
-│ (Step 4 Checkpoint)     │                  │
-└────────────┬────────────┘                  │
-             │ No: wait                       │
-             │ Yes: mark "completed"          │
-             v                                │
-┌─────────────────────────┐                  │
-│ Need Batch 2 Analyzers? │                  │
-│ (Step 4)                │                  │
-└────────────┬────────────┘                  │
-             │                                │
-         Yes │  No                            │
-             │                                │
-      ┌──────┴────────┐                      │
-      │               │                      │
-      v               v                      │
-┌───────────┐  ┌─────────────────────────┐  │
-│Spawn      │  │TaskCreate: synthesis    │  │
-│Batch 2    │  │Mark "pending"           │  │
-│Wait       │  └────────────┬────────────┘  │
-└─────┬─────┘               │                │
-      │                     │                │
-      └──────────┬──────────┘                │
-                 │                            │
-                 v                            │
-┌─────────────────────────┐                  │
-│ Mark Synthesis          │                  │
-│ "in_progress" (Step 5)  │                  │
-└────────────┬────────────┘                  │
-             │                                │
-             v                                │
-┌─────────────────────────┐                  │
-│ Synthesize Results      │                  │
-│ (Step 5)                │                  │
-└────────────┬────────────┘                  │
-             │                                │
-             │ Mark "completed"               │
-             v                                │
-┌─────────────────────────┐                  │
-│ Mark Validation         │                  │
-│ "in_progress" (Step 6)  │                  │
-└────────────┬────────────┘                  │
-             │                                │
-             v                                │
-┌─────────────────────────┐                  │
-│ Spawn Evaluator         │                  │
-│ Sub-Agent (Step 6)      │                  │
-│ model: sonnet, no tools │                  │
-│ Input: plan + synthesis │                  │
-│ + prior eval (iter 2+)  │                  │
-└────────────┬────────────┘                  │
-             │                                │
-             v                                │
-┌─────────────────────────┐                  │
-│ Evaluator Returns       │                  │
-│ Verdict                 │                  │
-└────────────┬────────────┘                  │
-             │                                │
-             v                                │
-┌─────────────────────────┐                  │
-│ Orchestrator Displays   │                  │
-│ Verdict & Acts on       │                  │
-│ Decision                │                  │
-└────────────┬────────────┘                  │
-             │                                │
-             v                                │
-      ┌──────┴──────┐                        │
-      │  Complete?  │                        │
-      └──────┬──────┘                        │
-             │                                │
-        Yes  │  No: Material gaps found       │
-             │  AND iteration < 4             │
-             │                                │
-      ┌──────┴────────┐                      │
-      │               │                      │
-      v               v                      │
-┌───────────┐  ┌─────────────────────────┐  │
-│Review     │  │TaskUpdate/TaskCreate:   │  │
-│Phase      │  │- Mark validation done   │  │
-│(Step 7)   │  │- Remove/revise synthesis│  │
-│           │  │- Add new agent tasks    │  │
-│           │  │- Add new synthesis task │  │
-│           │  │- Add new validation task│──┘
-│           │  │Mark new agents "pending"│
-└───────────┘  └─────────────────────────┘
-                Increment iteration N
-                RETURN to "Spawn Agents"
-```
-
-**Key State Transitions:**
-
-- `pending` -> `in_progress` -> `completed` for each task
-- Synthesis stays `pending` until ALL agents are `completed`
-- If gaps found, new iteration creates new pending tasks
-- Synthesis is NOT marked `completed` if gaps require more research
+- Proceed to Step 7 only after an independent PROCEED with no remaining material gap.
+  Missing mandatory delivery blocks approval after SKILL.md's bounded recovery.
+- Track both round counters in the parent's cumulative run-budget ledger and display the
+  completeness count in the "Research Completeness Review" header. Substantive revisions
+  return to completeness and affected reviewers using remaining counters, never new budgets.

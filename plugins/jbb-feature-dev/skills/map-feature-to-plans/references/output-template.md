@@ -1,110 +1,87 @@
 # Scoping Document Template
 
-Use this template when writing the scoping document in Step 5 of the map-feature-to-plans skill.
+For a single-plan result, keep the frontmatter, Splitting Decision and Autonomous
+Decisions sections and omit the rest.
 
----
-
-```markdown
+````markdown
 ---
 date: YYYY-MM-DD
 type: scoping
-source_research_doc: "[path to the research document]"
-feature_name: "[name of the feature being scoped]"
+source_research_doc: "[path]"
+feature_name: "[name]"
+plan_count: N
 status: draft
 ---
 
 # Scoping: [Feature Name]
 
-## Source Research Document
-
-[Link or path to the research document that was scoped]
-
-## Complexity Assessment
-
-- **Estimated files changed**: N
-- **Estimated LOC**: N
-- **Domains crossed**: [list]
-- **Risk level**: low / medium / high
-
 ## Splitting Decision
 
-**Decision**: Single plan / Multiple plans
-**Rationale**: [Why — which criteria triggered splitting, or why none triggered]
+**Decision**: Single plan / Multiple plans (N)
+**Justifications checked**: context fit, risk / landing order, checkpoint, separate
+delivery. [For each: holds or not, with the evidence.]
 
 ## Plan Outlines
 
-### Plan 0: Test Infrastructure (Wave 0)
+### Plan 1: [Name]
 
-> Only include if multiple plans depend on shared test infrastructure.
-> If only one plan needs test setup, keep it internal to that plan's Wave 0.
-
-- **Scope**: [shared fixtures, test utilities, framework config]
+- **Scope**: [end-to-end behaviour this plan delivers]
 - **Files**: [list]
 - **Dependencies**: None
 
-### Plan 1: [Feature Slice A]
+### Plan 2: [Name]
 
-- **Scope**: [what this plan covers — end-to-end behavior description]
-- **Files**: [list of files to be touched]
-- **Estimated LOC**: N
-- **Dependencies**: Plan 0 (if exists)
-
-### Plan 2: [Feature Slice B]
-
-- **Scope**: [what this plan covers]
+- **Scope**: [...]
 - **Files**: [list]
-- **Estimated LOC**: N
-- **Dependencies**: Plan 0 (if exists)
-
-## Wave 0 Assessment
-
-**Shared test infrastructure needed?**: Yes / No
-**Rationale**: [Do multiple plans depend on common test fixtures/helpers?]
+- **Justification**: [one of the four, with evidence]
+- **Dependencies**: Plan 1 ([the concrete artifact it needs])
 
 ## Dependency Graph
+
 ```
-
-Plan 0 (infra) ──→ Plan 1 (parallel with Plan 2)
-Plan 0 (infra) ──→ Plan 2 (parallel with Plan 1)
-Plan 1 ──→ Plan 3 (depends on Plan 1)
-
+Plan 1 ──→ Plan 2
+Plan 1 ──→ Plan 3 (parallel with Plan 2)
 ```
 
 ## Execution Wave Strategy
 
-| Wave | Plans | Execution |
-|------|-------|-----------|
-| 0 | Plan 0 (test infrastructure) | Sequential |
-| 1 | Plan 1, Plan 2 | Parallel |
-| 2 | Plan 3 | Sequential (depends on Wave 1) |
+| Wave | Plans          | Execution         |
+| ---- | -------------- | ----------------- |
+| 1    | Plan 1         | Sequential        |
+| 2    | Plan 2, Plan 3 | Parallel planning |
 
 ## PR Strategy
 
-**Estimated total diff**: N lines
-**Strategy**: Single PR / Stacked PRs / Stacked PRs + re-scope
-**Rationale**: [Based on adaptive thresholds from pr-strategy.md]
+**Strategy**: Single PR per repo / Stacked PRs
+**Rationale**: [which justification requires separate merges, or the repo precedent]
 
 ### Branch Chain
 
-> Only include when strategy is "Stacked PRs". Omit entirely for "Single PR per repo".
+Include only when the strategy is "Stacked PRs".
 
-| Plan | Branch Name | Base Branch | Estimated LOC |
-|------|-------------|-------------|---------------|
-| Plan 1 | feat/<prefix>-<slice-1> | master | N |
-| Plan 2 | feat/<prefix>-<slice-2> | feat/<prefix>-<slice-1> | N |
-| Plan 3 | feat/<prefix>-<slice-3> | feat/<prefix>-<slice-2> | N |
+| Plan   | Branch Name             | Base Branch             | Estimated LOC |
+| ------ | ----------------------- | ----------------------- | ------------- |
+| Plan 1 | feat/<prefix>-<slice-1> | master                  | N             |
+| Plan 2 | feat/<prefix>-<slice-2> | feat/<prefix>-<slice-1> | N             |
 
-**Rules**:
-- Branch names use the naming convention from pr-strategy.md
-- Base Branch for the first plan is always `master` (or the repo default branch)
-- Each subsequent plan's Base Branch is the previous plan's Branch Name (following the Dependency Graph order)
-- Independent plans (no dependency between them) both list `master` as their Base Branch — they are not stacked against each other
-- The Branch Chain table derives from the Dependency Graph and Execution Wave Strategy sections
+## Autonomous Decisions
 
-## Suggested Next Steps
+Non-interactive runs only.
 
-For each plan:
-- Plan 0: `/create-plan-tdd "Plan 0 outline"`
-- Plan 1: `/create-plan-tdd "Plan 1 outline"` (after Plan 0)
-- Plan 2: `/create-plan-tdd "Plan 2 outline"` (parallel with Plan 1, after Plan 0)
-```
+### Review Synthesis
+
+[Each Must Address item and how it was resolved; Should Consider items as advisory notes.]
+````
+
+## Branch Chain rules
+
+`implement-plan-tdd`, `submit-pr` and `rebase-stack` read the Branch Name and Base Branch
+columns and process rows top to bottom, so:
+
+- Row order is dependency order.
+- A plan with no upstream dependency has the repo default branch as its Base Branch.
+- A dependent plan's Base Branch is the Branch Name of the plan it depends on. A plan
+  with several upstreams needs them chained one after another above it, so its Base
+  Branch contains all of them.
+- Independent plans each list the default branch; they form separate stacks, not one
+  chain.

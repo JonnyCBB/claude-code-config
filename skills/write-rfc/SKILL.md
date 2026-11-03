@@ -1,7 +1,7 @@
 ---
 name: write-rfc
 description: Write a high-quality RFC following RFC best practices. Use when the user wants to create an RFC document with visual aids, editorial review, and technical review.
-argument-hint: [brief RFC topic description]
+argument-hint: "[brief RFC topic description]"
 ---
 
 # Write RFC

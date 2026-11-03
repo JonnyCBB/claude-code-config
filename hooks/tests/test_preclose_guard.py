@@ -26,7 +26,7 @@ TARGET = "targ-3333"
 OUTPUT = "the final answer"
 
 
-class GuardTest(unittest.TestCase):
+class GuardFixture(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
@@ -35,7 +35,12 @@ class GuardTest(unittest.TestCase):
             [
                 {"id": CONDUCTOR, "title": "conductor-hq", "is_conductor": 1},
                 {"id": WORKER, "title": "a-worker"},
-                {"id": TARGET, "title": "a-target", "tool": "claude"},
+                {
+                    "id": TARGET,
+                    "title": "a-target",
+                    "tool": "claude",
+                    "tmux_session": "agentdeck_targ_3333",
+                },
             ],
             self.root / "reg",
         )
@@ -48,11 +53,13 @@ class GuardTest(unittest.TestCase):
             "PRECLOSE_EVIDENCE_ROOT": str(self.root / "evidence"),
         }
 
-    def run_guard(self, command, instance_id, cwd="/tmp", output=OUTPUT, db=None):
+    def run_guard(
+        self, command, instance_id, cwd="/tmp", output=OUTPUT, db=None, run=None
+    ):
         return guard.main(
             fixtures.payload(command, cwd=cwd),
             self.env(instance_id, db),
-            run=fixtures.fake_output(output),
+            run=run if run is not None else fixtures.fake_deck(output, panes=["quiet"]),
         )
 
     def give_receipt(self, session_id=TARGET, **kwargs):
@@ -65,6 +72,8 @@ class GuardTest(unittest.TestCase):
 
     # ---- the three observations, as unit cases ----
 
+
+class GuardTest(GuardFixture):
     def test_a_conductor_removal_without_a_receipt_is_denied(self):
         self.assertEqual(
             self.run_guard("agent-deck session remove %s" % TARGET, CONDUCTOR), 2
@@ -207,14 +216,12 @@ class GuardTest(unittest.TestCase):
         calls = []
         import subprocess as sp
 
+        deck = fixtures.fake_deck(OUTPUT, panes=["quiet"])
+
         def counting_run(argv, timeout):
-            calls.append(argv)
-            return sp.CompletedProcess(
-                argv,
-                0,
-                '{"content": "%s", "success": true, "timestamp": "t"}' % OUTPUT,
-                "",
-            )
+            if "session" in argv and "output" in argv:
+                calls.append(argv)
+            return deck(argv, timeout)
 
         code = guard.main(
             fixtures.payload("agent-deck session remove %s" % TARGET),
@@ -395,9 +402,7 @@ class GuardTest(unittest.TestCase):
         guard.lib.agent_deck_binary = lambda: "/usr/bin/true"
         self.addCleanup(setattr, guard.lib, "agent_deck_binary", original)
         self.assertEqual(
-            self.run_guard(
-                "agent-deck session remove %s 2>&1" % TARGET, CONDUCTOR
-            ),
+            self.run_guard("agent-deck session remove %s 2>&1" % TARGET, CONDUCTOR),
             0,
         )
 
@@ -491,6 +496,86 @@ class EntryPointContractTest(unittest.TestCase):
         self.assertEqual(result.returncode, 2)
         self.assertEqual(result.stdout, "")
         self.assertIn("BLOCKED", result.stderr)
+
+
+class GuardLivenessTest(GuardFixture):
+    """The re-check at removal time, through guard.main rather than around it.
+
+    Every row in the fixture above used to leave `tmux_session` empty, so
+    last_activity_stamp returned "" before the runner was ever consulted and
+    _liveness_verdict resolved on its allow branch in every guard test. Replacing
+    the whole body of live_activity_stamp with `return ""` - the feature deleted -
+    left all six modules green.
+    """
+
+    def test_a_session_that_started_working_again_is_denied_at_removal_time(self):
+        self.give_receipt()
+        code = self.run_guard(
+            "agent-deck session remove %s" % TARGET,
+            CONDUCTOR,
+            run=fixtures.fake_deck(OUTPUT, panes=["quiet"], activity="999"),
+        )
+        self.assertEqual(code, 2)
+
+    def test_a_session_whose_terminal_has_not_moved_is_still_allowed(self):
+        self.give_receipt()
+        self.assertEqual(
+            self.run_guard("agent-deck session remove %s" % TARGET, CONDUCTOR), 0
+        )
+
+    def test_a_terminal_the_guard_cannot_re_read_is_denied(self):
+        self.give_receipt()
+        code = self.run_guard(
+            "agent-deck session remove %s" % TARGET,
+            CONDUCTOR,
+            run=fixtures.fake_deck(OUTPUT, panes=["quiet"], list_rc=1),
+        )
+        self.assertEqual(code, 2)
+
+    def test_no_tmux_is_spawned_for_a_target_with_no_receipt(self):
+        # live_activity_stamp costs two subprocesses per target on a hook that
+        # runs for every Bash call, so it must stay behind the cheap rejections.
+        calls = []
+
+        def run(argv, timeout):
+            calls.append(argv)
+            return fixtures.fake_deck(OUTPUT, panes=["quiet"])(argv, timeout)
+
+        self.assertEqual(
+            self.run_guard("agent-deck session remove %s" % TARGET, CONDUCTOR, run=run),
+            2,
+        )
+        self.assertEqual([a for a in calls if "has-session" in a], [])
+
+
+class LiveActivityStampTest(GuardFixture):
+    def row(self):
+        return {"tmux_session": "agentdeck_targ_3333", "tmux_socket_name": ""}
+
+    def test_an_expired_budget_refuses_rather_than_asking(self):
+        import time as _time
+
+        self.assertIsNone(
+            guard.live_activity_stamp(
+                self.row(), fixtures.fake_deck(panes=["quiet"]), _time.monotonic() - 1
+            )
+        )
+
+    def test_the_clamp_is_shared_across_both_tmux_calls(self):
+        # The helper spends its timeout on has-session AND list-panes, so a clamp
+        # passed whole is a per-call limit wearing the name of a total. Measured
+        # at 9.8s inside a 7s budget before this was halved.
+        import time as _time
+
+        timeouts = []
+
+        def run(argv, timeout):
+            timeouts.append(timeout)
+            return fixtures.fake_deck(panes=["quiet"])(argv, timeout)
+
+        guard.live_activity_stamp(self.row(), run, _time.monotonic() + 100)
+        self.assertTrue(timeouts)
+        self.assertLessEqual(sum(timeouts), 3.0)
 
 
 if __name__ == "__main__":

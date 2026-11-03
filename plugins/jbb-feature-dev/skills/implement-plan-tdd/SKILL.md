@@ -25,7 +25,7 @@ Parse `$ARGUMENTS` for `--non-interactive` flag and plan path.
 - **Interactive** (default): stop on mismatches and present to user with options. Wait for response before continuing.
 - **No arguments**: prompt user for a plan path.
 - **`--scoping-doc <path>`** (optional): Path to a scoping document from `/map-feature-to-plans`. When provided and the scoping doc specifies "Stacked PRs" strategy, the orchestrator creates chained branches (one per plan) instead of merging all work onto a single branch. Without this flag, all behavior is unchanged.
-- **`--skip-final-review`** (optional): Skip Steps 6-7 (final code quality review and guideline compliance). Pass this when a calling pipeline (e.g., `/orchestrate-feature-dev`) runs `/simplify` and `/code-review` on the cumulative diff afterwards — running both duplicates the work. Standalone invocations should omit it.
+- **`--skip-final-review`** (optional): Skip Steps 6-7 (final code quality review and guideline compliance). Pass this when a caller runs Claude's built-in `/simplify` and `/jbb-feature-dev:code-review` on the cumulative diff afterwards — running both duplicates the work. Standalone invocations should omit it.
 
 ## Step 1: Load Plan and Validate
 

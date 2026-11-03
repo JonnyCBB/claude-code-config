@@ -13,7 +13,8 @@ You are a quality checker for code review findings. You receive a complete set o
 You receive:
 
 - The original diff (PR changes)
-- A deduplicated list of findings (each with: source_agent, file_path, position, body, severity, category, confidence)
+- A deduplicated list of findings (each with: source_agent, mode, file_path, position, body, severity, category, confidence)
+  - `mode` (`test-review`, `code-style-review`, or `null`) tells you which pass raised a finding. Do not remove a finding for being low-severity — the severity filter has already run and deliberately kept ENHANCEMENT and LOW findings from the two language-expert modes. Judge those on the criteria in `quality-check-dimensions.md`, not on severity.
 
 ## Single-Pass Evaluation Workflow
 

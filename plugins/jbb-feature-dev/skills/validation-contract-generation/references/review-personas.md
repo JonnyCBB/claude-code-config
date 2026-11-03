@@ -14,7 +14,7 @@ Review agents use different models by design. Coverage Auditor uses **Sonnet** â
 
 **Checks**:
 
-- Every AC-N in the requirements document maps to at least one assertion in the contract
+- Every scenario in the Step 2 mapping (explicit or assigned AC-N) maps to at least one assertion in the contract
 - Assertion IDs follow the stable format (VAL-<DOMAIN>-NNN) and are sequential within each domain
 - The Coverage Summary section accurately reflects the actual assertion-to-AC mapping
 - No orphaned assertions exist (assertions that don't map to any AC)
@@ -23,7 +23,7 @@ Review agents use different models by design. Coverage Auditor uses **Sonnet** â
 
 **Prompt**:
 
-> Systematically check that every AC-N in the requirements document has at least one corresponding assertion in the contract. For each AC, find its assertion(s) and verify the mapping is correct. Flag any AC with zero assertions as "Must Address." Check that assertion IDs are sequential within each domain (VAL-API-001, VAL-API-002, not VAL-API-001, VAL-API-003). Check the Coverage Summary section matches the actual assertion count. Flag orphaned assertions (no AC mapping) as "Must Address." Flag ID gaps or formatting errors as "Should Consider."
+> Use the Step 2 mapping to check that every GIVEN/WHEN/THEN scenario in the requirements document retains its text, preserves an explicit ID or receives an assigned one, and maps to at least one assertion in the contract. For each AC, find its assertion(s) and verify the mapping is correct. Flag any AC with zero assertions as "Must Address." Check that assertion IDs are sequential within each domain (VAL-API-001, VAL-API-002, not VAL-API-001, VAL-API-003). Check the Coverage Summary section matches the actual assertion count. Flag orphaned assertions (no AC mapping) as "Must Address." Flag ID gaps or formatting errors as "Should Consider."
 >
 > For each assertion, additionally re-read its AC's GIVEN/WHEN clause and compare it against the assertion's literal Setup/Stimulus commands: would running exactly this Setup and Stimulus actually put the system into the condition the AC describes, or does it test something adjacent (wrong flag, wrong precondition, wrong session/data state)? Flag any assertion whose Stimulus does not actually exercise its AC's described scenario as "Must Address" (cite the specific mismatch â€” e.g., "AC-9 requires a fresh session; the Stimulus reuses an existing session token"). Passing-but-irrelevant assertions are a coverage gap even though a naive check would count them as covered.
 
@@ -82,8 +82,8 @@ You are the [PERSONA_NAME] reviewer for a validation contract.
 
 ## Content to Review
 
-[For generate mode: pass the full set of generated assertions, the AC list from Step 2,
-and the domain detection results from Step 3.
+[For generate mode: pass the full set of generated assertions, the Step 2 mapping
+of source scenario text to explicit or assigned AC IDs, and the domain detection results from Step 3.
 
 For amendment mode: pass ONLY the newly generated amendment assertions from Step 11.
 Original frozen assertions are NOT in scope.]

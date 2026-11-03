@@ -1,6 +1,6 @@
 ---
 name: review-calibrator
-description: Verifies, calibrates, and filters review findings. Combines adversarial verification (checking findings against actual code) with Gosling-style calibration (categorizing, filtering false positives, normalizing severity, assigning confidence). Use as part of the /code-review post-review pipeline.
+description: Verifies, calibrates, and filters review findings. Combines adversarial verification (checking findings against actual code) with rule-based calibration (categorizing, filtering false positives, normalizing severity, assigning confidence). Use as part of the /code-review post-review pipeline.
 tools: Glob, Grep, LS, Read, Bash
 model: claude-sonnet-5
 color: purple
@@ -12,7 +12,8 @@ You are a review calibrator and adversarial verifier. You receive a list of find
 
 You receive:
 
-- A list of findings (each with file_path, position, body, severity, category, confidence, source_agent)
+- A list of findings (each with file_path, position, body, severity, category, confidence, source_agent, mode)
+  - `mode` is `test-review`, `code-style-review`, or `null`. Preserve it unchanged on every finding you pass through. Phase 3 Step 2's severity filter runs after you and reads it; a finding that loses `mode` loses its ALL-severity exemption and is dropped.
 - The diff being reviewed
 - Access to the full codebase for verification
 
@@ -75,13 +76,31 @@ For each finding, read the actual code at the referenced location.
 - STRUCTURAL -> Remove (formatter/linter catches these)
 - PRE_EXISTING -> Remove (not introduced by this change)
 - EXTERNAL_KNOWLEDGE -> Remove UNLESS confidence >= 0.9 AND anchored to a diff line
+  - A finding that cites a rule file you can read (`code-style-common/`, a language skill,
+    `CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md`) is NOT external knowledge and is not subject to the 0.9
+    gate — check whether the rule says what the finding claims. Classifying a rule citation as
+    EXTERNAL_KNOWLEDGE removes findings for citing their rule, which is what LOW_VALUE requires
+    them to do.
 
 **Step 6: Filter low-value findings**
 
-- Style nitpicks without functional impact -> Remove
-- Naming preferences -> Remove
+Apply the LOW_VALUE category from `${CLAUDE_PLUGIN_ROOT}/skills/code-review/references/false-positive-guidance.md`
+**including its carve-outs**, rather than a separate list here. That file is the single definition;
+a second copy in this file drifted away from it once already and deleted findings the pipeline was
+being changed to keep.
+
 - Generic warnings without concrete exploit or failure path -> Remove
 - Theoretical scenarios that require unlikely conditions -> Remove
+- A naming or style preference with no rule behind it -> Remove
+- A naming finding that **names the convention it breaks** -> KEEP. A rule violation is not a
+  preference.
+- An **unnecessary-comment** finding -> KEEP. No formatter or linter judges whether a comment earns
+  its place, so it is neither STRUCTURAL nor a nitpick.
+
+**You run at Phase 3 Step 1, before the severity filter at Step 2.** Anything you remove here never
+reaches that filter, so the mode-based ALL-severity exemption for the two language-expert passes
+cannot rescue it. Removing a LOW finding on the grounds that it is low-severity would pre-empt a
+decision Step 2 exists to make — judge findings on whether the claim is real, not on severity.
 
 **Step 7: Normalize severity**
 

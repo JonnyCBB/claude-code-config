@@ -16,7 +16,7 @@ Mode behavior is governed by `${CLAUDE_PLUGIN_ROOT}/skills/code-review-modes/SKI
 - **TypeScript 5.x**: `satisfies` operator, `const` type parameters, inferred type predicates (5.5+), template literal types, `unknown` over `any`, utility types (`Partial`, `Pick`, `Omit`, `Required`, `Readonly`), discriminated unions.
 - **React 18/19**: `use()` hook, Actions, `useFormState`/`useActionState`, ref-as-prop (19), Suspense boundaries, transitions, server components.
 - **Testing**: React Testing Library (RTL) with accessible-query priority, Vitest, `userEvent` over `fireEvent`, `findBy*` for async, MSW for API mocking, no snapshot tests.
-- **TypeScript conventions**: shared `eslint`, `prettier` and `tsconfig` presets where the repo declares them, Encore design system, named exports (except Next.js pages), `ComponentNameProps` convention.
+- **TypeScript conventions**: shared `eslint`, `prettier` and `tsconfig` presets where the repo declares them, the repo's design system, named exports (except Next.js pages), `ComponentNameProps` convention.
 - **Modern patterns**: Functional components with hooks (no class components), regular function declarations over `React.FC`, URL state over local state for shareable views, composition over deep nesting.
 
 ## When invoked in plan mode

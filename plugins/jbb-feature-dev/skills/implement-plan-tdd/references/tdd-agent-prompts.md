@@ -85,7 +85,7 @@ Phase order is mandatory. Do not reorder, merge, or skip phases.
 ### GREEN — minimal implementation
 
 5. Write the MINIMAL implementation in `{{GREEN_IMPL_FILE}}` to make the test pass.
-   - Minimal means: only enough code to satisfy the assertions. No extra features, optimizations, error handling, or abstractions beyond what the test requires.
+   - Minimal means: only enough code to satisfy the assertions. No extra features, optimizations, error handling, abstractions, or comments beyond what the test requires.
 6. Run the targeted test: `{{GREEN_RUN_COMMAND}}`. **It must pass.** If it fails, adjust the implementation — never the test — and retry. Capture the verbatim passing output as GREEN_EVIDENCE.
 
 ### REFACTOR — clean up (if the plan specifies it)
@@ -137,6 +137,14 @@ DONE_WITH_CONCERNS (major) by the orchestrator.
 - Never weaken the test to make it pass. If the test and implementation disagree, the burden of proof is on the implementation.
 - Never disable, skip, delete, or loosen any existing passing test.
 - Keep the implementation minimal — if the test checks one case, handle one case.
+- Default to writing no comments. Make the code readable instead: descriptive names, methods small
+  enough to do one thing. Add a comment only when it carries something that cannot be gathered from
+  reading the code alone and that matters for understanding or justifying why the code is there — a
+  hidden constraint, a subtle invariant, a workaround for a specific bug, behaviour that would
+  surprise a reader. If removing it would not confuse a future reader, do not write it. Never
+  explain WHAT the code does, and never reference this task, this fix, or the callers ("added for
+  the Y flow", "used by X") — that belongs in the PR description and rots on the next change. This
+  applies to test code and to non-code artefacts (protos, config) exactly as it does to source.
 - Only touch files this task owns (the plan's Files Touched column for this task, plus test utilities in test directories). Modifying other files is a major concern — report it.
 - Do not run the full test suite while sibling tasks may be in flight (see Instructions step 9).
 ````
@@ -226,28 +234,15 @@ Inject language-specific test patterns into the implementer prompt using the fol
 
 ### How to Populate by Language
 
-**Java**:
-
-- Test file pattern: `*Test.java`, `*Tests.java`, `src/test/**/*.java`
-- Framework: JUnit 5
-- Assertion style: `assertEquals(expected, actual)`, `assertThrows(Exception.class, () -> ...)`, `assertThat(actual).isEqualTo(expected)` (AssertJ)
-- Import patterns: `import org.junit.jupiter.api.Test;`, `import static org.junit.jupiter.api.Assertions.*;`
-- Test idiom: `@Test void shouldDoSomething() { // arrange, act, assert }`
-
-**Scala**:
-
-- Test file pattern: `*Spec.scala`, `*Test.scala`, `src/test/**/*.scala`
-- Assertion style: `result shouldBe expected`, `result should contain(element)`, `an [Exception] should be thrownBy { ... }`
-- Import patterns: `import org.scalatest.flatspec.AnyFlatSpec`, `import org.scalatest.matchers.should.Matchers`
-- Test idiom: `"Feature" should "behave this way" in { ... }`
-
 **Python**:
 
 - Test file pattern: `test_*.py`, `*_test.py`, `tests/**/*.py`
 - Framework: pytest
 - Assertion style: `assert result == expected`, `with pytest.raises(Exception):`, `assert result in collection`
 - Import patterns: `import pytest`, `from unittest.mock import MagicMock, patch`
-- Test idiom: `def test_should_do_something():  # arrange, act, assert`
+- Test idiom: `def test_should_do_something(): ...` — arrange, act and assert in that order,
+  unlabelled. Do not write `# arrange` / `# act` / `# assert` comments; the structure is visible
+  without them.
 
 **TypeScript / JavaScript**:
 
@@ -263,8 +258,6 @@ Use file extensions from `${CLAUDE_PLUGIN_ROOT}/skills/shared-references/languag
 
 | Language ID  | File Extensions |
 | ------------ | --------------- |
-| `java`       | `.java`         |
-| `scala`      | `.scala`        |
 | `python`     | `.py`           |
 | `typescript` | `.ts`, `.tsx`   |
 | `javascript` | `.js`, `.jsx`   |

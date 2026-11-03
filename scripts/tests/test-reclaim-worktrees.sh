@@ -24,7 +24,7 @@ FAIL=0
 
 # Bootstrap-RED sentinel, matching scripts/tests/test-conductor-signals.sh. Without it a harness
 # that recorded zero assertions would print "0 passed, 0 failed" and exit 0 - green. This repo
-# has no CI (jbrooksbartlett-sqmi), so this suite is the only gate and it has to prove it can
+# has no CI (hq-sqmi), so this suite is the only gate and it has to prove it can
 # report a failure at all.
 #   EXPECT_BOOTSTRAP_RED=1 bash scripts/tests/test-reclaim-worktrees.sh
 # must exit non-zero and show exactly one FAIL.
@@ -1751,7 +1751,7 @@ assert_absent "$wt" "...and a 2-day-old record IS due under that window, so the 
 # THE CONTROL: a non-numeric NO_PR_MIN_AGE_DAYS removes a worktree it should keep
 # ---------------------------------------------------------------------------
 #
-# This is the defect (jbrooksbartlett-lngd). A worktree with no pull request, touched today, should
+# This is the defect (hq-lngd). A worktree with no pull request, touched today, should
 # be kept because it is younger than any sane threshold. But with NO_PR_MIN_AGE_DAYS=abc:
 #
 #   [ "$idle" -lt "abc" ]   ->  "integer expression expected", exit 2

@@ -13,9 +13,15 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+import fixtures  # noqa: E402
 import preclose_receipt as receipt_mod  # noqa: E402
 
+ACTIVITY = fixtures.ACTIVITY
+
 NOT_APPLICABLE = {"applicable": False, "reason": "test fixture"}
+
+
+LIVENESS = {"state": "quiet", "reason": "fixture", "activity": ACTIVITY}
 
 
 def write_receipt(
@@ -31,6 +37,7 @@ def write_receipt(
     dump_bytes=None,
     output_text="the final answer",
     worktree=None,
+    liveness=None,
     overrides=None,
 ):
     """Write a receipt that is VALID by default.
@@ -62,6 +69,7 @@ def write_receipt(
         dump_bytes=dump_bytes,
         output_sha256=receipt_mod.sha256_text(output_text),
         worktree=worktree if worktree is not None else dict(NOT_APPLICABLE),
+        liveness=liveness if liveness is not None else dict(LIVENESS),
     )
     if overrides:
         payload.update(overrides)
