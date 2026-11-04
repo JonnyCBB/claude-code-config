@@ -54,12 +54,22 @@ CONDUCTOR_PATH_MARKER = os.path.join(".local", "share", "agent-deck", "conductor
 # `bd` and `agent-deck` live in Homebrew's prefix, which is NOT on the minimal
 # PATH a hook can inherit. Verified 2026-08-18: `env -i sh -c 'command -v bd'`
 # finds nothing.
-EXTRA_PATH_DIRS = ("/opt/homebrew/bin", "/usr/local/bin")
+EXTRA_PATH_DIRS = (
+    "/opt/homebrew/bin",
+    "/usr/local/bin",
+    os.path.join(os.path.expanduser("~"), ".local", "bin"),
+)
 
 # Without BEADS_DIR, `bd list --json` exits non-zero with "no beads database
 # found" - which would hand this check an EMPTY id list and pass every message.
 # ~/.zshenv exports it, but a hook is not a login shell.
-DEFAULT_BEADS_DIR = os.path.join(os.path.expanduser("~"), "beads-hq", ".beads")
+_BEADS_DIR_CANDIDATES = (
+    os.path.join(os.path.expanduser("~"), "src", "beads-hq", ".beads"),
+    os.path.join(os.path.expanduser("~"), "beads-hq", ".beads"),
+)
+DEFAULT_BEADS_DIR = next(
+    (p for p in _BEADS_DIR_CANDIDATES if os.path.isdir(p)), _BEADS_DIR_CANDIDATES[0]
+)
 
 # --------------------------------------------------------------------------
 # Shared patterns and vocabularies
