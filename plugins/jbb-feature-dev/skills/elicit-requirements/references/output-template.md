@@ -64,9 +64,7 @@ THEN [what someone can observe or do, not a restatement of the precondition]
 [Include meaningful exclusions and failure behavior. For a time window, leave its
 reference event and boundary unresolved when not supplied. Do not invent the
 interaction shape, output contents, or clock start.
-Repeat for each distinct scenario. Do not add AC-N labels by default. If the owner
-explicitly needs the older validation-contract workflow, prefix each scenario with
-stable, sequential AC-1:, AC-2:, etc. without changing its meaning.]
+Repeat for each distinct scenario. Do not add AC-N labels by default.]
 
 ## Success Criteria \*
 

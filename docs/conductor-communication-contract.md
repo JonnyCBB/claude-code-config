@@ -242,7 +242,7 @@ NOT verified: <what could not be checked, and why - never silence>
 
 He chose templates plus an automatic check over a self-check: a self-check works until the conductor is busy.
 
-**Running now.** `hooks/comms-contract-check.py`, a `Stop` hook in `settings.json` that reads every finished message; tests: `scripts/tests/test-comms-contract-check.py`. It matches the draft against the live bead IDs (`bd list`) and session names (`agent-deck list --json`), flags any with no description beside it, and flags habit words (provenance, load-bearing, orthogonal, blast radius, falsifier, affordance, cadence) used without a gloss. It matches the live ID list, never a pattern: a bare suffix is 3-4 characters, so a shape regex matches ordinary English.
+**Running now.** `hooks/comms-contract-check.py`, a `Stop` hook in `settings.json` that reads every finished message. It matches the draft against the live bead IDs (`bd list`) and session names (`agent-deck list --json`), flags any with no description beside it, and flags habit words (provenance, load-bearing, orthogonal, blast radius, falsifier, affordance, cadence) used without a gloss. It matches the live ID list, never a pattern: a bare suffix is 3-4 characters, so a shape regex matches ordinary English.
 
 **It does not catch:**
 

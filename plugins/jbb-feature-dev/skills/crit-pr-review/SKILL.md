@@ -16,6 +16,21 @@ argument-hint: "<pr-number-or-review-doc-path>"
 
 Post code review findings to a GitHub PR using crit for interactive review and submission.
 
+## Review Compatibility Blocker
+
+The available [personal code-review workflow](../code-review/SKILL.md)
+does not produce this adapter's comprehensive review document or severity,
+source-agent, and comment-format contract. Its fix mode edits and commits;
+colleague mode drafts only the findings the user selects and delegates security
+and repository conventions to a review bot.
+
+Stop before fresh review generation, branch checkout, daemon launch, comment
+injection, or posting. Report that a compatible adapter design needs user
+approval. Do not invent a saved report, infer severity labels from personal
+review, restore legacy references, or skip either the finding-selection or
+posting-confirmation gate. The steps below retain the former adapter contract;
+they are not executable against personal review without an approved redesign.
+
 ## Step 1: Parse Arguments
 
 Argument: `$ARGUMENTS`
@@ -31,7 +46,8 @@ Argument: `$ARGUMENTS`
   ls -t ~/.claude/thoughts/shared/reviews/review_*${PR_NUMBER}*.md 2>/dev/null | head -1
   ```
 - If found, ask: "Found existing review: `<path>`. Use this or generate fresh?"
-- If generating fresh: invoke `/code-review $PR_NUMBER` to produce the review doc
+- Fresh generation is blocked: personal `/code-review` does not produce the
+  comprehensive review doc this adapter requires.
 - Store `REVIEW_DOC_PATH` and `PR_NUMBER`
 
 **If file path** (contains `/` or `.md`):
@@ -46,7 +62,11 @@ Argument: `$ARGUMENTS`
 
 ```bash
 REPO_INFO=$(gh repo view --json owner,name -q '"\(.owner.login)/\(.name)"')
+export GH_HOST=$(git remote get-url origin | sed -n 's|^[a-z]*://\([^@/]*@\)\{0,1\}\([^:/]*\).*|\2|p; s|^[^@/]*@\([^:/]*\):.*|\1|p')
+GH_HOST=${GH_HOST:-github.com}
 ```
+
+`GH_HOST` is the repository's host (github.com unless the remote points at a GitHub Enterprise host). Every later `gh` and `crit push` call uses it.
 
 ## Step 2: Launch Crit Before Injecting Anything
 
@@ -122,10 +142,10 @@ alongside Claude's findings in the browser UI.
 
 ```bash
 # Get all inline review comments (all reviews combined)
-gh api "repos/$REPO_INFO/pulls/$PR_NUMBER/comments" --hostname github.com --paginate
+gh api "repos/$REPO_INFO/pulls/$PR_NUMBER/comments" --hostname "$GH_HOST" --paginate
 
 # Get review-level comments (top-level review bodies)
-gh api "repos/$REPO_INFO/pulls/$PR_NUMBER/reviews" --hostname github.com --paginate
+gh api "repos/$REPO_INFO/pulls/$PR_NUMBER/reviews" --hostname "$GH_HOST" --paginate
 ```
 
 ### Skip if no human comments or fetch fails
@@ -151,7 +171,7 @@ Build a JSON array for `crit comment --json`. Group root comments and their repl
   comments are injected (need the crit ID of the parent first)
 
 For review-level comments from `/pulls/{pr}/reviews` where `body` is non-empty and
-`user.login` is not a bot (bot accounts end with `[bot]`, e.g., `dependabot[bot]`):
+`user.login` is not a bot (bot accounts end with `[bot]`, e.g., `some-bot[bot]`):
 
 ```json
 { "body": "<review body>", "scope": "review", "author": "<user.login>" }
@@ -257,11 +277,13 @@ file (e.g., "Large PR" finding, general design concerns):
 
 ### Tone conversion
 
-Read and apply `${CLAUDE_PLUGIN_ROOT}/skills/code-review/references/comment-format.md`
-for severity-to-label mapping and tone rules. Key points:
+The legacy comment-format contract is unavailable. The mappings below describe
+the former comprehensive adapter, not personal-review labels. Conversion is
+blocked pending an approved design; do not infer these labels from personal
+review. Former rules:
 
 - CRITICAL/HIGH -> `issue (blocking):`, MEDIUM -> `suggestion (non-blocking):`, LOW/ENHANCEMENT -> `nit (non-blocking):`
-- repo-rules-reviewer findings: preserve rule attribution ("Per your CLAUDE.md: ...")
+- repo-rules-reviewer findings: preserve rule attribution ("Per your CLAUDE.md: ..." or "Per your AGENTS.md: ...")
 - Include at least one `praise:` comment from the review doc's Highlights section
 
 ### Inject Claude's comments
@@ -430,7 +452,7 @@ Report:
 **Human comments shown**: H
 **Review document**: $REVIEW_DOC_PATH
 
-View: https://github.com/$REPO_INFO/pull/$PR_NUMBER
+View: https://$GH_HOST/$REPO_INFO/pull/$PR_NUMBER
 ```
 
 ## Notes
@@ -440,7 +462,7 @@ View: https://github.com/$REPO_INFO/pull/$PR_NUMBER
 - `crit push` uses file line numbers — no diff-position calculation needed
 - The `--author` flag on `crit comment` is cosmetic in crit's UI; GitHub attributes the review to the authenticated `gh` user
 - If `gh` is not authenticated, `crit push` will fail — tell the user to run `gh auth login`
-- For GitHub Enterprise (e.g., `github.com`), **prefix `crit push` with `GH_HOST=<host>`**, otherwise crit will dispatch to `github.com` and `gh pr view`/review creation will return HTTP 404. Resolve the host from the git remote: `GH_HOST=$(git remote get-url origin | sed -n 's|.*@\([^:/]*\)[:/].*|\1|p')`
+- For GitHub Enterprise (e.g., `github.example.com`), **prefix `crit push` with `GH_HOST=<host>`**, otherwise crit will dispatch to `github.com` and `gh pr view`/review creation will return HTTP 404. Step 1 exports `GH_HOST` from the git remote.
 - `crit push` does NOT include `review_comments` from `.crit.json` — always use `--message` for the review body
 - `crit pull` is unreliable (confirmed broken in v0.9.0) — use `gh api` directly to fetch human comments
 - Crit IDs are sequential: `c1`, `c2`, `c3` for file/line comments; `r0`, `r1` for review-level; `c3-r1` for replies

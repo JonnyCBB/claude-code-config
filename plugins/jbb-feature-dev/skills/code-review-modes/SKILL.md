@@ -60,8 +60,8 @@ In implement mode, the language expert:
 ## Test-Review Mode
 
 Use when the caller wants **test coverage analysis** for a diff. This is today's
-test-reviewer pipeline. Output schema is preserved verbatim so
-`review-deduplicator` and `review-calibrator` parse without changes.
+test-reviewer pipeline. Output schema is preserved verbatim so existing
+consumers parse without changes.
 
 In test-review mode, the language expert:
 
@@ -232,12 +232,9 @@ output template, preserving on-disk space-form block names (`TEST NEEDED`,
 ## Output Contract
 
 Per-mode block schemas populate the `body` field of each finding emitted by
-the language expert. If `${CLAUDE_PLUGIN_ROOT}/skills/code-review/references/finding-schema.md`
-exists, it defines the wrapping envelope (severity, file, line, body). Where
-that finding-schema reference is absent, treat the per-language schema files
-as the complete output contract — the schema text IS the body field, in the
-verbatim space-form block layout that downstream agents
-(`review-deduplicator`, `review-calibrator`) parse today.
+the language expert. The per-language schema files are the complete output
+contract: the schema text IS the body field, in the verbatim space-form block
+layout.
 
 ## Plugin Caveats
 
@@ -249,10 +246,8 @@ Two known Claude Code plugin issues affect skill-driven invocation:
   this skill's content via short, self-contained quotes where the rule must
   hold even if the skill failed to load (the canonical CHANGE_SCOPE
   sentence above is anchored here so a single grep verifies presence).
-- **GitHub issue #7406** — parallel-spawn flakiness: `/code-review` and
-  `/polish-code` spawn the language expert twice in parallel (test-review +
-  code-style-review). Under flake conditions, one of the two parallel
-  spawns may not register its output. Combined-invocation fallback is
-  documented in `code-review/SKILL.md` — a single sequential invocation
-  emitting both schemas in one response. Use it when parallel spawn drops
-  findings.
+- **GitHub issue #7406** — parallel-spawn flakiness: `/polish-code` spawns
+  the language expert twice in parallel (test-review + code-style-review).
+  Under flake conditions, one of the two parallel spawns may not register
+  its output. Fallback: a single sequential invocation emitting both schemas
+  in one response. Use it when parallel spawn drops findings.

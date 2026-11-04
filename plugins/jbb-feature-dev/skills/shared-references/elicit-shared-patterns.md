@@ -67,4 +67,4 @@ Ask the owner about choices that change scope, acceptance, privacy or consent, r
 ## Suggest Next Step
 
 State the saved file path and suggest the relevant next step: `/research-problem [path]` or
-`/create-plan-tdd [path]`.
+`/implement-change [path]`.

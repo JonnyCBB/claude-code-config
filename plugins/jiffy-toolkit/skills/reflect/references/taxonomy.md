@@ -34,7 +34,7 @@ Signal: empirical verification of undocumented capability
 
 **user_correction:**
 "Auto mode only suppresses tool-use prompts, NOT skill interactive gates — stop
-skipping the wave-structure approval step in create-plan-tdd"
+skipping the approval step in implement-change"
 Signal: explicit user correction of model behavior
 
 **infrastructure_gotcha:**

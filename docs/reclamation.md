@@ -40,7 +40,7 @@ Checked in this order; the first match wins.
 | `kept-no-pr` | no pull request, touched more recently | nothing |
 | `kept-undetermined` | detached HEAD, `gh` unreachable, or git could not report | nothing |
 
-`--dry-run` reports `would-remove`, `would-remove-after-unlock` and `would-rescue` and writes nothing but the report. The order is load-bearing and two tests pin it: an ancient no-PR worktree that is dirty is still rescued and left in place, and one a session sits in is still untouched.
+`--dry-run` reports `would-remove`, `would-remove-after-unlock` and `would-rescue` and writes nothing but the report. The order is load-bearing: an ancient no-PR worktree that is dirty is still rescued and left in place, and one a session sits in is still untouched.
 
 **No-PR worktrees are reclaimed on age** (`RECLAIM_NO_PR_MIN_AGE_DAYS`, 14). PR state is not a safety signal, since the branch survives either way; it only says whether someone is still using the copy, and age answers that better. Age is the **newest** of the worktree directory's mtime and `logs/HEAD` in its private git admin directory (touched by every checkout, commit, reset or rebase in that worktree). The HEAD commit's date is deliberately excluded: a worktree created today from an ancient commit would read as dead, and a branch last pushed from another machine would read as alive. Age that cannot be read keeps the worktree.
 
@@ -72,8 +72,6 @@ Tool-native commands only: `npm cache clean --force`, `yarn cache clean`, `pip c
 
 ## The traps, and why the code looks the way it does
 
-Each has tests that fail if the fix is removed.
-
 **The live-session check is directional.** A worktree is held if some session path **is** it or lies **beneath** it, never the reverse. A substring or regex match fails silently and totally: one live session's path is the repository root (here `$HOME`), a prefix of every worktree, so everything reads LIVE and the report says "nothing to clean". An exact match is wrong the other way: a session that `cd`'d into a subdirectory of its worktree matches nothing and its worktree is removed underneath it.
 
 **Rescuing uncommitted work must handle untracked directories.** `git status --porcelain` collapses an untracked directory to one entry, and plain `cp` silently skips a directory, producing an empty patch reported as success. Two defences: enumerate with `git ls-files --others --exclude-standard` (files only; `cp -R` stays for symlink-to-directory), and **prove the copy landed**: a dirty check that found something followed by an empty patch and no files is `rescue-failed`.
@@ -103,15 +101,6 @@ Logins are frequent and the job deletes directories, so `--if-due` runs only if 
 
 **The guard errs toward running.** No record, an empty or prose record, an over-long number, a future timestamp: none is evidence a sweep completed, and only evidence of a run may suppress one. launchd has one `ProgramArguments` per job, so the flag applies to the Sunday occurrence too; that self-corrects (7 days between Sundays exceeds the window; a Saturday catch-up correctly skips Sunday).
 
-**`--install-schedule` starts a run.** `RunAtLoad` launches the job at `launchctl bootstrap`, and with no record it reads as due. **Never run it outside the suite to inspect the plist**; the suite stubs `launchctl`, or read `write_plist`.
+**`--install-schedule` starts a run.** `RunAtLoad` launches the job at `launchctl bootstrap`, and with no record it reads as due. **Never run it to inspect the plist**; read `write_plist` instead.
 
 XPC Activity was rejected on a hard requirement: it needs `xpc_set_event_stream_handler(3)`, which a bash script cannot call, and `launchctl` cannot fire an activity to verify it. `pmset repeat wakeorpoweron` changes the laptop, not this job, and is out of scope.
-
-## Tests
-
-```bash
-bash scripts/tests/test-reclaim-worktrees.sh                        # prints N passed, 0 failed
-EXPECT_BOOTSTRAP_RED=1 bash scripts/tests/test-reclaim-worktrees.sh # must fail, exactly once
-```
-
-The suite uses real git repositories and real worktrees; only `agent-deck`, `gh`, `ps`, the cache tools and `launchctl` are stubbed (so it can never register a real job, and can assert `bazel` is never invoked). Stubbing git would test nothing, since both traps live in how git's output is read. This repo has no CI, so the suite is the only gate; the bootstrap-RED sentinel stops a zero-assertion harness printing green.

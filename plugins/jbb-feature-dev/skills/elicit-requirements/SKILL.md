@@ -6,7 +6,7 @@ description: >
   acceptance criteria, scope tradeoffs, success metrics). Spawns context-gathering agents
   when artifacts are provided. Uses wave-based depth progression and relentless tree-walking
   until shared understanding is reached.
-  Use when starting a new feature, before /research-problem or /create-plan-tdd.
+  Use when starting a new feature, before /research-problem or /implement-change.
   Trigger phrases: (1) "elicit requirements" (2) "gather requirements" (3) "requirements interview"
   (4) "what are we building" (5) "deep dive requirements" (6) "grill me"
   (7) "scope this feature" (8) "define requirements".

@@ -55,7 +55,7 @@ If a skill falls back to implementer self-assessment, obtain a fresh assessor or
 | Order | Skill | Assessment and result |
 | --- | --- | --- |
 | 1 | Claude's built-in `/simplify` | Invoke directly with its internal review agents; inspect behavior-preserving edits and check output. Do not substitute `/polish-code` or a plugin package. |
-| 2 | [code-review](../code-review/SKILL.md) | Invoke `/jbb-feature-dev:code-review` with `--all-severities` directly; its self-review guard uses independent specialists. Review the simplified diff and apply confirmed findings. |
+| 2 | [code-review](../code-review/SKILL.md) | Invoke `/jbb-feature-dev:code-review` directly; it dispatches two fresh read-only assessors (general and bug) against one snapshot. Review the simplified diff and apply confirmed findings. |
 | 3 | [verify-implementation](../verify-implementation/SKILL.md) | Use a fresh verification agent, not the implementer, fixer, or an earlier assessor. Produce objective-linked local scenarios and observed evidence. |
 
 Give each pass and its internal agents the objective, acceptance criteria, repository/worktree path,
@@ -66,11 +66,7 @@ commands, output excerpts, changed files, and limits. Read its actual artifacts 
 Always supply this same scope to built-in `/simplify`; do not rely on its default diff selection or override its instructions.
 An empty scope or missing independent pass is blocked, not clean. If built-in `/simplify` cannot run, report that blocker.
 
-After simplification, select review effort from the actual diff and risk using the canonical
-[code-review effort policy](../code-review/SKILL.md#review-effort-policy).
-Record the diff-based reason, requested effort, effective supported setting or limitation, and model separately.
-Do not invent an Agent-tool effort parameter, use prompt wording as a runtime setting, or replace specialists with one reviewer.
-Preserve security, repository-rules, holistic, language-style, and language-test coverage.
+After simplification, run code-review on the simplified diff. Do not replace its two assessors with one reviewer.
 For a local code review, supply the branch name, pinned base, and explicit output path in the brief;
 use `--non-interactive` only when no user can answer scope questions. Never switch branches or stash work to review it.
 

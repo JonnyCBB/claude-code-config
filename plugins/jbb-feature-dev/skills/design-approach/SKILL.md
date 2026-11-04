@@ -119,7 +119,7 @@ Count only the **open tensions** (not settled decisions) for the threshold check
   - header: `"Low tension"` (max 12 chars)
   - options:
     - label: `"Fallback trio"`, description: `"Spawn architects with Minimal Changes / Clean Architecture / Pragmatic Balance"`
-    - label: `"Skip to plan"`, description: `"Exit design-approach and go straight to /create-plan-tdd"`
+    - label: `"Skip to plan"`, description: `"Exit design-approach and go straight to /implement-change"`
 - Non-interactive: write a minimal design decision doc to
   `~/.claude/thoughts/shared/feature_designs/` noting "no significant tensions identified —
   design approach not required" and exit immediately
@@ -319,8 +319,7 @@ After each decision, narrow the solution space and continue to the next divergen
 
 **Non-interactive mode:**
 
-- Auto-select decisions per
-  `${CLAUDE_PLUGIN_ROOT}/skills/decision-principles/SKILL.md`
+- Auto-select each decision by choosing the safest, best-evidenced, simplest option
 - Document each auto-selected decision with rationale in the output
 - Apply requirements compliance check and flag any violations in the output
 
@@ -346,14 +345,13 @@ The document must include:
 - **Architect Perspectives Explored** — list of the perspectives that were evaluated
 
 **Non-interactive mode:** append an `## Autonomous Decisions` section listing every
-decision made automatically and the decision-principles rule that guided it.
+decision made automatically and the reason for it.
 
 After writing, present the document location to the user and suggest the next step:
-`/create-plan-tdd [design-doc-path] [research-doc-path]`
+`/implement-change [design-doc-path]`
 
 ## Cross-References
 
-- `${CLAUDE_PLUGIN_ROOT}/skills/decision-principles/SKILL.md` — used in Step 7 non-interactive auto-selection
 - `${CLAUDE_PLUGIN_ROOT}/skills/shared-references/agent-verification-pattern.md` — agent contract and pre-spawn verification
 - `${CLAUDE_PLUGIN_ROOT}/skills/shared-references/model-selection-guide.md` — model selection for spawned agents
 - `references/tension-analysis-guide.md` — tension scanning categories and scoring (Step 2)
@@ -369,7 +367,7 @@ This skill enforces the following non-negotiable constraints:
 - Supports `--non-interactive` mode for pipeline use (all interactive prompts have automated fallbacks)
 - Uses the Agent tool for spawning architect agents — no external processes
 - Architect agents run in parallel for speed (never sequentially)
-- Uses shared infrastructure: agent-verification-pattern.md and decision-principles SKILL.md
+- Uses shared infrastructure: agent-verification-pattern.md
 - Does NOT build shared multi-architect infrastructure with /improve-codebase-architecture
 - Maximum of 4 architect agents spawned per run
 - Comparison document is limited to 1-2 pages per approach

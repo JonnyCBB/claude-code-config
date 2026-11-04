@@ -6,7 +6,7 @@ Facts that changed behaviour, kept out of `context-and-skills-standards` because
 
 Execute every block against a real fixture in every input state: empty result, populated result, no input. An expert review of one change found four defects and still missed two that surfaced on execution (an unassigned variable in a second block; a degenerate input that reported as normal).
 
-- **Each block must be self-contained.** Shell state does not persist between an agent's tool calls. If a later step needs a value, have the earlier step write it somewhere durable and read it back. (`bug-hunter-3000`'s `test_finder_dispatch_supplies_run_and_skill_dirs` exists because a dispatch passed neither dir, so finders invented paths.)
+- **Each block must be self-contained.** Shell state does not persist between an agent's tool calls. If a later step needs a value, have the earlier step write it somewhere durable and read it back. (A dispatch once passed neither its run dir nor its skill dir, so the agents it spawned invented paths.)
 - **"Nothing found" must be distinguishable from "nothing to look at".** Collapsing them is how a check reports success without checking.
 
 ## Skills are markdown; the evidence

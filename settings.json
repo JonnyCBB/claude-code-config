@@ -180,10 +180,6 @@
             "type": "command",
             "command": "agent-deck hook-handler",
             "async": true
-          },
-          {
-            "type": "command",
-            "command": "~/.claude/hooks/sync-plugins.sh"
           }
         ]
       }

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Validates the five action items from the 2026-05-01 redundancy audit.
+"""Validates action items 2 to 5 from the 2026-05-01 redundancy audit.
 
 Each check_action_N function returns (name, passed, message). Exits 0 only
-when all five pass. Run from any directory; auto-detects plugin root.
+when all four pass. Run from any directory; auto-detects plugin root.
 """
 
 from __future__ import annotations
@@ -16,48 +16,6 @@ SKILLS = PLUGIN_ROOT / "skills"
 
 def _read(p: Path) -> str:
     return p.read_text()
-
-
-def check_action_1(root: Path) -> tuple[str, bool, str]:
-    """create-plan-tdd Step 1 has no Pre-Spawn Verification Table; Step 3 has the structured table."""
-    skill = root / "skills/create-plan-tdd/SKILL.md"
-    body = _read(skill)
-    s1 = re.search(r"^## Step 1:.*?(?=^## Step 2:)", body, re.MULTILINE | re.DOTALL)
-    s3 = re.search(r"^## Step 3:.*?(?=^## Step 4:)", body, re.MULTILINE | re.DOTALL)
-    if not (s1 and s3):
-        return ("action_1", False, "could not isolate Step 1 or Step 3 sections")
-    if "Pre-Spawn Verification" in s1.group(0):
-        return (
-            "action_1",
-            False,
-            "Step 1 still contains a Pre-Spawn Verification block — should live only in Step 3",
-        )
-    if "Pre-Spawn Verification" not in s3.group(0):
-        return ("action_1", False, "Step 3 missing Pre-Spawn Verification heading")
-    # Strengthened: Step 3 must contain the STRUCTURED TABLE format (with Spawn?/Justification columns),
-    # not merely a bullet list. The audit asks for the Step 1 table to migrate into Step 3.
-    if "Spawn?" not in s3.group(0) or "Justification" not in s3.group(0):
-        return (
-            "action_1",
-            False,
-            "Step 3 still uses a bullet list — needs the Spawn?/Justification table from old Step 1",
-        )
-    # Step 3 must include all agent rows. `codebase-explorer` and `thoughts-explorer` were Step-1-only;
-    # asserting them here proves the table moved (not just renamed in place).
-    required_rows = [
-        "codebase-explorer",
-        "thoughts-explorer",
-        "Domain experts",
-        "Language experts",
-    ]
-    missing = [r for r in required_rows if r not in s3.group(0)]
-    if missing:
-        return ("action_1", False, f"Step 3 verification table missing rows: {missing}")
-    return (
-        "action_1",
-        True,
-        "Step 1 has no spawn table; Step 3 has the structured Spawn?/Justification table with all agent rows",
-    )
 
 
 def check_action_2(root: Path) -> tuple[str, bool, str]:
@@ -386,14 +344,13 @@ def check_action_5(root: Path) -> tuple[str, bool, str]:
 
 def main() -> int:
     checks = [
-        check_action_1,
         check_action_2,
         check_action_3,
         check_action_4,
         check_action_5,
     ]
-    valid = {f"action_{i}" for i in range(1, 6)} | {
-        f"--action_{i}" for i in range(1, 6)
+    valid = {f"action_{i}" for i in range(2, 6)} | {
+        f"--action_{i}" for i in range(2, 6)
     }
     only = sys.argv[1] if len(sys.argv) > 1 else None
     if only is not None and only not in valid:

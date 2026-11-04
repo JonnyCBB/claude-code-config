@@ -14,10 +14,9 @@ from turning a review into a nitpick list. Read this file when invoked in code-s
 
 ## Vague and generic names
 
-The `LOW_VALUE` filter's naming bullet now carves out rule-citing findings — see
-`${CLAUDE_PLUGIN_ROOT}/skills/code-review/references/false-positive-guidance.md` for why.
-This section draws the boundary of that carve-out, so it does not become
-noise. The line is:
+A naming finding that cites a rule is kept; one that does not is filtered as
+low value. This section draws the boundary, so it does not become noise. The
+line is:
 
 **Can you name the rule the identifier breaks, and quote it?**
 

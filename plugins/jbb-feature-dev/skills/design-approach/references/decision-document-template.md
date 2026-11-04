@@ -51,7 +51,7 @@ planning agents have complete context.
 
 ## Constraints for Downstream Planning
 
-Explicit hard constraints that /create-plan-tdd must respect:
+Explicit hard constraints that implementation must respect:
 
 - Constraint 1: e.g., must use existing authentication service, no new auth layer
 - Constraint 2: e.g., zero-downtime migration required
@@ -86,9 +86,9 @@ explicit acknowledgment for each:
 
 ## Next Steps
 
-Run the following command to generate an implementation plan:
+Run the following command to implement the chosen approach:
 
 \`\`\`
-/create-plan-tdd <path-to-this-design-doc> <path-to-research-doc>
+/implement-change <path-to-this-design-doc>
 \`\`\`
 ```

@@ -3,7 +3,7 @@ name: elicit-requirements-friendly
 description: >
   Gather requirements through a friendly, story-based, one-question-at-a-time interview
   designed for non-technical users (and technical users in unfamiliar domains). Forks
-  elicit-requirements with the same output schema so /research-problem and /create-plan-tdd
+  elicit-requirements with the same output schema so /research-problem and /implement-change
   work unchanged. Aggressively frontloads references (screenshots, links, brand colors),
   spawns context agents to fill technical gaps the user can't, and translates jargon
   inline. Always thorough — walks every branch of the design tree in friendly tone.

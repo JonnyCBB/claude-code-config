@@ -22,8 +22,7 @@ produce a structured decision record.
 | `references/dynamic-composition.md`      | Phase 2 (Classify) — to determine team composition |
 | `references/decision-record-template.md` | Phase 6 (Decision Record) — to format output       |
 
-Teammates are told to use the `decision-principles` skill for judgement calls —
-the skill is referenced by name, not embedded into prompts.
+Teammates use the decision principles listed in `references/roles.md` for judgement calls.
 
 ---
 
@@ -71,7 +70,7 @@ Branch to Phase 4A (agent team) or Phase 4B (sub-agent fallback).
 2. Create an agent team with the Synthesis Lead as team lead (Opus model)
 3. Spawn teammates (Sonnet model) with:
    - Their full persona prompt from `references/roles.md`
-   - Instruction: "Use the `decision-principles` skill when making judgement calls"
+   - Instruction: "Use the decision principles in your persona file when making judgement calls"
    - The document to review (full path)
    - Review criteria specific to document type
 4. Pre-allocate ALL triggered extended roles at creation time (agent teams
@@ -98,8 +97,8 @@ Branch to Phase 4A (agent team) or Phase 4B (sub-agent fallback).
 3. Spawn all determined roles as **parallel sub-agents** (Agent tool,
    subagent_type: `general-purpose`, model: `sonnet`).
    **Agent delivery resilience**: Subagents may go idle without delivering results (known Claude Code issue). If an agent sends an `idle_notification` without content: (1) prompt it via SendMessage using its agent ID (not name), (2) if still no delivery, respawn once, (3) if respawn fails, document the gap and proceed with available reviews. When spawning 5+ reviewers, consider sequential sub-batches to reduce cascade-failure risk.
-   - Each receives: their persona prompt + instruction to use `decision-principles`
-     skill + the full document text + review criteria for the document type
+   - Each receives: their persona prompt + instruction to use the decision
+     principles in `references/roles.md` + the full document text + review criteria for the document type
    - Each returns: structured findings with severity tags (Critical / High /
      Medium / Low) and their stand-down declaration if no concerns
 4. Collect and synthesise initial findings:
@@ -109,7 +108,7 @@ Branch to Phase 4A (agent team) or Phase 4B (sub-agent fallback).
 5. **Deliberation round** (simulated):
    - For each major disagreement, spawn a targeted sub-agent with the Critical
      Analyst persona, providing BOTH positions and asking it to evaluate which
-     is stronger using the `decision-principles` skill
+     is stronger using the decision principles in `references/roles.md`
    - This simulates the debate that agent teams handle natively
    - Minor disagreements (Low severity from both sides) are recorded but not
      deliberated

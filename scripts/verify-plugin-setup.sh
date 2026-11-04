@@ -30,19 +30,11 @@ for plugin in jbb-feature-dev eng-utils jiffy-toolkit; do
   check ".mcp.json exists" test -f "$REPO_ROOT/plugins/$plugin/.mcp.json"
 done
 
-# Hook
-echo "Hook:"
-check "sync-plugins.sh exists and is executable" test -x "$REPO_ROOT/hooks/sync-plugins.sh"
-
 # Gitignore
 echo "Gitignore:"
 check ".claude-plugin/ whitelisted" grep -q '!\.claude-plugin/' "$REPO_ROOT/.gitignore"
 check "plugins/ whitelisted" grep -q '!plugins/' "$REPO_ROOT/.gitignore"
 check "scripts/ whitelisted" grep -q '!scripts/' "$REPO_ROOT/.gitignore"
-
-# Settings
-echo "Settings:"
-check "sync-plugins.sh in settings" grep -q 'sync-plugins.sh' "$REPO_ROOT/settings.json"
 
 # No duplicates
 echo "Duplicates:"

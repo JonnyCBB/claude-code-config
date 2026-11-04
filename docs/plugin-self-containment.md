@@ -35,7 +35,7 @@ grep -rnE '~/\.claude/(docs/|thoughts/[^ ]*(20[0-9]{2}-[0-9]{2}|corpus)|plugins/
 
 Every hit is a candidate. The test: someone who installed this plugin and nothing else follows it; do they get something? About a quarter are fine (invented example filenames, placeholders like `2024-01-15_topic.md`). **"It is in a README" is not the heuristic:** 2 of 14 README hits on the baseline were genuine escapes, and 4 illustrative hits were outside READMEs.
 
-**Eval and test fixtures are in scope but last.** A fixture under `evals/` or `tests/` naming the author's own document is a genuine escape (`claude plugin eval` is a real command), though not the same defect as a `SKILL.md` sending a live user to a dead end. Fixing one is authoring synthetic inputs, not de-pathing (`/explain`'s `skills/explain/evals/evals.json`, `hq-tvqt1`).
+**Eval and test fixtures are in scope but last.** A fixture under `evals/` or `tests/` naming the author's own document is a genuine escape (`claude plugin eval` is a real command), though not the same defect as a `SKILL.md` sending a live user to a dead end. Fixing one is authoring synthetic inputs, not de-pathing.
 
 **The `thoughts` clause is narrowed to a dated filename or a corpus; do not widen it.** A plugin naming `~/.claude/thoughts/shared/research/` as a directory it writes is fine; naming one dated document inside it points at something only we have. Matching the bare directory takes 25 hits to 181, and the extra 156 are directories plugins create or search.
 
@@ -71,10 +71,10 @@ Master `d74df146`, 2026-09-08, plant step confirmed first: 62 candidates in 36 f
 
 | class | count | where it concentrates |
 | --- | --- | --- |
-| bead IDs cited as the record of a decision | 26 | `eng-utils/skills/bug-hunter-3000/` (12) |
+| bead IDs cited as the record of a decision | 26 | one `eng-utils` skill, since deleted (12) |
 | dated `~/.claude/thoughts/` documents | 25 | `sound-like-me` personas, `jbb-feature-dev` README examples |
 | paths on one machine | 7 | `~/src/<other-repo>`, `~/evidence/` |
 | absolute install paths | 4 | `design-approach`, `create-my-mode-skill` |
 | `~/.claude/docs/` | 0 | - |
 
-The zero is deliberate; the alternative stays in the pattern as a regression guard. Draining: `hq-7bw5q` (bead IDs), `hq-6s0zd` (paths), `hq-tvqt1` (`/explain` eval fixtures). Whether the check becomes an enforced gate is `hq-flt0o`; a gate failing on all 46 today would be switched off, as `scripts/verify-plugin-setup.sh` already is while red (`hq-g8wea`).
+The zero is deliberate; the alternative stays in the pattern as a regression guard. Draining: `hq-7bw5q` (bead IDs), `hq-6s0zd` (paths). Whether the check becomes an enforced gate is `hq-flt0o`; a gate failing on all 46 today would be switched off, as `scripts/verify-plugin-setup.sh` already is while red (`hq-g8wea`).

@@ -9,8 +9,7 @@ Exit codes, monotonic by severity:
                       affected fields are null and `tiers_omitted` records it
     2  UNRESOLVABLE  - the reference is invalid or ambiguous, or no PR was found
 
-NOTE: this script deliberately INVERTS the discipline of the scripts it otherwise
-imitates (eng-utils bug-hunter-3000), whose docstring says "nothing at all
+NOTE: this script deliberately INVERTS the usual discipline that "nothing at all
 reaches stdout on an error exit". Here, valid JSON is emitted on EVERY exit,
 because the caller needs the `errors` array and the partial sheet in order to
 render fields as `unverifiable` rather than silently omitting them. There is

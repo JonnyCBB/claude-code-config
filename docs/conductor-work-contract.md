@@ -72,7 +72,7 @@ An agent-filed bead goes from `deferred` to `open` without asking Jonny when **a
 1. It names a **concrete defect** with a reproducible failure, or a specific `file:line`.
 2. The fix is **confined to the repo it was found in**.
 3. It ends in a **reviewable PR**.
-4. It was **discovered during real work**, not by a speculative hunt (six speculative bug-hunt beads passed tests 1 to 3 and were closed not-wanted).
+4. It was **discovered during real work**, not by a speculative hunt (six beads from speculative hunts passed tests 1 to 3 and were closed not-wanted).
 
 Anything failing stays `deferred` with the `agent-proposed` label, invisible to `bd ready`, until Jonny confirms it. **The `agent-proposed` label survives promotion**: Beads records no useful creator field (`created_by` is always the OS user), so it is the only provenance. The skim query filters status as well, so a kept label costs nothing:
 
@@ -342,13 +342,12 @@ Route to the skill that fits. This table ADDS to the mandatory chain in section 
 | Several viable approaches needing a deliberate choice | `/jbb-feature-dev:design-approach` |
 | Frontend or visual work | `/frontend-design:frontend-design` |
 | A document rather than code | `/jiffy-toolkit:review-document` |
-| Implementation, once requirements are settled | `/jbb-feature-dev:create-plan-tdd` then `/implement-plan-tdd` |
 | A repository change to implement end-to-end | `/jbb-feature-dev:implement-change` |
 | **Changes a CONTEXT file** (`CLAUDE.md`, `AGENTS.md`) | `/jiffy-toolkit:context-and-skills-standards` to review it |
 | **Changes a SKILL file** (any `SKILL.md`) | **BOTH** `/jiffy-toolkit:context-and-skills-standards` (principles) **and** `/skill-creator:skill-creator` (workflow and the **evals**); a skill change with no eval run is unverified |
 | **Submitting a PR**, every time, every repo | `/jbb-feature-dev:submit-pr`, then `/jiffy-toolkit:sound-like-me` |
 
-**Verify skill names before putting one in a dispatch spec.** A wrong name fails at dispatch, after the worker exists: `/eng-utils:hunt-bugs` does not exist (real: `eng-utils:bug-hunter-3000`, `eng-utils:bug-hunter-crossfire`), and bare `/context-and-skills-standards`, `/sound-like-me`, `/submit-pr` need their `jiffy-toolkit:` or `jbb-feature-dev:` prefix. These stack on the work-shaped routing: research that ends up editing a `SKILL.md` still owes the skill-file steps. Context-file review is the only routine pass asking whether a conductor rule still pays for itself.
+**Verify skill names before putting one in a dispatch spec.** A wrong name fails at dispatch, after the worker exists: a skill name without its plugin prefix does not resolve: bare `/context-and-skills-standards`, `/sound-like-me`, `/submit-pr` need their `jiffy-toolkit:` or `jbb-feature-dev:` prefix. These stack on the work-shaped routing: research that ends up editing a `SKILL.md` still owes the skill-file steps. Context-file review is the only routine pass asking whether a conductor rule still pays for itself.
 
 **`/submit-pr` then `/sound-like-me`, every PR.** A PR description is often the only artefact a reviewer has, and Jonny cannot review TypeScript/React by reading it. `/submit-pr` already calls `/sound-like-me` for the description it generates, so the explicit second step matters when a worker writes or edits a PR body BY HAND; state it anyway. **NEVER pass `--auto-merge`** to `/submit-pr`; the no-self-merge rule is absolute for workers.
 

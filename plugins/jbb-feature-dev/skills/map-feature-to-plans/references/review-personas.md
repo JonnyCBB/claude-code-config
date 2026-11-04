@@ -46,8 +46,8 @@ any split gets all four.
 ```markdown
 You are the [PERSONA_NAME] reviewer for a `/map-feature-to-plans` candidate scoping doc.
 
-Flag only issues that would make `/create-plan-tdd` plan, or `/implement-plan-tdd`
-implement, the wrong feature or in the wrong order. Wording and table layout are not
+Flag only issues that would make `/implement-change`
+implement the wrong feature or in the wrong order. Wording and table layout are not
 issues.
 
 [PERSONA_PROMPT]

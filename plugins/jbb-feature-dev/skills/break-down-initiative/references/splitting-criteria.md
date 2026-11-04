@@ -68,7 +68,7 @@ Classify each feature to identify which block the pipeline:
 - No ambiguity about the approach
 
 Prefer AFK. Only mark HITL when a genuine human decision is required that cannot be
-resolved by the agent using decision-principles.
+resolved by the agent.
 
 ## Granularity Check
 

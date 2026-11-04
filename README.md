@@ -14,8 +14,8 @@ This repo also serves as a **Claude Code plugin marketplace**. You can install p
 
 | If you want to...                              | Install                                      |
 | ---------------------------------------------- | -------------------------------------------- |
-| Build features with AI-guided TDD workflow     | jbb-feature-dev                               |
-| Document architecture or hunt bugs             | eng-utils                                    |
+| Build features with an AI-guided workflow      | jbb-feature-dev                               |
+| Document architecture or prune code            | eng-utils                                    |
 | Create interactive explainers or presentations | jiffy-toolkit                                |
 | All of the above                               | Install all three -- they work independently |
 
@@ -23,14 +23,14 @@ This repo also serves as a **Claude Code plugin marketplace**. You can install p
 
 | Plugin                                    | When to use it                                                               | Description                                                                                                                                                                                                                                                                                                                  | Examples                                                                                |
 | ----------------------------------------- | ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| [jbb-feature-dev](plugins/jbb-feature-dev/) | You're **building a feature** from scratch                                   | Current-session implementation with independent built-in /simplify, specialist review, local verification, and authorized submission through latest-head CI and clean review. Optional requirements, research, and TDD planning skills remain available. | `/jbb-feature-dev:implement-change <task>` |
-| [eng-utils](plugins/eng-utils/)           | You need to **understand, hunt bugs in, or prune a system**            | Architecture documentation with C4 diagrams, codebase friction analysis, multi-candidate bug hunts (bug-hunter-3000, bug-hunter-crossfire), and dead-code pruning (prune-code).                                                                                                                                                                                                                                                                                                               | `/system-architecture-doc`, `/prune-code`                                               |
+| [jbb-feature-dev](plugins/jbb-feature-dev/) | You're **building a feature** from scratch                                   | Current-session implementation with independent built-in /simplify, specialist review, local verification, and authorized submission through latest-head CI and clean review. Optional requirements and research skills remain available. | `/jbb-feature-dev:implement-change <task>` |
+| [eng-utils](plugins/eng-utils/)           | You need to **understand or prune a system**                         | Architecture documentation with C4 diagrams, codebase friction analysis, and dead-code pruning (prune-code).                                                                                                                                                                                                                                                                                                               | `/system-architecture-doc`, `/prune-code`                                               |
 | [jiffy-toolkit](plugins/jiffy-toolkit/)   | You need to **explain or present** something                                 | Turn concepts into polished interactive pages, slide decks, and standards-compliant documentation.                                                                                                                                                                                                                           | `/teach-me`, `/frontend-slides`                                                         |
 
 ### How the plugins relate
 
 - **jbb-feature-dev** -- the _build_ phase: idea -> shipped code
-- **eng-utils** -- the _operate_ phase: system understanding, bug hunting, pruning
+- **eng-utils** -- the _operate_ phase: system understanding, pruning
 - **jiffy-toolkit** -- the _communicate_ phase: explanations, presentations, documentation standards
 
 ### Plugin scale
@@ -94,7 +94,7 @@ configured. Nothing here depends on a private MCP gateway.
 **Additional per plugin:**
 
 - **jbb-feature-dev**: `gh` for PR submission and CI monitoring
-- **eng-utils**: `git` and `gh`; the bug hunts read local checkouts
+- **eng-utils**: `git` and `gh`
 - **jiffy-toolkit**: optionally Python 3 + Playwright (for visual QA) and Manim (for math content)
 
 See each plugin's README for full details.
@@ -121,12 +121,11 @@ See each plugin's README for full details.
       - [3.3.2. Example usage - PR reviewing](#332-example-usage---pr-reviewing)
       - [3.3.3. Example usage - Complex Multi-stage workflow with chained custom commands](#333-example-usage---complex-multi-stage-workflow-with-chained-custom-commands)
         - [3.3.3.1. /research-problem](#3331-research-problem)
-        - [3.3.3.2. /create-plan](#3332-create-plan)
-        - [3.3.3.3. /clarify (optional)](#3333-clarify-optional)
-        - [3.3.3.4. /implement-plan](#3334-implement-plan)
-        - [3.3.3.5. /polish-code](#3335-polish-code)
-        - [3.3.3.6. /submit-pr](#3336-submit-pr)
-        - [3.3.3.7. MANUAL REVIEW](#3337-manual-review)
+        - [3.3.3.2. /clarify (optional)](#3332-clarify-optional)
+        - [3.3.3.3. /implement-change](#3333-implement-change)
+        - [3.3.3.4. /polish-code](#3334-polish-code)
+        - [3.3.3.5. /submit-pr](#3335-submit-pr)
+        - [3.3.3.6. MANUAL REVIEW](#3336-manual-review)
   - [4. Roadmap for More Skills, Agents and Commands](#4-roadmap-for-more-skills-agents-and-commands)
   - [5. Tips for Creating Agents, Commands and Skills](#5-tips-for-creating-agents-commands-and-skills)
     - [5.1. Creating Agents, Commands and Skills](#51-creating-agents-commands-and-skills)
@@ -142,7 +141,6 @@ See each plugin's README for full details.
         - [Summary](#summary-2)
   - [6. Final Words](#6-final-words)
   - [7. Getting in Touch](#7-getting-in-touch)
-  - [8. Running the Tests](#8-running-the-tests)
 
 ## 1. Inspiration
 
@@ -257,26 +255,25 @@ The `/submit-pr` skill generates reviewer-visible descriptions, discovers repo P
 
 #### 3.3.2. Example usage - PR reviewing
 
-PR reviews are very common and we typically look at similar aspects for each PR. The [/code-review skill](plugins/jbb-feature-dev/skills/code-review/) (which superseded `/pr-review` in jbb-feature-dev) spins up several specialist subagents — bug-catcher, security-reviewer, repo-rules-reviewer, general-code-reviewer, and Python/TypeScript language experts — to review the PR. This can be invoked using:
+PR reviews are very common and we typically look at similar aspects for each PR. The [/code-review skill](plugins/jbb-feature-dev/skills/code-review/) (which superseded `/pr-review` in jbb-feature-dev) runs two fresh read-only assessors, one general and one for bugs, against the PR and its objective. This can be invoked using:
 
 ```
 /code-review [PR_BRANCH_OR_NUMBER]
 ```
 
-The output of this command is a summary of it's findings and a list of all recommendations. **Note:** these recommendations are not automatically written to the PR. I prefer to review them first since many recommendations may not be ones that I agree should be addressed.
+On a colleague's PR the output is an objective check, the findings, a verdict, and drafted comments. **Note:** nothing is written to the PR. I prefer to review them first since many recommendations may not be ones that I agree should be addressed. On my own work it applies the findings instead.
 
 #### 3.3.3. Example usage - Complex Multi-stage workflow with chained custom commands
 
 One of my most common workflows when implementing features is a pretty complex one that involves a sequence of custom commands each with their own orchestration of agents/skills. The steps are:
 
 1. `/research-problem`
-2. `/create-plan-tdd`
-3. `/clarify (optional)`
-4. `/implement-plan-tdd`
-5. `/code-review`
-6. `/polish-code`
-7. `/submit-pr`
-8. MANUAL REVIEW!!!
+2. `/clarify (optional)`
+3. `/implement-change`
+4. `/code-review`
+5. `/polish-code`
+6. `/submit-pr`
+7. MANUAL REVIEW!!!
 
 ##### 3.3.3.1. /research-problem
 
@@ -292,39 +289,29 @@ Example usage:
 
 **Important:** I can't stress enough how important this step is. This is essentially Planning mode but with the addition of agents that can help you with the research required for the problem (You could say Planning Mode Plus). It's critical that you [give the required context](https://runnercode.com/blog/context-is-the-bottleneck-for-coding-agents-now) for the agents to be able to answer the question adequately and DO NOT be afraid to ask follow up questions. You can (and should) run this step in a "loop" until you are happy with the plan BEFORE proceeding.
 
-##### 3.3.3.2. /create-plan
-
-Once you're happy with the high-level plan it's time to create a more detailed plan. Typically I just pass the research document to this command and no other information.
-
-```
-/create-plan <LINK_TO_RESEARCH_DOC_PRODUCED_PREVIOUSLY>
-```
-
-This command produces another doc which is much more technical and contains lots of code. It's worth reviewing this because it basically outlines what will be implemented before the agent actually implements it. It's your chance to get on the same page as the agent proactively.
-
-##### 3.3.3.3. /clarify (optional)
+##### 3.3.3.2. /clarify (optional)
 
 You may or may not run this command depending on how confident you are that the plan is solid and what you expect. If you want more reassurance that the plan is solid then running the following command in Claude is a good step.
 
 ```
-/clarify <LINK_TO_IMPLEMENTATION_PLAN_FROM_PREVIOUS_STEP>
+/clarify <LINK_TO_RESEARCH_DOC_FROM_PREVIOUS_STEP>
 ```
 
-This does not produce a document but instead presents clarifying questions to the user about the plan.
+This does not produce a document but instead presents clarifying questions to the user about the research document.
 
 This command has been very useful for me.
 
-##### 3.3.3.4. /implement-plan
+##### 3.3.3.3. /implement-change
 
-Does what it says on the tin. Importantly, it makes sure that the agent keeps a todo list of tasks for implementing the plan and checks it off as it goes along so if it gets stuck or hangs at any point it knows where it left off. The command also forces the agent to stop and notify the user if it feels that it needs to diverge from the agreed plan.
-
-You can use it by running:
+Once you're happy with the high-level plan it's time to implement it. Typically I just pass the research document to this command and no other information.
 
 ```
-/implement-plan <LINK_TO_IMPLEMENTATION_PLAN_FROM_THE_CREATE_PLAN_STEP>
+/implement-change <LINK_TO_RESEARCH_DOC_PRODUCED_PREVIOUSLY>
 ```
 
-##### 3.3.3.5. /polish-code
+It implements the change in the current session, then independently simplifies, reviews and verifies it. The agent stops and asks if it needs a decision that blocks implementation or verification.
+
+##### 3.3.3.4. /polish-code
 
 Implementing the plan should hopefully produce something that solves the original problem but this doesn't guarantee that the code is of good enough quality for PR review (please do think about your peers). This is why I created the `/polish-code` command (formerly `/tidy` and `/auto-tidy`, merged in 0.5.0). It runs six passes — test enhancement, source simplification, test simplification, data annotation, coding guidelines, and formatting — with checkpoint commits at each stage so you can revert cleanly. Interactive by default; pass `--non-interactive` for autonomous mode that logs decisions instead of prompting.
 
@@ -334,11 +321,11 @@ Implementing the plan should hopefully produce something that solves the origina
 
 where `<TARGET_BRANCH>` is typically `master`. Use `/polish-code --non-interactive --branch master` for the autonomous variant.
 
-##### 3.3.3.6. /submit-pr
+##### 3.3.3.5. /submit-pr
 
 This is basically the [same discussed above](#331-example-usage---submit-a-pr-to-github) regarding submitting a PR.
 
-##### 3.3.3.7. MANUAL REVIEW
+##### 3.3.3.6. MANUAL REVIEW
 
 There is no substitute for reviewing this code yourself BEFORE sending the PR for review by your team members. Make sure you empathise with your team and don't forget this important step.
 
@@ -452,18 +439,3 @@ I'm loving working with Claude Code and it's configurable agentic capabilities. 
 ## 7. Getting in Touch
 
 If you have any questions or feedback about anything in this repository or just want to chat about coding agents/Claude Code, feel free to open an issue on this repository. Or if you think that the discussion/question is relevant to lots of people then open a discussion on this repository so it's visible for everyone.
-
-## 8. Running the Tests
-
-```bash
-bash hooks/tests/run-tests.sh
-```
-
-Exit code is the number of failing modules. Finding zero test modules is treated as
-a failure, not a pass.
-
-To prove the harness can report a failure at all:
-
-```bash
-EXPECT_BOOTSTRAP_RED=1 bash hooks/tests/run-tests.sh   # must exit non-zero
-```

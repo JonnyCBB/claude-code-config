@@ -84,10 +84,9 @@ For each finding, read the actual code at the referenced location.
 
 **Step 6: Filter low-value findings**
 
-Apply the LOW_VALUE category from `${CLAUDE_PLUGIN_ROOT}/skills/code-review/references/false-positive-guidance.md`
-**including its carve-outs**, rather than a separate list here. That file is the single definition;
-a second copy in this file drifted away from it once already and deleted findings the pipeline was
-being changed to keep.
+Apply the "Do not report" section of `${CLAUDE_PLUGIN_ROOT}/skills/code-review/checklist.md`
+as the LOW_VALUE definition, rather than a separate list here. A finding that cites a documented
+rule is kept even when it would otherwise look low value.
 
 - Generic warnings without concrete exploit or failure path -> Remove
 - Theoretical scenarios that require unlikely conditions -> Remove

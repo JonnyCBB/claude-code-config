@@ -118,7 +118,7 @@ def load_golden(name: str) -> set[str] | None:
 
 
 def validate_wave_0(failures: list[tuple[str, str]]) -> None:
-    """Wave 0: goldens exist with comment headers; harness present."""
+    """Wave 0: goldens exist with comment headers."""
     for lang in LANGUAGES:
         gpath = GOLDEN_DIR / f"{lang}-tool-union.txt"
         if not gpath.exists():
@@ -133,9 +133,6 @@ def validate_wave_0(failures: list[tuple[str, str]]) -> None:
                 f"golden/{lang}-tool-union.txt",
                 "comment header must cite source agents",
             )
-    harness = AGENTS_DIR / "tests" / "verify-agents.sh"
-    if not harness.exists():
-        _record(failures, "agents/tests/verify-agents.sh", "missing")
 
 
 def validate_agent_frontmatter(
@@ -367,9 +364,6 @@ def validate_wave_3(failures: list[tuple[str, str]]) -> None:
     targets = [
         SKILLS_DIR / "polish-code" / "SKILL.md",
         SKILLS_DIR / "code-review" / "SKILL.md",
-        SKILLS_DIR / "implement-plan-tdd" / "SKILL.md",
-        SKILLS_DIR / "implement-plan-tdd" / "references" / "wave-execution-guide.md",
-        SKILLS_DIR / "create-plan-tdd" / "SKILL.md",
         SKILLS_DIR / "research-problem" / "references" / "agent-guide.md",
     ]
     for path in targets:
@@ -385,20 +379,6 @@ def validate_wave_3(failures: list[tuple[str, str]]) -> None:
                 failures,
                 str(path.relative_to(PLUGIN_ROOT)),
                 f"references old agent {m.group(0)!r}",
-            )
-
-    code_review = SKILLS_DIR / "code-review" / "SKILL.md"
-    if code_review.exists():
-        text = code_review.read_text()
-        if "Combined-invocation fallback" not in text:
-            _record(
-                failures,
-                "code-review/SKILL.md",
-                "combined-invocation fallback section missing",
-            )
-        if "issue #7406" not in text:
-            _record(
-                failures, "code-review/SKILL.md", "issue #7406 cross-reference missing"
             )
 
 

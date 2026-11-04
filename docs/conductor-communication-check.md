@@ -3,8 +3,6 @@
 Enforces `conductor-communication-contract.md` section 9.
 
 - **The check:** `hooks/comms-contract-check.py`
-- **Its tests:** `scripts/tests/test-comms-contract-check.py`
-- **Its corpora:** `scripts/tests/fixtures/comms-contract/`
 - **Registered as:** a `Stop` hook in `settings.json`
 
 A rule written twice was broken twice, and Jonny declined to be the safety net, so this program is the only thing between the contract and a third failure.
@@ -46,7 +44,7 @@ Adjacency is not a description: `` `c39` flagged it`` is refused.
 
 Suffixes are 3-4 characters and collide with English (`part` is a live suffix; eleven are pure digits). The rule is two-tier. In an **identifier context** (backticks, bold, after a lead word like "bead", alone in a table cell) a live suffix is always an identifier. In **plain prose** it is one only if it could not be an English word or a bare number.
 
-The English test is the system dictionary (`/usr/share/dict/words`, loaded lazily, only in a conductor session), not a hand-kept list, because `bd` generates ids outside this repo. `TECHNICAL_WORDS` (`env`, `dir`, `api`, `cli`) is roughly forty words and not an equivalent fallback: with no system dictionary, English-word suffixes become false positives again. Tests pin that degradation. Words the dictionary masks in prose are still caught in an identifier context.
+The English test is the system dictionary (`/usr/share/dict/words`, loaded lazily, only in a conductor session), not a hand-kept list, because `bd` generates ids outside this repo. `TECHNICAL_WORDS` (`env`, `dir`, `api`, `cli`) is roughly forty words and not an equivalent fallback: with no system dictionary, English-word suffixes become false positives again. Words the dictionary masks in prose are still caught in an identifier context.
 
 Two exemptions:
 
@@ -67,8 +65,6 @@ Two exemptions:
 python3 hooks/comms-contract-check.py --file draft.md
 python3 hooks/comms-contract-check.py --stdin < draft.md
 python3 hooks/comms-contract-check.py --file draft.md --identifiers frozen-ids.json   # reproducible
-python3 scripts/tests/test-comms-contract-check.py
-EXPECT_BOOTSTRAP_RED=1 python3 scripts/tests/test-comms-contract-check.py   # must exit 1
 ```
 
-`--identifiers` takes a frozen id list because the live queue moves between runs. Each habit word carries its own matching rules (only "surface" needs part-of-speech sensitivity) as a data row. This repository runs no CI, so the test suite is the only gate; the bootstrap-RED sentinel stops a harness with zero assertions printing green.
+`--identifiers` takes a frozen id list because the live queue moves between runs. Each habit word carries its own matching rules (only "surface" needs part-of-speech sensitivity) as a data row.

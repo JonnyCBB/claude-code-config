@@ -115,8 +115,8 @@ The skill reads and writes per-branch git config values to track stack relations
 
 | Key                             | Purpose                            | Set By                      | Read By                      |
 | ------------------------------- | ---------------------------------- | --------------------------- | ---------------------------- |
-| `branch.<name>.gh-merge-base`   | Declared parent branch name        | implement-plan-tdd (Plan A) | rebase-stack, `gh pr create` |
-| `branch.<name>.stackBaseCommit` | Parent branch SHA at creation time | implement-plan-tdd (Plan A) | rebase-stack (for --onto)    |
+| `branch.<name>.gh-merge-base`   | Declared parent branch name        | stack creation (Plan A)     | rebase-stack, `gh pr create` |
+| `branch.<name>.stackBaseCommit` | Parent branch SHA at creation time | stack creation (Plan A)     | rebase-stack (for --onto)    |
 
 ### Reading Config
 

@@ -75,7 +75,7 @@ Non-interactive runs only.
 
 ## Branch Chain rules
 
-`implement-plan-tdd`, `submit-pr` and `rebase-stack` read the Branch Name and Base Branch
+`submit-pr` and `rebase-stack` read the Branch Name and Base Branch
 columns and process rows top to bottom, so:
 
 - Row order is dependency order.

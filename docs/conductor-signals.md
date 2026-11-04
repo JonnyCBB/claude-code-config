@@ -101,12 +101,3 @@ Appended to `${XDG_STATE_HOME:-~/.local/state}/conductor-signals/escalations.jso
 | `CONDUCTOR_SIGNALS_STATE_DIR` | `$XDG_STATE_HOME/conductor-signals` | Escalation log location |
 
 `--resources-from <file>` replaces the live capacity read with a captured one, to exercise the veto and disagreement paths.
-
-## Tests
-
-```bash
-bash scripts/tests/test-conductor-signals.sh                       # 67 assertions
-EXPECT_BOOTSTRAP_RED=1 bash scripts/tests/test-conductor-signals.sh # must exit 1
-```
-
-Every signal has a case that must fire and one that must stay silent, built from the real text that produced it. The bootstrap-RED sentinel exists because this repo has no CI (`hq-sqmi`) and a zero-assertion harness would exit 0. Fixture JSON is validated before every run (a trailing comma once produced zero hits, which reads like a clean queue). `bd`, `gh` and `agent-deck` are stubbed; worker worktrees are real git repos.

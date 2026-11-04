@@ -193,7 +193,7 @@ Multiple viable design approaches were identified in this research:
 - [tension/ambiguity 2]
 
 Consider running `/design-approach [path-to-this-doc]` to explore and compare
-approaches before creating an implementation plan with `/create-plan-tdd`.
+approaches before implementing with `/implement-change`.
 
 {{If requirements were gathered, add:}}
 Include the requirements doc: `/design-approach [research-doc] --requirements=[requirements-doc]`
@@ -201,7 +201,7 @@ Include the requirements doc: `/design-approach [research-doc] --requirements=[r
 {{If this research is straightforward with one clear approach, include:}}
 
 No significant design tensions were identified. Proceeding directly to
-`/create-plan-tdd` is recommended.
+`/implement-change` is recommended.
 ```
 
 ## Step 12: GitHub Permalink Generation

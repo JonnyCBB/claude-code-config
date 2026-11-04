@@ -147,75 +147,22 @@ Multi-architect design exploration before planning. Spawns competing architect a
 /design-approach --non-interactive ~/.claude/thoughts/shared/research/2026-03-28-search-feature.md
 ```
 
-### /create-plan-tdd
-
-Create detailed TDD implementation plans with wave-based parallelism and multi-persona review.
-
-**Key features**:
-
-- Test-Driven Development methodology: every task follows Red-Green-Refactor cycle
-- Wave 0 for shared test infrastructure setup
-- Wave-based parallelism: tasks within a wave have no mutual dependencies
-- Domain and language detection for specialized agents
-- Context gathering with parallel research agents
-- Multi-persona review loop (TDD Methodology reviewer + others based on plan characteristics)
-- Consumes research docs, scoping docs, and design decision docs as inputs
-
-**Output**: `~/.claude/thoughts/shared/plans/YYYY-MM-DD-description.md`
-
-**Examples**:
-
-```bash
-/create-plan-tdd
-/create-plan-tdd ~/.claude/thoughts/shared/research/2026-03-28-search-feature.md
-/create-plan-tdd --non-interactive ~/.claude/thoughts/shared/research/2026-03-28-search-feature.md
-```
-
-### /implement-plan-tdd
-
-Execute TDD implementation plans with wave-based parallel agents and worktree isolation.
-
-**Key features**:
-
-- Spawns separate RED and GREEN agents per task for strict TDD enforcement
-- RED phase: parallel failing-test agents in isolated worktrees → merge
-- GREEN phase: parallel implementation agents in isolated worktrees → merge
-- Integration check after each wave
-- Spec compliance review verifying implementation matches plan
-- Resume-safe: checkmarks in the plan track progress
-- Agent status protocol: DONE, DONE_WITH_CONCERNS, BLOCKED, NEEDS_CONTEXT
-- Final code quality review with language-specific code style reviewers
-
-**Output**: Code changes with checkmarked plan file
-
-**Examples**:
-
-```bash
-/implement-plan-tdd ~/.claude/thoughts/shared/plans/2026-03-28-search-feature.md
-/implement-plan-tdd --non-interactive ~/.claude/thoughts/shared/plans/2026-03-28-search-feature.md
-```
-
 ### /code-review
 
-Comprehensive multi-agent code review covering bugs, security, code style, test quality, and holistic review.
+Single-pass review of a branch, working tree or PR against its objective: correctness, scope, tests, reuse, performance, minimal code, readability, naming and comments.
 
 **Key features**:
 
-- Phase 1 (Context): gathers codebase patterns, conventions, sibling implementations
-- Phase 2 (Review): spawns parallel specialist agents — bug-catcher, security-reviewer, repo-rules-reviewer, language experts (python-expert, typescript-expert) in code-style and test-review modes, general-code-reviewer, domain experts
-- Phase 3 (Post-Review): sequential calibration (adversarial verification against actual code) and deduplication
-- Configurable severity filtering: default MEDIUM+, `--all-severities`, `--strict-severity` (HIGH+CRITICAL only)
-- Structured finding schema enabling automated PR comment submission via `/crit-pr-review`
-
-**Output**: `~/.claude/thoughts/shared/reviews/review_<PR>_<DATE>.md`
+- Two fresh read-only `general-purpose` assessors run concurrently on one snapshot: a general assessor (`checklist.md` plus `java.md`, `python.md` or `typescript.md`) and a bug assessor (`bug-review`)
+- Fix mode on your own work: applies validated findings, runs the repo's tests and lint, and commits only when authorized
+- Colleague mode on someone else's PR: read-only, gives an Approve / Request changes verdict and drafts comments; posts nothing
+- Security and repo conventions are left to a dedicated review bot or reviewer
 
 **Examples**:
 
 ```bash
-/code-review 123                      # Review PR #123
-/code-review my-feature-branch        # Review a branch
-/code-review 123 --all-severities     # Include LOW findings
-/code-review 123 --strict-severity    # Only HIGH+CRITICAL
+/code-review                          # Review the current branch (fix mode)
+/code-review 123                      # Review PR #123 (colleague mode if you are not the author)
 ```
 
 ### /polish-code
@@ -464,15 +411,15 @@ working repository, so this figure is not reproducible from a plugin install.
 
 ## Agents (14)
 
-Includes 4 research/discovery agents (codebase-explorer, thoughts-explorer, web-search-researcher, visual-aid-recommender), 8 code review agents (bug-catcher, security-reviewer, repo-rules-reviewer, general-code-reviewer, ml-pipeline-reviewer, quality-checker, review-calibrator, review-deduplicator), and 2 mode-aware language experts (python-expert, typescript-expert).
+Includes 4 research/discovery agents (codebase-explorer, thoughts-explorer, web-search-researcher, visual-aid-recommender), 8 code review agents (bug-catcher, security-reviewer, repo-rules-reviewer, general-code-reviewer, ml-pipeline-reviewer, quality-checker, review-calibrator, review-deduplicator; `/code-review` itself no longer dispatches them), and 2 mode-aware language experts (python-expert, typescript-expert).
 
 ## Agent-Loaded Skills
 
-Knowledge loaded by agents rather than invoked directly: code style patterns (`code-style-common`, `python-code-style`, `typescript-code-style`), review modes (`code-review-modes`), ML model patterns (`ml-model-patterns`), and shared references and guidelines (`shared-references`, `decision-principles`, `diagram-standards`).
+Knowledge loaded by agents rather than invoked directly: code style patterns (`code-style-common`, `python-code-style`, `typescript-code-style`), review modes (`code-review-modes`), and shared references and guidelines (`shared-references`, `diagram-standards`).
 
 ## Prerequisites
 
-- The `gh` CLI, authenticated against the GitHub host your repositories live on, for `/submit-pr`, `/babysit-pr`, `/crit-pr-review` and `/rebase-stack`.
+- The `gh` CLI, authenticated against the GitHub host your repositories live on, for `/submit-pr`, `/crit-pr-review` and `/rebase-stack`.
 - The `bd` (beads) CLI for `/sweep-followups` and the `Stop` hook. Without a Beads queue the hook exits silently.
 
 ### Optional

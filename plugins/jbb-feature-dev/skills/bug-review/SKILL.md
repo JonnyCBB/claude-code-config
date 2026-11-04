@@ -1,51 +1,30 @@
 ---
 name: bug-review
 description: >
-  Checks change-caused bugs against accepted inputs, reachable states, and authoritative contracts.
-  Supplies the existing bug-catcher's read-only assessment within code-review, not another worker or a replacement review pipeline.
-  Use when the bug-catcher agent runs inside /code-review and needs the bug evidence contract.
+  Assesses correctness only as code-review's read-only bug assessor. Finds evidenced
+  defects in changed behavior or contracts; does not orchestrate reviews or apply fixes.
+  Use when code-review dispatches its bug assessor.
 ---
 
 # Bug review
 
-Use the caller's objective, acceptance criteria, pinned base, head, diff, and relevant working-tree files.
-If required scope or contract evidence is missing, report that limit instead of inventing intent.
-Keep the reviewed checkout unchanged. Security findings belong to the existing security-reviewer.
+Use the caller's supplied snapshot, mode, objective, acceptance criteria, scope, and output format.
+Confirm the root, worktree, branch, base, head, tracked diff, and relevant untracked contents.
+Report missing inputs as blocked; do not silently substitute another checkout or comparison.
+Read the Correctness and Do not report sections of [the canonical checklist](../code-review/checklist.md).
+Inspect changed paths and relevant callers, consumers, sibling implementations, and authoritative contracts.
+Honor the caller's large-diff limit and state reduced coverage.
 
-## Establish the failure
+Admit a bug only with a concrete accepted input or state, a reachable changed path, and an authoritative
+objective or contract that establishes the expected result. Show the expected and actual result,
+quoted location, causal trace, and consequence. Do not turn preferences or hypothetical invalid inputs into defects.
+Try a minimal safe, isolated local probe when feasible. Keep dependencies local and shared checkout state unchanged.
+Label source-derived results as source-derived, not observed. If execution is missing, state why and what remains unverified.
+If a material uncertainty prevents establishing a defect, keep it outside admitted findings with the evidence needed to resolve it.
 
-For each candidate:
-
-1. Name a concrete accepted input or reachable state. Trace validation, callers, transitions, and consumers;
-   do not infer reachability from a branch alone. Include boundary values and malformed-but-accepted present data.
-2. Read the authoritative objective or contract that establishes the expected outcome, such as an approved criterion,
-   schema, API contract, or caller guarantee. Reconcile contradictory comments, messages, tests, and sibling behavior;
-   none alone proves intent when stronger evidence conflicts.
-3. Trace how a scoped change introduces the failure or makes an existing path wrong. Compare the pinned base;
-   a pre-existing pattern alone is not a change-caused bug.
-4. State expected versus actual behavior and the consequence. Separate an observed result from a source-supported
-   conclusion and from uncertainty. Never describe a predicted result as executed evidence.
-5. Run a safe isolated local probe when feasible. Use local fixtures or fakes, bounded execution, and separate
-   scratch/build outputs. Do not contact deployed systems, copy secrets, weaken authentication, or run destructive probes.
-   Do not edit reviewed files or race other reviewers on shared build/test outputs. If isolation is unavailable,
-   return the proposed check to the coordinator rather than executing it in the shared checkout.
-6. Record the actual setup, inputs, action, expected result, output, and exit status for an executed probe.
-   If execution is missing, say why and identify what remains unverified. Source evidence can support a finding
-   without execution, but cannot prove an observed failure.
-
-For example, an accepted zero limit that reaches a new division path needs a contract for zero's meaning,
-its caller path, and the expected result. An isolated probe can confirm the exception; an unreachable zero cannot.
-
-## Return findings and limits separately
-
-Use the caller's finding schema and confidence/admission rules. Within code-review, use
-[the finding schema](../code-review/references/finding-schema.md) and
-[comment format](../code-review/references/comment-format.md).
-Put the input/state, contract, change-caused path, expected/actual distinction, evidence, and execution limit
-in the finding body; do not add fields or change severity/category values. Leave calibration and false-positive
-filtering to the existing pipeline.
-
-Do not admit an uncertain bug merely to preserve it. Return material unresolved concerns separately with
-supporting evidence, the missing fact or probe, and what would confirm or refute them. Report coverage separately:
-paths/contracts inspected, probes executed, and missing execution or context. Zero admitted findings does not mean
-an unqualified clean result when material concerns or required coverage remain unresolved.
+Remain read-only: no source edits, commits, posting, production/deployed requests, or nested agents.
+Do not run the parent's shared baseline checks. Do not weaken checks or change global credentials for a probe.
+Return findings in the caller's supplied format, with instructions read, evidence, and assessed state.
+Report material uncertainty and coverage limits outside admitted findings; zero findings does not establish full coverage.
+Return not applicable only with evidence that neither executable behavior nor a behavioral contract changes.
+State that reason rather than claiming a clean bug review. Leave fixes and disputed conclusions to the caller.

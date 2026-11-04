@@ -115,7 +115,7 @@ Skills default to one `SKILL.md` (Jonny, 2026-09-07). Reference files only when 
 
 ### TDD scope
 
-Apply Red-Green-Refactor only to code behavior files (source, tests, config affecting runtime). Do NOT write tests for documentation (markdown, READMEs, workflow templates) unless asked. This applies to `/create-plan-tdd`, `/implement-change`, `/implement-plan-tdd` and any TDD workflow. **A markdown file that EXECUTES is not documentation:** a skill file that shells out, templates a string into a command, or defines a data format another step parses is code and is tested like code. Test: could a wrong character make a command fail, run the wrong thing, or run something an outsider supplied?
+Apply Red-Green-Refactor only to code behavior files (source, tests, config affecting runtime). Do NOT write tests for documentation (markdown, READMEs, workflow templates) unless asked. This applies to `/implement-change` and any TDD workflow. **A markdown file that EXECUTES is not documentation:** a skill file that shells out, templates a string into a command, or defines a data format another step parses is code and is tested like code. Test: could a wrong character make a command fail, run the wrong thing, or run something an outsider supplied?
 
 ### Skill compliance
 

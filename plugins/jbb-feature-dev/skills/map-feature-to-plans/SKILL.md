@@ -5,7 +5,7 @@ description: >
   one implementation plan. Every extra plan must cite a named justification; otherwise the
   output is "single plan" (a no-op pass-through). When it splits, produces plan outlines
   with file lists, a dependency graph, execution waves, and a PR strategy. Use after
-  research completes and before create-plan-tdd. Trigger phrases (1) "feature to plans"
+  research completes and before implement-change. Trigger phrases (1) "feature to plans"
   (2) "split into plans" (3) "split feature for implementation" (4) "how many plans"
   (5) "plan from feature". Outputs to ~/.claude/thoughts/shared/scoping/.
 ---
@@ -13,7 +13,7 @@ description: >
 # Map Feature to Plans
 
 Decide how many implementation plans a researched feature needs. Each plan outline feeds
-`create-plan-tdd` directly.
+`implement-change` directly.
 
 ## Step 0: Check the input level
 
@@ -27,8 +27,8 @@ raise an escalation._
 
 ## Mode
 
-- `--non-interactive`: auto-approve every decision using
-  `${CLAUDE_PLUGIN_ROOT}/skills/decision-principles/SKILL.md` and log each one. The research-doc path
+- `--non-interactive`: auto-approve every decision by
+  choosing the safest, best-evidenced, simplest option and log each one. The research-doc path
   is required.
 - A file path: read it fully (no limit/offset), plus any requirements and design docs it
   names — the reviewers trace plans to their acceptance criteria — and begin.
@@ -96,7 +96,7 @@ Synthesize the feedback, resolve every Must Address item, and re-review. Stop af
 iterations, or when there are zero Must Address items, zero disagreements and at most 2
 Should Consider items. Unresolved Must Address items go to Step 5.
 
-_Non-interactive: one iteration only. Resolve Must Address items with decision-principles
+_Non-interactive: one iteration only. Resolve Must Address items by choosing the safest, best-evidenced, simplest option
 and record each under `## Autonomous Decisions` → `### Review Synthesis` in the scoping doc
 (the orchestrator checks for that heading). Record Should Consider items as advisory
 notes._
@@ -106,16 +106,16 @@ notes._
 Present the scoping doc and ask whether the plan boundaries, cited justifications,
 dependencies, waves and PR strategy are right. Iterate until approved.
 
-_Non-interactive: auto-approve with decision-principles and log the decision._
+_Non-interactive: auto-approve by choosing the safest, best-evidenced, simplest option and log the decision._
 
 ## Step 6: Write the scoping doc
 
 Write `~/.claude/thoughts/shared/scoping/YYYY-MM-DD-<kebab-description>.md` from
-`references/output-template.md`. `implement-plan-tdd`, `submit-pr` and `rebase-stack` parse
+`references/output-template.md`. `submit-pr` and `rebase-stack` parse
 its Branch Chain table, so keep those headings and columns exactly.
 
 Then list the next command for each plan, e.g.
-`/create-plan-tdd "Plan 2 outline"` (after Plan 1).
+`/implement-change "Plan 2 outline"` (after Plan 1).
 
 If a plan later fails during implementation, re-run this skill with the failure context to
 revise the outlines.
