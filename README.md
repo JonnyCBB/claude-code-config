@@ -121,11 +121,10 @@ See each plugin's README for full details.
       - [3.3.2. Example usage - PR reviewing](#332-example-usage---pr-reviewing)
       - [3.3.3. Example usage - Complex Multi-stage workflow with chained custom commands](#333-example-usage---complex-multi-stage-workflow-with-chained-custom-commands)
         - [3.3.3.1. /research-problem](#3331-research-problem)
-        - [3.3.3.2. /clarify (optional)](#3332-clarify-optional)
-        - [3.3.3.3. /implement-change](#3333-implement-change)
-        - [3.3.3.4. /polish-code](#3334-polish-code)
-        - [3.3.3.5. /submit-pr](#3335-submit-pr)
-        - [3.3.3.6. MANUAL REVIEW](#3336-manual-review)
+        - [3.3.3.2. /implement-change](#3332-implement-change)
+        - [3.3.3.3. /polish-code](#3333-polish-code)
+        - [3.3.3.4. /submit-pr](#3334-submit-pr)
+        - [3.3.3.5. MANUAL REVIEW](#3335-manual-review)
   - [4. Roadmap for More Skills, Agents and Commands](#4-roadmap-for-more-skills-agents-and-commands)
   - [5. Tips for Creating Agents, Commands and Skills](#5-tips-for-creating-agents-commands-and-skills)
     - [5.1. Creating Agents, Commands and Skills](#51-creating-agents-commands-and-skills)
@@ -268,12 +267,11 @@ On a colleague's PR the output is an objective check, the findings, a verdict, a
 One of my most common workflows when implementing features is a pretty complex one that involves a sequence of custom commands each with their own orchestration of agents/skills. The steps are:
 
 1. `/research-problem`
-2. `/clarify (optional)`
-3. `/implement-change`
-4. `/code-review`
-5. `/polish-code`
-6. `/submit-pr`
-7. MANUAL REVIEW!!!
+2. `/implement-change`
+3. `/code-review`
+4. `/polish-code`
+5. `/submit-pr`
+6. MANUAL REVIEW!!!
 
 ##### 3.3.3.1. /research-problem
 
@@ -289,19 +287,7 @@ Example usage:
 
 **Important:** I can't stress enough how important this step is. This is essentially Planning mode but with the addition of agents that can help you with the research required for the problem (You could say Planning Mode Plus). It's critical that you [give the required context](https://runnercode.com/blog/context-is-the-bottleneck-for-coding-agents-now) for the agents to be able to answer the question adequately and DO NOT be afraid to ask follow up questions. You can (and should) run this step in a "loop" until you are happy with the plan BEFORE proceeding.
 
-##### 3.3.3.2. /clarify (optional)
-
-You may or may not run this command depending on how confident you are that the plan is solid and what you expect. If you want more reassurance that the plan is solid then running the following command in Claude is a good step.
-
-```
-/clarify <LINK_TO_RESEARCH_DOC_FROM_PREVIOUS_STEP>
-```
-
-This does not produce a document but instead presents clarifying questions to the user about the research document.
-
-This command has been very useful for me.
-
-##### 3.3.3.3. /implement-change
+##### 3.3.3.2. /implement-change
 
 Once you're happy with the high-level plan it's time to implement it. Typically I just pass the research document to this command and no other information.
 
@@ -311,7 +297,7 @@ Once you're happy with the high-level plan it's time to implement it. Typically 
 
 It implements the change in the current session, then independently simplifies, reviews and verifies it. The agent stops and asks if it needs a decision that blocks implementation or verification.
 
-##### 3.3.3.4. /polish-code
+##### 3.3.3.3. /polish-code
 
 Implementing the plan should hopefully produce something that solves the original problem but this doesn't guarantee that the code is of good enough quality for PR review (please do think about your peers). This is why I created the `/polish-code` command (formerly `/tidy` and `/auto-tidy`, merged in 0.5.0). It runs six passes — test enhancement, source simplification, test simplification, data annotation, coding guidelines, and formatting — with checkpoint commits at each stage so you can revert cleanly. Interactive by default; pass `--non-interactive` for autonomous mode that logs decisions instead of prompting.
 
@@ -321,11 +307,11 @@ Implementing the plan should hopefully produce something that solves the origina
 
 where `<TARGET_BRANCH>` is typically `master`. Use `/polish-code --non-interactive --branch master` for the autonomous variant.
 
-##### 3.3.3.5. /submit-pr
+##### 3.3.3.4. /submit-pr
 
 This is basically the [same discussed above](#331-example-usage---submit-a-pr-to-github) regarding submitting a PR.
 
-##### 3.3.3.6. MANUAL REVIEW
+##### 3.3.3.5. MANUAL REVIEW
 
 There is no substitute for reviewing this code yourself BEFORE sending the PR for review by your team members. Make sure you empathise with your team and don't forget this important step.
 
