@@ -8,7 +8,7 @@
 # ### THIS DELIBERATELY DOES NOT TOUCH heartbeat.sh. MEASURED 2026-08-29.
 #
 # `agent-deck conductor status --json` REGENERATES
-# ~/.local/share/agent-deck/conductor/conductor-hq/heartbeat.sh from a template, within a
+# ~/.local/share/agent-deck/conductor/hq/heartbeat.sh from a template, within a
 # second, silently. It reads like a status query and is not one.
 #
 # Installing an instrumented script over heartbeat.sh is therefore self-defeating:
@@ -29,7 +29,7 @@
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-HQ_DIR="${CONDUCTOR_HQ_DIR:-$HOME/.local/share/agent-deck/conductor/conductor-hq}"
+HQ_DIR="${CONDUCTOR_HQ_DIR:-$HOME/.local/share/agent-deck/conductor/hq}"
 
 SRC_RULES="$REPO_ROOT/docs/conductor-heartbeat-rules.md"
 DST_RULES="$HQ_DIR/HEARTBEAT_RULES.md"
@@ -54,21 +54,45 @@ STAMP=$(date -u +%Y%m%dT%H%M%SZ)
 cp "$SRC_RULES" "$DST_RULES" && ok "installed HEARTBEAT_RULES.md" \
     || fail "could not install HEARTBEAT_RULES.md"
 
-# Report the real interval. meta.json records heartbeat_interval: 0, which does
-# NOT match the plist and must not be trusted; if agent-deck ever regenerates the
-# plist from meta.json the cadence could silently change, so surface it here.
-PLIST="$HOME/Library/LaunchAgents/com.agentdeck.conductor-heartbeat.conductor-hq.plist"
+# Report the real interval, from whichever scheduler this host actually uses.
+# meta.json records heartbeat_interval: 0, which matches neither and must not be
+# trusted; if agent-deck ever regenerates the job definition from meta.json the
+# cadence could silently change, so surface the live figure here.
+#
+# Looking only at launchd printed "launchd plist not found at
+# ~/Library/LaunchAgents/..." on the Linux VM -- a false alarm where nothing was
+# wrong, and no interval at all on the host this is most often run from.
+INTERVAL=""
+SCHEDULER=""
+PLIST="$HOME/Library/LaunchAgents/com.agentdeck.conductor-heartbeat.hq.plist"
+TIMER="$HOME/.config/systemd/user/conductor-heartbeat-hq.timer"
 if [ -f "$PLIST" ]; then
+    SCHEDULER="the launchd plist"
     INTERVAL=$(awk '/StartInterval/{getline; gsub(/[^0-9]/,""); print; exit}' "$PLIST")
-    if [ -n "$INTERVAL" ]; then
-        printf 'note  interval %ss (%s min) per the plist -- expect ~%s receipts overnight\n' \
-            "$INTERVAL" "$((INTERVAL / 60))" "$((8 * 3600 / INTERVAL))"
-    fi
+elif [ -f "$TIMER" ]; then
+    SCHEDULER="the systemd timer"
+    # OnUnitActiveSec takes a systemd time span: bare seconds, or a unit suffix.
+    INTERVAL=$(awk -F= '/^ *OnUnitActiveSec *=/{v=$2; gsub(/[[:space:]]/,"",v);
+        if (v ~ /^[0-9]+h$/)      {gsub(/h/,"",v); print v*3600}
+        else if (v ~ /^[0-9]+m(in)?$/) {gsub(/m(in)?/,"",v); print v*60}
+        else if (v ~ /^[0-9]+s?$/)     {gsub(/s/,"",v); print v}
+        exit}' "$TIMER")
+fi
+if [ -n "$INTERVAL" ] && [ "$INTERVAL" -gt 0 ] 2>/dev/null; then
+    printf 'note  interval %ss (%s min) per %s -- expect ~%s receipts overnight\n' \
+        "$INTERVAL" "$((INTERVAL / 60))" "$SCHEDULER" "$((8 * 3600 / INTERVAL))"
+elif [ -n "$SCHEDULER" ]; then
+    printf 'note  found %s but could not read an interval from it\n' "$SCHEDULER"
 else
-    printf 'note  launchd plist not found at %s\n' "$PLIST"
+    printf 'note  no scheduler found -- looked for %s and %s\n' "$PLIST" "$TIMER"
 fi
 
-RECEIPTS="$HQ_DIR/heartbeat-received.log"
+# Same default and same override as conductor-heartbeat.sh, so the count
+# reported here is taken from the file the runner actually interrogates. With
+# only one of the two overrides honoured, setting it made this print the receipt
+# count of a different file with no error on either side -- a check that passes
+# while reading the wrong thing.
+RECEIPTS="${HEARTBEAT_RECEIPT_LOG:-$HQ_DIR/heartbeat-received.log}"
 if [ -f "$RECEIPTS" ]; then
     printf 'note  %s receipts recorded so far\n' "$(wc -l < "$RECEIPTS" | tr -d ' ')"
 else

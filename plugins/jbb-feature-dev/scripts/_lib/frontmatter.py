@@ -1,8 +1,6 @@
 """Shared YAML frontmatter helpers for plugin validators.
 
-Extracted from validate_consolidation.py once a second consumer
-(validate_plan_b_contract_artifacts.py) appeared. Both validators import from
-here so changes to the parser stay in one place.
+Validators import from here so changes to the parser stay in one place.
 """
 
 from __future__ import annotations

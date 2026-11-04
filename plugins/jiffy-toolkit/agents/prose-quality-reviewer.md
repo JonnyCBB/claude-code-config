@@ -21,7 +21,7 @@ You receive:
 - **Grammar errors**: Subject-verb agreement, tense consistency, pronoun references, dangling modifiers, parallel structure
 - **Spelling errors**: Including technical terms, proper nouns, common homonym errors (its/it's, their/there, affect/effect)
 - **Clarity problems**: Ambiguous pronouns, vague language ("this", "it" without clear referent), double negatives, overly complex sentences
-- **Conciseness issues**: Unnecessary filler words, redundant phrases ("in order to" → "to"), wordy constructions
+- **Conciseness issues**: Unnecessary filler words, redundant phrases ("in order to" → "to"), wordy constructions. Conciseness removes words that carry nothing. Never flag as too long a sentence that gives a definition, a step, an example or a result the reader needs; if the reader would have to infer one, flag the gap instead
 - **Word choice**: Imprecise terms, jargon without explanation, informal language in formal docs (or vice versa)
 - **Tone mismatches**: Inconsistent formality level, inappropriate humor or casualness
 - **Acronym violations**: Undefined acronyms not on the allowlist — flag with `suggested_edit` expanding the acronym on first use. If the expansion is unknown, set `auto_edit_safe: false` and note in rationale.
@@ -62,6 +62,7 @@ Emit findings per `references/finding-schema.md`. Set `category` to PROSE and `s
 - Document structure or section ordering (structure-reviewer)
 - Missing diagrams or visual aids (visual-aid-reviewer)
 - Accessibility issues (accessibility-reviewer)
+- Unexplained non-acronym terminology (accessibility-reviewer). Acronyms stay yours, because only you read the allowlist
 - AI parsability (agent-readability-reviewer)
 - Reader engagement patterns (engagement-reviewer)
 - Cross-document formatting consistency (consistency-checker — unless it's a terminology choice at the word level)

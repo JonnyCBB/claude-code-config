@@ -3,8 +3,8 @@
 Produce an HTML walkthrough of a pull request for a reader who has not looked at the code, ending in
 a merge recommendation they can act on.
 
-Everything in `SKILL.md` still applies, and `references/craft.md` carries the length band, the visual
-density target and the self-containment rules for both modes - it is the single place those numbers
+Everything in `SKILL.md` still applies, and `references/craft.md` carries the length checks, the visual
+guidance and the self-containment rules for both modes - it is the single place those rules
 live, so do not restate them here. This file adds only what is specific to a pull request.
 
 ## Step 1: Run the signals script first
@@ -88,7 +88,7 @@ action derived from *this* PR's actual gaps.
 
 | | |
 | --- | --- |
-| Acceptable | `MERGE AFTER running the 4 publish-to-snow script tests locally and confirming the two bash snippets in SKILL.md execute` |
+| Acceptable | `MERGE AFTER running the 4 publish-script tests locally and confirming the two bash snippets in SKILL.md execute` |
 | **A failure to correct, not an acceptable output** | `MERGE AFTER manual checks` |
 
 **`branch_currency` has three values and only one of them is good news.** `current` means the branch

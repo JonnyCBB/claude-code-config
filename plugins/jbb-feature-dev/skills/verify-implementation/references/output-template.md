@@ -1,20 +1,36 @@
 # Evidence Document Template
 
-Use this template when generating the verification evidence document in Step 9.
+Use this template when generating the verification evidence document in Step 10.
+Use the task objective and acceptance criteria when no formal plan exists. Replace every
+placeholder with observed evidence; examples and expected results are not successful runs.
+Remove irrelevant sections and explain any required check that is blocked or missing.
+Record each execution once and reference it from all applicable sections, not as extra checks.
+Write user-facing explanations in STE as specified in SKILL.md; preserve exact commands and raw output.
 
 ---
 
 ````markdown
-# Verification Suite: [Plan Title]
+# Verification Evidence: [Task or Plan Title]
 
-**Date**: YYYY-MM-DD HH:MM:SS TZ
-**Plan**: ~/.claude/thoughts/shared/plans/YYYY-MM-DD-description.md
-**Branch**: [feature-branch]
-**Commit**: [short-hash]
+## Result
 
-## Plan Objective
+**Verdict**: [PASS / FAIL / PARTIAL and its meaning for the supplied objective]
+**Findings**: [observed results in clear STE, before open questions]
+**Limits and open questions**: [unverified criteria, exact blockers, and any required user action]
 
-[Extracted from plan Overview section]
+**Date**: [capture date and timezone]
+**Source**: [supplied objective, acceptance criteria, and/or plan reference]
+**Repository**: [absolute root]
+**Branch**: [actual branch or detached HEAD]
+**Base**: [recorded full base commit and how it was selected]
+**Head**: [full verified HEAD commit]
+**Working-tree scope**: [staged, unstaged, and relevant untracked files; exclusions and reasons]
+**Assessor**: [role and independence when the caller requires independent assessment]
+**Baseline worktree**: [path and commit if used; retained unless removal is authorized]
+
+## Task Objective and Acceptance Criteria
+
+[Objective and testable outcomes from the supplied source, without inventing plan headings]
 
 ## Verification Strategy
 
@@ -22,12 +38,13 @@ Use this template when generating the verification evidence document in Step 9.
 
 ## Objective Alignment Results
 
-| #   | Desired End State Item | Implementation Evidence | Status        |
-| --- | ---------------------- | ----------------------- | ------------- |
-| 1   | [Item from plan]       | [File/code reference]   | PASS/FAIL/GAP |
-| 2   | ...                    | ...                     | ...           |
+| # | Objective or Criterion | Implementation Evidence | Alignment | Execution Evidence |
+| --- | --- | --- | --- | --- |
+| [ID] | [supplied outcome] | [file/code reference] | [PASS/FAIL/GAP] | [scenario reference or missing evidence] |
 
-**Drift**: [Any code changes not mapped to plan items, or "None"]
+[Implementation alignment is not a behavioral verdict. Inspection alone verifies only inspection-based criteria.]
+
+**Drift**: [Any changes not mapped to supplied outcomes, or "None"]
 
 ## Requirements Alignment (from requirements doc)
 
@@ -37,97 +54,78 @@ Use this template when generating the verification evidence document in Step 9.
 
 | #    | Acceptance Criterion              | Evidence Type | Evidence                         | Status   |
 | ---- | --------------------------------- | ------------- | -------------------------------- | -------- |
-| AC-1 | GIVEN X WHEN Y THEN Z             | Live test     | Scenario 3: [name] — PASS        | PASS     |
-| AC-2 | GIVEN A WHEN B THEN C             | Code + Live   | `file:line` + Scenario 5 — PASS  | PASS     |
-| AC-3 | GIVEN D WHEN E THEN F             | Code only     | `file:line` — no live test       | GAP      |
-| AC-4 | GIVEN G WHEN H THEN latency < Xms | —             | Requires production load testing | DEFERRED |
+| [ID] | [criterion] | [local execution / inspection / unavailable] | [evidence reference and limits] | [PASS/FAIL/GAP/BLOCKED/DEFERRED] |
 
-**Evidence strength**: Live test > Code + Live test > Code only > Deferred
+**Evidence limits**: [Which criteria have direct behavioral evidence, inspection only, or no evidence.
+Inspection and unit-suite counts do not replace required local behavioral scenarios.
+Criteria that need production data remain DEFERRED; do not make production requests.]
 
 ### Scope Verification
 
 | Feature / Sub-task | Priority     | Expected       | Actual     | Status |
 | ------------------ | ------------ | -------------- | ---------- | ------ |
-| [Feature 1]        | Essential    | Implemented    | [evidence] | PASS   |
-| [Feature 2]        | Nice-to-have | Not over-built | [evidence] | PASS   |
-| [Feature 3]        | Not needed   | Absent         | [evidence] | PASS   |
+| [Feature] | [Essential/Nice-to-have/Not needed] | [expected scope] | [observed evidence] | [observed status] |
 
 ### Success Criteria
 
 | #   | Success Criterion | Evidence   | Status        |
 | --- | ----------------- | ---------- | ------------- |
-| 1   | [metric/outcome]  | [evidence] | PASS/DEFERRED |
+| [ID] | [metric/outcome] | [evidence and limits] | [PASS/FAIL/GAP/BLOCKED/DEFERRED] |
 
 ## Automated Verification Results
 
 | Phase             | Criterion   | Command     | Result    |
 | ----------------- | ----------- | ----------- | --------- |
-| Phase 1           | [Criterion] | `[command]` | PASS/FAIL |
-| Phase 2           | ...         | ...         | ...       |
-| Desired End State | [Criterion] | `[command]` | PASS/FAIL |
+| [phase or task] | [criterion ID] | `[actual command]` | [PASS/FAIL/BLOCKED and execution reference] |
 
 ## Live Service Testing Results
 
-> Included when Backend API domain is detected (Step 8). Omit this section if Step 8 was skipped.
+> Include when service requests directly verify the changed behavior. Otherwise state the
+> relevant local interface used in Verification Examples and why service startup is irrelevant.
+> If required service testing is blocked, retain this section with the exact error,
+> attempted safe local remedies, affected criteria, and BLOCKED status.
 
 ### Service Startup
 
 - **Build system**: [Maven/Bazel/SBT]
 - **Startup command**: `[command used]`
 - **Readiness**: [How readiness was confirmed — e.g., "gRPC health check returned SERVING after 8 seconds"]
-- **Auth**: [Auth method used — e.g., "ADC with service account impersonation via <service>-user.conf"]
+- **Local dependencies and auth**: [documented local setup, fake/emulator targets, and coverage limits; no secrets]
+- **Captured output**: [verbatim startup/readiness output or exact blocker]
 
 ### Summary
 
 | #   | Scenario        | Objective                 | Key Input Variations     | Result    |
 | --- | --------------- | ------------------------- | ------------------------ | --------- |
-| 1   | [Scenario name] | [Plan objective verified] | [What makes it distinct] | PASS/FAIL |
-| 2   | ...             | ...                       | ...                      | ...       |
+| [ID] | [scenario name] | [supplied outcome or criterion ID] | [precise input variations] | [PASS/FAIL/BLOCKED] |
 
 ### Scenario Details
 
 <details>
 <summary><strong>Scenario 1: [Name]</strong></summary>
 
-**Objective**: [Which plan objective/desired end state item this verifies]
+**Objective**: [Which objective or acceptance criterion this verifies]
+**Setup and inputs**: [precise local configuration, working directory, data, and relevant input variations]
+**Expected outcome**: [specific expected response and exit status, defined before execution]
 **What this tests**: [Purpose — which code path/behavior is being verified]
 
-**Request:**
-\```bash
-[exact grpcurl/curl command]
-\```
+**Execution evidence**: [scenario transcript ID in the appendix, containing the exact command, request, and response]
 
-**Response:**
-\```json
-[full JSON response]
-\```
-
-**Verified**: [Specific assertions about the response]
+**Observed status**: [actual command exit status and response status]
+**Verified and limits**: [assertions tied to actual response fields; what remains unverified]
 
 </details>
 
 <details>
 <summary><strong>Scenario N: [Before/After] [Name]</strong></summary>
 
-**Objective**: [Which plan objective this verifies]
-**What this tests**: [What behavioral change is expected]
+**Objective**: [Which supplied outcome or acceptance criterion this verifies]
+**Setup and expected outcome**: [identical local inputs, expected changed fields, and expected unchanged behavior]
 
-**Request** (same for both):
-\```bash
-[exact command]
-\```
+**Execution evidence**: [before and after transcript IDs in the appendix, with identical request inputs, exact commands, and recorded base/feature states]
 
-**Before (base branch):**
-\```json
-[response on base branch]
-\```
-
-**After (feature branch):**
-\```json
-[response on feature branch]
-\```
-
-**Verified**: [e.g., "Before: offending results present. After: offending results absent."]
+**Observed statuses**: [actual exit and response status for each run]
+**Verified and limits**: [specific before/after assertions and any unverified behavior]
 
 </details>
 
@@ -143,22 +141,23 @@ Use this template when generating the verification evidence document in Step 9.
 
 **Purpose**: Demonstrates that [primary feature] works correctly.
 
-**Request**:
+**Setup and inputs**: [working directory, local configuration, exact data, and criterion ID]
+
+**Action**:
 \```bash
-[exact command]
+[exact command; for UI checks, local URL and exact browser actions]
 \```
 
 **Expected Outcome**: [Natural language description of what success looks like. E.g., "Response contains exactly 3 items, all with status 'active', and no items from the blocked list appear in the results"]
 
 **Actual Result** (raw output):
 \```
-[actual output from command]
+[actual output, exit status, or browser observations and screenshot references]
 \```
 
 **Assertions**:
 
-- PASS: [assertion 1]
-- PASS: [assertion 2]
+- [PASS/FAIL/BLOCKED]: [assertion, expected result, observed result, and evidence limits]
 
 ### Example 2: [Before/After] [Description]
 
@@ -166,7 +165,7 @@ Use this template when generating the verification evidence document in Step 9.
 
 #### Before (baseline):
 
-**Command**: [command against base branch]
+**Command**: [exact command and working directory in baseline worktree at recorded base]
 **Output**:
 \```
 [baseline output]
@@ -174,7 +173,7 @@ Use this template when generating the verification evidence document in Step 9.
 
 #### After (implementation):
 
-**Command**: [same command against feature branch]
+**Command**: [same command and working directory in recorded feature working-tree state]
 **Output**:
 \```
 [feature branch output]
@@ -182,8 +181,8 @@ Use this template when generating the verification evidence document in Step 9.
 
 **Assertions**:
 
-- PASS: Before shows [X], After shows [Y]
-- PASS: Other aspects remain unchanged
+- [PASS/FAIL/BLOCKED]: [expected before/after difference, actual output, and exit statuses]
+- [PASS/FAIL/BLOCKED]: [specific unchanged behavior and actual evidence]
 
 ### Example 3: [Edge Case] [Description]
 
@@ -203,7 +202,7 @@ Use this template when generating the verification evidence document in Step 9.
 
 **Assertions**:
 
-- PASS: [assertion]
+- [PASS/FAIL/BLOCKED]: [criterion ID, exact inputs, assertion, actual output, exit status, and limits]
 
 ### Example 4: [Failure Mode] [Description]
 
@@ -223,36 +222,40 @@ Use this template when generating the verification evidence document in Step 9.
 
 **Assertions**:
 
-- PASS: [assertion about error handling]
+- [PASS/FAIL/BLOCKED]: [criterion ID, exact inputs, expected error handling, actual output, exit status, and limits]
 
 ## Test Suite Verification
 
 | Test Suite        | Command     | Tests Run | Passed | Failed |
 | ----------------- | ----------- | --------- | ------ | ------ |
-| Unit Tests        | `[command]` | [N]       | [N]    | 0      |
-| Integration Tests | `[command]` | [N]       | [N]    | 0      |
+| [relevant suite] | `[actual command]` | [observed count] | [observed count] | [observed count] |
+
+[Reference existing execution records. Do not rerun suites just to fill this table.
+Record skipped or blocked suites explicitly. Include actual inputs and outputs for any
+focused library example or behavioral test, not only its name or pass count.]
 
 ## Negative Assertions (What We're NOT Doing)
 
 | #   | Out-of-Scope Item | Verified Not Present | Status |
 | --- | ----------------- | -------------------- | ------ |
-| 1   | [Item from plan]  | [Evidence]           | PASS   |
+| [ID] | [out-of-scope item] | [observed evidence] | [observed status] |
 
 ## Summary
 
-| Category               | Total | Pass  | Fail  | Skip     |
-| ---------------------- | ----- | ----- | ----- | -------- |
-| Objective Alignment    | X     | X     | 0     | 0        |
-| Requirements Alignment | X     | X     | 0     | DEFERRED |
-| Plan Criteria          | X     | X     | 0     | 0        |
-| Verification Examples  | X     | X     | 0     | 0        |
-| Test Suites            | X     | X     | 0     | 0        |
-| Negative Assertions    | X     | X     | 0     | 0        |
-| **Overall**            | **X** | **X** | **0** | **0**    |
+| Category | Required | Pass | Fail | Blocked / Deferred / Missing |
+| -------- | -------- | ---- | ---- | ---------------------------- |
+| [category] | [actual count] | [actual count] | [actual count] | [actual count] |
+
+[Report criterion coverage separately from unique execution counts. Do not sum duplicate
+references as independent checks or fill absent results with zero failures.]
 
 ## Verdict: PASS / FAIL / PARTIAL
 
-[Brief explanation of verdict. If PARTIAL, list what passed and what failed.]
+[PASS requires passing evidence for every required criterion and at least one executed
+required check. FAIL means a required check demonstrates incorrect behavior. Otherwise
+use PARTIAL for blocked, deferred, or missing coverage. Zero executed required checks
+cannot PASS. List failures, exact blockers, and unverified criteria; distinguish expectations
+and code inspection from observed behavior.]
 
 ## Reproduction Instructions
 
@@ -262,25 +265,24 @@ To reproduce this verification:
 
 - [Language/runtime version — e.g., "Java 25 via SDKMAN (`sdk env`)"]
 - [Required tools — e.g., "`spgrpcurl` installed", "`grpcurl` installed"]
-- [Auth setup — e.g., "GCP ADC configured (`gcloud auth application-default login`)"]
-- [Environment variables — e.g., "`SERVICE_DOMAIN=internal.example` exported"]
-- [Any other prerequisites — e.g., "`USER_ID` exported"]
+- [Documented local authentication and fake/emulator setup, without copying secrets or weakening auth]
+- [Local environment variables and dependency targets]
+- [Working directories, recorded commits, and relevant working-tree inputs]
 
-### Step 1: Run automated verification script
-
-\```bash
-~/.claude/thoughts/shared/verification/scripts/verify-[description].sh
-\```
-
-Expected: [N]/[N] PASS.
-
-### Step 2: Run test suites
+### Step 1: Run relevant existing checks and examples
 
 \```bash
-[exact test command for each test suite, with expected output]
+[exact commands, working directories, and local inputs used]
 \```
 
-### Step 3: Start service for live verification
+Expected: [specific output and exit status for each command].
+Observed: [reference actual output above, including failures or blockers].
+
+[Run each unique command once. A wrapper is optional only when needed to express the
+sequence; if used, include its local-only path and commands. Never infer PASS from an
+empty wrapper run or an exit code without required criterion evidence.]
+
+### Step 2: Start service only when relevant
 
 \```bash
 [exact startup command including env vars]
@@ -295,34 +297,36 @@ Wait for startup (~[N] seconds). Verify with health check:
 
 \```
 
-### Step 4: Send test requests
+### Step 3: Send local test requests or perform local browser actions when relevant
 
-[For each scenario, provide the exact copy-pasteable command and expected outcome]:
+[For service scenarios, reference the appendix transcript containing the exact copy-pasteable command and expected outcome. Do not repeat its payloads.]
 
-**S[N] — [Scenario name]:**
+[For browser scenarios, reference Verification Examples for the local URL, exact actions, expected state, observed state, and screenshots.]
 
-\```bash
-[exact request command]
-\```
+### Step 4: Stop owned processes and report retained artifacts
 
-Expected: [what to look for in the response]
-
-### Step 5: Cleanup
-
-\```bash
-[exact cleanup/kill command]
-\```
+[Record process identifiers and exact stop commands used. Confirm feature checkout state is
+preserved. List retained logs and baseline worktree paths. Do not delete worktrees, files,
+or artifacts without explicit authorization.]
 
 ## Appendix: Raw Request/Response Transcripts
 
-This section is MANDATORY for ALL verifications that include live testing, regardless
-of domain. Include the verbatim request and response for every live test scenario.
+Include this appendix for service request/response checks. Keep each command and
+verbatim request/response transcript here once, with its scenario ID and expected outcome.
+Reference that ID from other sections rather than duplicating payloads. Record browser
+actions, observed states, and screenshots in Verification Examples; browser checks do not
+require unrelated service transcripts.
 This allows reviewers to independently assess the results without re-running tests.
-Do NOT truncate, abbreviate, or summarize responses — include the full payload as received.
+Include full payloads as received, except redact any secrets or personal data and label
+each redaction. Do not publish tokens or credentials as evidence.
 
 Format each transcript as:
 
-### Test N: [Scenario description] — "[query or key input]"
+### S[N]: [Scenario description] — "[query or key input]"
+
+**Command and working directory**: [exact command and directory used]
+**Expected outcome**: [specific response and exit status]
+**Observed status**: [actual command exit status and response status]
 
 **Request:**
 \`\`\`json
@@ -331,14 +335,14 @@ Format each transcript as:
 
 **Response:**
 \`\`\`json
-<exact response received, unmodified>
+<exact response received, with any sensitive-data redactions labeled>
 \`\`\`
 
 Guidelines:
 
-- Include ALL live test scenarios, not just notable ones
+- Include all service request/response scenarios, not just notable ones
 - Include workaround/sanity-check requests if any were performed
-- Do not truncate responses — include the full payload
+- Preserve full responses except explicitly labeled sensitive-data redactions
 - For non-deterministic content (LLM text), include the actual text received
   during this specific test run
 - If a test returned an error, include the full error response

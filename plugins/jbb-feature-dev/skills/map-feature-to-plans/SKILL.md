@@ -1,178 +1,121 @@
 ---
 name: map-feature-to-plans
 description: >
-  Analyze a research document for a single feature and determine whether it should be
-  split into multiple implementation plans. Produces plan outlines with file lists,
-  dependency graph, execution waves, and adaptive PR strategy. Use after research
-  completes and before create-plan-tdd. Outputs "single plan" (no-op) when splitting
-  is unnecessary. Trigger phrases (1) "feature to plans" (2) "split into plans"
-  (3) "split feature for implementation" (4) "how many plans" (5) "plan from feature".
-  Outputs to ~/.claude/thoughts/shared/scoping/.
+  Analyze a research document for a single feature and decide whether it needs more than
+  one implementation plan. Every extra plan must cite a named justification; otherwise the
+  output is "single plan" (a no-op pass-through). When it splits, produces plan outlines
+  with file lists, a dependency graph, execution waves, and a PR strategy. Use after
+  research completes and before implement-change. Trigger phrases (1) "feature to plans"
+  (2) "split into plans" (3) "split feature for implementation" (4) "how many plans"
+  (5) "plan from feature". Outputs to ~/.claude/thoughts/shared/scoping/.
 ---
 
 # Map Feature to Plans
 
-Analyze a research document for a single feature and determine whether it needs to be
-split into multiple implementation plans. Each output plan outline feeds directly into
-`create-plan-tdd` -- no further research needed.
+Decide how many implementation plans a researched feature needs. Each plan outline feeds
+`implement-change` directly.
 
-## Step 0: Validate Input Level
+## Step 0: Check the input level
 
-Before proceeding, check whether this document is at the right abstraction level for
-tactical scoping.
+This skill takes one researched feature. If the document describes several independent
+features, subsystems or user journeys, or reads like a PRD/epic with no file-level detail,
+say so and point to `break-down-initiative`, which splits an initiative into features that
+each get their own research.
 
-**This skill is appropriate when** the document describes a single feature with enough
-technical detail to estimate files, LOC, and dependencies.
+_Non-interactive: log the observation and proceed if only one feature is present; otherwise
+raise an escalation._
 
-**This skill may not be appropriate when** the document:
+## Mode
 
-- Describes multiple independent subsystems or features
-- Contains user stories spanning different user journeys
-- Has no file-level detail or implementation analysis
-- Reads like a PRD, RFC, or epic rather than a research output
+- `--non-interactive`: auto-approve every decision by
+  choosing the safest, best-evidenced, simplest option and log each one. The research-doc path
+  is required.
+- A file path: read it fully (no limit/offset), plus any requirements and design docs it
+  names — the reviewers trace plans to their acceptance criteria — and begin.
+- No arguments: ask for the research-doc path.
 
-If the input looks like a multi-feature initiative, inform the user:
-"This document appears to describe multiple independent features or subsystems rather
-than a single researched feature. You may want to use the `break-down-initiative` skill
-first, which breaks high-level initiatives into separate features — each with its own
-research step — before tactical plan splitting."
+## Step 1: Decide the split
 
-_Non-interactive: log the observation and proceed if only 1 feature/subsystem is present.
-Otherwise, raise an escalation._
+**One plan is the default, and the burden of proof sits on every additional plan.** Each
+extra plan costs a full planning and review pass, a strictly sequential implementation
+pass, and an interface decision split across agents that do not share context. Splits
+have produced wiring gaps between sibling plans that existed only because the work was
+split.
 
-## Mode Detection
+A plan beyond the first is allowed only when it cites one of these, with evidence from the
+research doc:
 
-Parse `$ARGUMENTS` for flags and input:
+| Justification            | Holds when                                                                                                                                                                            |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Context fit**          | The research doc plus the files the plan must read would exceed ~75% of the planning model's context window. Cite the estimate in tokens (bytes ÷ 4 for prose and code), not LOC.     |
+| **Risk / landing order** | A risk-class change (auth, payments, cryptography, data migration, destructive operation, public API break) has to land and be verified before its consumers, or be revertable alone. |
+| **Checkpoint**           | Later work cannot be designed until an earlier result is observed: a probe of a live system, a spike, a migration's real data shape.                                                  |
+| **Separate delivery**    | The parts must ship separately: different repos, different owning teams, or different release timing.                                                                                 |
 
-- `--non-interactive`: Auto-approve all decisions using `~/.claude/skills/decision-principles/SKILL.md`. Log each decision. File path (research doc) is REQUIRED.
-- File path argument: read the research document immediately and begin Step 1.
-- No arguments: ask user for the research document path.
+These are **not** justifications on their own: estimated LOC or file count, the number of
+domains or layers crossed, mirroring the design doc's component list, tidiness, and diff
+reviewability (a PR decision; see Step 3). A large feature with none of the four is one
+plan.
 
-## Step 1: Load Research Document
+Dependencies decide ordering once a split exists; they are never a reason to split. Two
+plans that touch the same file depend on each other and never share a wave. Shared
+test infrastructure goes in the earliest plan that needs it, never in a plan of its own;
+every other plan that uses it declares that plan as a dependency. Each plan must be independently verifiable (tests, lint and build pass after it lands), so
+a slice that cannot be verified alone is merged into its neighbour.
 
-Read the research document FULLY (no limit/offset). Extract:
+**If no justification holds**, the output is "single plan": write a minimal scoping doc
+recording the decision and which justifications were checked, then proceed.
 
-- Components and files that will be changed
-- Independent subsystems identified in the research
-- Complexity signals (file count, estimated LOC, domain crossings)
-- Risk factors (auth, payments, data migrations, public API changes)
+## Step 2: Outline the plans
 
-## Step 2: Apply Splitting Criteria
+For each plan: name, scope, files it touches, the justification it cites (every plan after
+the first), and its dependencies on other plans. Then group plans into execution waves:
+plans with no dependency between them share a wave; dependent plans follow in later waves.
 
-Read `references/splitting-criteria.md` for the tactical splitting criteria with
-quantitative thresholds.
+## Step 3: Choose the PR strategy
 
-**Single plan is the default outcome.** Every additional plan costs a full planning pass,
-a strictly-sequential implementation pass, and per-plan research overhead downstream. When
-the evidence is ambiguous, do not split.
+Plan count does not decide PR count. Default to **one PR per repo**, including multi-plan
+work split for context fit or a checkpoint, which lands on one branch. Choose **Stacked
+PRs** only when plans must merge separately: a risk / landing-order or separate-delivery
+split, or a combined diff that reviewers in this repo would not accept as one PR (check the
+repo's recent merged PRs for precedent). Stacking adds rebase work on every change to a
+lower branch. Each repo gets its own chain; stacking never spans repos.
 
-Apply these automated heuristics in order:
+## Step 4: Review the candidate
 
-1. **Size check** (soft flag): estimated changes >2000 LOC or >25 files -> flag. A size
-   flag alone never forces a split — it needs a corroborating signal: a domain crossing
-   (check 2), a risk trigger (check 5), or a verifiability failure (a slice that cannot be
-   independently tested/built — see `references/splitting-criteria.md` section 4).
-2. **Domain check**: changes cross >2 domain boundaries -> flag for splitting
-3. **Dependency check**: build a dependency graph of the changes
-4. **Context budget** (hard trigger): plan material would exceed ~75% of the planning
-   model's context window -> must split. Count tokens with the current model's tokenizer
-   (Sonnet 5's tokenizer yields ~30% more tokens than Sonnet 4.x estimates for the same text).
-5. **Risk check** (hard trigger): high-risk components present -> isolate into separate plan
+Spawn reviewer sub-agents in parallel using `references/review-personas.md`: the Risk
+Isolator alone for a single-plan result, all four personas for any split. Pass each the
+requirements doc, research doc, design doc (if any) and the candidate scoping doc.
+Self-review never substitutes for spawning them, in either mode, and token cost is not a
+reason to skip.
 
-**If no hard trigger fires and no soft flag is corroborated**: output is "single plan" -- the
-map-feature-to-plans step is a no-op pass-through. Write a minimal scoping document noting
-the decision and proceed.
+If a reviewer goes idle without delivering: prompt it once via SendMessage, respawn once,
+then gather the data directly and record the gap.
 
-## Step 3: Produce Plan Outlines
+Synthesize the feedback, resolve every Must Address item, and re-review. Stop after 3
+iterations, or when there are zero Must Address items, zero disagreements and at most 2
+Should Consider items. Unresolved Must Address items go to Step 5.
 
-For each plan, produce:
+_Non-interactive: one iteration only. Resolve Must Address items by choosing the safest, best-evidenced, simplest option
+and record each under `## Autonomous Decisions` → `### Review Synthesis` in the scoping doc
+(the orchestrator checks for that heading). Record Should Consider items as advisory
+notes._
 
-- **Plan name** and scope description
-- **Files list**: which files will be touched
-- **Estimated LOC**
-- **Dependencies** on other plans
+## Step 5: Confirm with the user
 
-Then determine:
+Present the scoping doc and ask whether the plan boundaries, cited justifications,
+dependencies, waves and PR strategy are right. Iterate until approved.
 
-- **Wave 0 need**: shared test infrastructure gets its own plan ONLY when multiple
-  plans depend on it. If only one plan needs test setup, keep it internal to that plan.
-- **Execution waves**: group independent plans for parallel execution, sequence
-  dependent plans
-- **PR strategy**: read `references/pr-strategy.md` for adaptive thresholds
+_Non-interactive: auto-approve by choosing the safest, best-evidenced, simplest option and log the decision._
 
-## Step 4: DAG Review Loop
+## Step 6: Write the scoping doc
 
-After producing the candidate scoping doc in Step 3, run a multi-persona review pass to validate the DAG before the user-facing Step 5 review.
+Write `~/.claude/thoughts/shared/scoping/YYYY-MM-DD-<kebab-description>.md` from
+`references/output-template.md`. `submit-pr` and `rebase-stack` parse
+its Branch Chain table, so keep those headings and columns exactly.
 
-See `references/review-personas.md` for persona definitions, selection criteria, prompt template, synthesis format, iteration rules, and auto-approve threshold.
+Then list the next command for each plan, e.g.
+`/implement-change "Plan 2 outline"` (after Plan 1).
 
-1. **Classify the candidate scoping doc**: count plans (1 / 2-3 / 4+) and assess risk (low / medium / high based on whether risk-class artifacts appear in any plan).
-
-2. **Select reviewers** per the selection grid in `references/review-personas.md`. For any multi-plan case, all 4 reviewers (Over-Splitting Skeptic, Dependency Auditor, Risk Isolator, Requirements Tracer) fire in parallel. For the single-plan no-op case, fire 2 (Over-Splitting Skeptic + Requirements Tracer) to verify the no-op decision is correct.
-
-3. **Spawn the selected reviewer agents in parallel** (4 for multi-plan, 2 for the single-plan no-op per the selection grid in step 2) using the prompt template from `references/review-personas.md`. Pass each the requirements doc, research doc, and candidate scoping doc.
-
-   **Agent delivery resilience**: Subagents may go idle without delivering results (known Claude Code issue). If an agent sends an `idle_notification` without content: (1) prompt it via SendMessage using its agent ID (not name), (2) if still no delivery, respawn once, (3) if respawn fails, gather data directly or document the gap.
-
-4. **Synthesize feedback** across all reviewers using the format in `references/review-personas.md`. Categorize each item as Must Address, Should Consider, Minor, or Points of Disagreement.
-
-5. **Iterate**:
-   - Revise the candidate scoping doc to resolve all Must Address items.
-   - Re-run the review on the revised doc.
-   - Maximum 3 iterations. Auto-approve when zero Must Address + zero Disagreement + ≤2 Should Consider.
-   - If Must Address items persist after 3 iterations, surface them in Step 5 (Interactive Review) for user decision.
-
-**Non-interactive mode**: spawn the selected reviewer sub-agents (mandatory — self-review is NEVER a substitute for sub-agent spawning, even in `--non-interactive` mode). Run a single iteration only. Auto-resolve all Must Address items via `decision-principles`; document each resolution in the produced scoping doc's `## Autonomous Decisions § Review Synthesis` section. Note Should Consider items as advisory comments. Token cost is NOT a valid skip justification.
-
-## Step 5: Interactive Review
-
-Present the scoping document to the user. Ask about:
-
-- Are the plan boundaries correct?
-- Are the dependencies between plans accurate?
-- Do the wave assignments make sense?
-- Is the PR strategy appropriate?
-
-Iterate until user approves.
-
-_Non-interactive: auto-approve using decision-principles, log decisions._
-
-## Step 6: Write Scoping Document
-
-Read `references/output-template.md` for the document structure.
-
-1. Create `~/.claude/thoughts/shared/scoping/` directory if it does not exist.
-2. Generate filename: `YYYY-MM-DD-<kebab-case-description>.md`
-3. Write the scoping document with YAML frontmatter and all sections.
-
-## Step 7: Suggest Next Steps
-
-For each plan outline, suggest the next command:
-
-```
-Plan 0 (test infrastructure): /create-plan-tdd "Plan 0 outline"
-Plan 1 (feature slice A): /create-plan-tdd "Plan 1 outline" (after Plan 0)
-Plan 2 (feature slice B): /create-plan-tdd "Plan 2 outline" (parallel with Plan 1)
-```
-
-## Guidelines
-
-- **Model**: the analysis runs on the invoking context's model — the `sonnet` stage wrapper in the orchestrator pipeline (see the orchestrator's stage table); the dependency-DAG output is backstopped by the Step 4 reviewers
-- **Implementation failures trigger re-scoping** -- if a plan fails during implementation,
-  re-run map-feature-to-plans with the failure context to produce revised plan outlines
-- **Single plan is the common case** -- most features fit in one plan. The map-feature-to-plans
-  step should be a fast no-op for simple features.
-- **Each plan must be independently verifiable** -- tests, lint, build must pass after
-  each plan is implemented
-
-## Reference Files
-
-- **`references/splitting-criteria.md`** -- Read in Step 2. Contains quantitative
-  splitting thresholds (LOC, file count, context budget) with source citations.
-- **`references/review-personas.md`** -- Read in Step 4. Defines the 4 reviewer personas
-  (Over-Splitting Skeptic, Dependency Auditor, Risk Isolator, Requirements Tracer),
-  selection grid, prompt template, synthesis format, max-iteration cap, and auto-approve threshold.
-- **`references/output-template.md`** -- Read in Step 6. Contains the scoping document
-  template with plan outlines, dependency graph, and PR strategy sections.
-- **`references/pr-strategy.md`** -- Read in Step 3. Contains the adaptive PR strategy
-  decision table (<500 single, 500-1500 stacked, >1500 re-scope) with defect detection data.
+If a plan later fails during implementation, re-run this skill with the failure context to
+revise the outlines.

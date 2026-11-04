@@ -83,7 +83,5 @@ Examples in this skill use language-agnostic pseudocode or Java/Scala syntax. Wh
 
 See the language-specific skills for complete conventions:
 
-- `java-code-style` - Java streams, Optional, Java 21/25 features
-- `scala-code-style` - Scala functional idioms
 - `python-code-style` - Python comprehensions, async, modern syntax
 - `typescript-code-style` - TypeScript 5.x features, React 18/19 patterns, RTL/Vitest testing

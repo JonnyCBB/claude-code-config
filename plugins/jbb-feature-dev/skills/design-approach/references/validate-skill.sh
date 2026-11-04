@@ -57,7 +57,6 @@ check "$SKILL/SKILL.md" "comparison"
 check "$SKILL/SKILL.md" "non-interactive"
 check "$SKILL/SKILL.md" "AskUserQuestion"
 check "$SKILL/SKILL.md" "feature_designs"
-check "$SKILL/SKILL.md" "decision-principles"
 check "$SKILL/SKILL.md" "agent-verification-pattern"
 min_lines "$SKILL/SKILL.md" 150
 
@@ -87,7 +86,6 @@ check "$BASE/skills/research-problem/references/document-template.md" \
   "Design Exploration Recommendation"
 check "$BASE/skills/research-problem/references/document-template.md" \
   "design-approach"
-check "$BASE/skills/create-plan-tdd/SKILL.md" "design decision"
 
 echo ""
 echo "=== Summary ==="

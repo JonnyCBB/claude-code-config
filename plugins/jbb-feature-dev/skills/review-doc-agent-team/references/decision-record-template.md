@@ -87,7 +87,7 @@ This section is mandatory regardless of decision outcome.}
 
 ## Decision-Making Principles Applied
 
-{Which principles from the decision-principles skill were invoked during the
+{Which decision principles from `references/roles.md` were invoked during the
 review and how they influenced the outcome.}
 
 | Principle | Applied To | How It Influenced the Decision |

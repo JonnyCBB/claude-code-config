@@ -43,7 +43,7 @@ subsystems/features. Otherwise, output a single-feature pass-through._
 
 Parse `$ARGUMENTS` for flags and input:
 
-- `--non-interactive`: Auto-approve all decisions using `~/.claude/skills/decision-principles/SKILL.md`. Log each decision. File path argument is REQUIRED.
+- `--non-interactive`: Auto-approve all decisions by choosing the safest, best-evidenced, simplest option. Log each decision. File path argument is REQUIRED.
 - File path argument: read the document immediately and begin Step 1.
 - No arguments: ask user for the document path or paste content.
 
@@ -101,7 +101,7 @@ Ask the user:
 
 Iterate until the user approves the breakdown.
 
-_Non-interactive: skip this step. Auto-approve using decision-principles, log decisions._
+_Non-interactive: skip this step. Auto-approve by choosing the safest, best-evidenced, simplest option, log decisions._
 
 ## Step 5: Write Decomposition Document
 

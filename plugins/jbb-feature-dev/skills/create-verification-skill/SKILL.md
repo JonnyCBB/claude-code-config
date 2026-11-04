@@ -57,25 +57,22 @@ Answer these from the codebase. Ask only what you genuinely cannot observe.
 
   That works when `BUILD.bazel` carries a target named the same as the directory, which is the
   convention; when it does not, name it (`bazel run //system/component:target-name`). Read the
-  `BUILD.bazel` for the `service_java` target rather than guessing. The repo documents this at
-  `docs/guides/local-environment-setup/run-component-locally.md`, with env vars covered separately
-  in `docs/guides/set-environment-variables-test-run.md` and a debug port available via
-  `-- --debug=5005`.
+  `BUILD.bazel` for the service target rather than guessing. Look in the repo's own docs for how it
+  runs a component locally, sets env vars, and exposes a debug port.
 
-  Three rules from the repo's own `CLAUDE.md`, quoted rather than paraphrased because each is a
-  trap an agent walks into unprompted:
+  Three rules that hold in a large Bazel monorepo (check the repo's own `CLAUDE.md` or
+  `AGENTS.md` for its version), each a trap an agent walks into unprompted:
 
   - *"Target specific packages — never `bazel build //...`"*. At monorepo scale an unscoped
-    build is unusable rather than merely slow. The rule as written covers `build`; the same
-    reasoning applies to `bazel test //...`, though that is inference rather than their text.
+    build is unusable rather than merely slow. The same reasoning applies to `bazel test //...`.
   - *"NEVER use `bazel clean` — the cache handles invalidation"*. This is the one to remember,
     because a service that will not start is exactly when reaching for `clean` feels right.
-  - *"NEVER modify `.bazelrc` files or `buildconf/`"*.
+  - *"NEVER modify `.bazelrc` files or shared build configuration"*.
 
   Do not write "no documented start command" into the generated skill when the service is in the
   monorepo. Write the `bazel run` line, and say which target it resolves to.
 - **Drive — how can an agent interact programmatically?** Existing harnesses first: integration
-  tests, `jhurl` recipes, curl-able endpoints, `grpcurl`, a debug port, a local pipeline runner.
+  tests, curl-able endpoints, `grpcurl`, a debug port, a local pipeline runner.
   Only then a generic recipe.
 - **Observe — what evidence can be captured?** Response bodies, gRPC status codes, log lines,
   emitted rows, BigQuery output, index documents, exit codes, screenshots.
@@ -83,7 +80,7 @@ Answer these from the codebase. Ask only what you genuinely cannot observe.
   the generated skill: refusing to double-drive a shared instance beats corrupting a live one.
 
 If the checkout does not build or start as-is, **fix that first or report it precisely** before
-generating. A skill written against a broken base teaches wrong steps.
+generating. A skill written against a broken base teaches wrong steps. When an irrelevant missing file blocks startup, the generated skill may create it, only if it is absent, marked as verification scaffolding. The skill records that it created the file and removes it in Cleanup only if this run created it. It never overwrites an existing file.
 
 ### Surfaces worth naming explicitly
 
@@ -102,8 +99,7 @@ Write `.claude/skills/verify-<app>/SKILL.md` with YAML frontmatter (`name: verif
 skill never registers**). Every section must be grounded in what the interview actually found. No
 placeholders.
 
-- **Launch** — the exact command, and how to tell it is ready (a log line, a port answering). For a
-  short-lived job there is no server: launch means build once, then drive each run in isolation.
+- **Launch** — the exact command, and how to tell it is ready (a log line, a port answering). It must reach a usable state from an empty data directory, including migrations and seed data. Ready means usable, not that a process answers: a database health check can pass while its init scripts still run. Record the process ID of each process you start. Check that the tools the scripts need are installed, and stop with a clear message if one is missing. For a short-lived job there is no server: launch means build once, then drive each run in isolation.
   Include teardown.
 - **Doctor** — one read-only check answering "is this instance worth driving?": process up, right
   build, port owned by us, auth valid. Run it first whenever anything looks off.
@@ -114,8 +110,7 @@ placeholders.
   state; verify side effects (rows written, messages published) alongside what is returned; mock
   only where a production boundary already isolates the external system. Where the safe path is a
   dry-run, **verify what it actually skips by observing** rather than trusting its name.
-- **Cleanup** — tear down what this run started. **Never kill by process name; kill what you
-  started.** Cleanup removes instances and scratch state, never the evidence — proof artifacts
+- **Cleanup** — tear down what this run started. **Never kill by process name; kill what you started.** Stop each recorded process and its child processes, because a dev server often starts a child that owns the port. Cleanup removes instances and scratch state, never the evidence — proof artifacts
   survive teardown, at a location the skill names.
 - **Helpers** — any script the skill ships is executable and its invocation is shown in the skill
   body. A helper the reader must reverse-engineer is not a helper.
@@ -125,8 +120,7 @@ placeholders.
 Create `.claude/skills/verify-<app>/features/README.md` as an index, plus one file per user-facing
 feature, taken from routes, RPC methods, pipeline outputs or docs. Seed the ones a caller would
 actually notice breaking, and stop when the next one you would add is not one of those. The map is
-meant to grow through `/jbb-feature-dev:maintain-verification-skill`, so an honest partial map beats
-a padded one.
+meant to grow through `/jbb-feature-dev:maintain-verification-skill`, so an honest partial map beats a padded one. Start with three to five features. The shape is in [references/feature-map-example](references/feature-map-example/README.md).
 
 Each feature file uses these four H2s:
 
@@ -134,6 +128,8 @@ Each feature file uses these four H2s:
 - `## How to get to it (caller POV)`
 - `## Driving it with <harness>`
 - `## Gotchas`
+
+If the seed data lacks a precondition a journey needs, the journey reports a failure and the reason goes in that feature's `Gotchas`. Never weaken the journey to make it pass.
 
 The map is the repo's maintained verification source. **A proof that drives one convenient entry
 point is incomplete when the map lists others.**
@@ -145,12 +141,12 @@ have just written is a single-pass generated skill, which is the one kind the ev
 underperforms; the standards exist to catch that before it ships. Expect the findings to be
 instructions that do not earn their tokens and any limit stated in two places.
 
-**Then run its own instructions end to end, once:** launch, doctor, drive **one** mapped feature,
-capture evidence, clean up. After cleanup, confirm the evidence still exists at the named location.
+**Then run its own instructions end to end, once:** launch, doctor, drive **one** mapped feature
+(one is enough; the map exists so later runs can cover the rest), capture evidence, clean up. After cleanup, confirm the evidence still exists at the named location.
 A cleanup that eats its own proof fails this step.
 
 Fix what fails, and run the generated cleanup after every failed iteration too, so broken attempts
-do not strand processes and ports.
+do not strand processes and ports. If you proved the skill in a stand-in for the real target, list every setup step the stand-in did that the target will not do. Those steps stay unverified until a run on the real target covers them.
 
 **A generated skill that was never reviewed and never executed is a draft, not a deliverable.**
 

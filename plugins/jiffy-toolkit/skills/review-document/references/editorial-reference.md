@@ -2,6 +2,32 @@
 
 Consolidated normative reference for document review agents (Prose Quality Reviewer, Structure Reviewer, Consistency Checker). Absorbs the full content of the editorial-standards source files: editorial-dimensions, decision-framework, document-type-standards, special-considerations, and references-and-resources.
 
+## STE-informed Review
+
+Use [ASD-STE100 Simplified Technical English (STE)](https://www.asd-ste100.org/about_STE.html)
+clarity principles as the default for technical prose. This guidance is not the full standard or
+its controlled dictionary. Do not report formal STE compliance unless you checked both.
+
+For each relevant finding and suggested edit:
+
+- Check that a briefing states the supported outcome and reader decision before the mechanism.
+  For a tutorial, check the expected result before the steps. Keep reference documents easy to look
+  up; do not force a narrative opening into every entry. Never invent an outcome absent from the source.
+- Prefer short sentences with one main idea and direct verbs. Name the actor when known, and put
+  conditions before the actions they control. Keep one action per instruction and show its expected result.
+- Use one term per concept. Keep exact API names and other technical terms; explain unfamiliar ones
+  at first use. Simplify the surrounding prose, not the identifier. Avoid idioms and abstract noun chains.
+- Preserve exceptions, conditions, uncertainty, evidence limits, and source links. Do not edit code,
+  commands, or quotations merely to match the prose style. Do not chase sentence-length or readability scores.
+- Keep a natural tone. Suggest a concrete example where it would clarify the result; label an
+  invented example as illustrative, not observed evidence.
+
+For example, when supported by the source, suggest "Owners receive one notice per channel, not one
+per rollout" before the explanation of channel grouping. Treat this move as restructuring under
+the decision framework below, not as a mechanical edit. Flag a reader's likely misunderstanding,
+not a style preference or an unverified dictionary violation. Write findings and summaries in the
+same clear style.
+
 ## Editorial Dimensions
 
 Evaluate documents across all 9 dimensions below. Each dimension is independent; reviewers should assess every dimension relevant to their role.
@@ -17,12 +43,23 @@ Evaluate documents across all 9 dimensions below. Each dimension is independent;
 
 ### 2. Style & Language (Line Editing)
 
-- Sentence-level clarity and conciseness
+- Sentence-level clarity and conciseness (remove words that carry nothing; never a step, definition or example the reader needs)
 - Word choice precision and appropriateness
 - Active voice vs. passive voice balance
 - Tone consistency and appropriateness for audience
-- Elimination of jargon or proper explanation when technical terms are necessary
-- Readability (aim for 8th-12th grade level unless expert audience requires higher)
+- **Word choice, in this order.** First: is there a plainer word that does the same job with nothing
+  lost? Use it. Second: is the harder word the actual name of the thing, or genuinely more precise?
+  Keep it and define it on first use. Never leave a term unexplained on either branch, and never
+  swap a precise term for a vaguer one to hit a score - that takes away the word the reader can
+  search for. Whether the reader already owns the term decides how much glossing it needs, so this
+  is a judgement about the audience, not about how technical the word looks.
+- The two rules above are also stated, for the writing surface rather than the reviewing one, in
+  the `explain` skill. If you change one, change both.
+- **Readability: do not score it.** A grade-level formula is arithmetic over average word length and
+  average sentence length and reads nothing else. It therefore penalises `idempotent` and
+  `PilotDataAccess` in a document written for people who use those words daily, and rewards breaking
+  one accurate sentence into two vague ones. Judge instead whether a reader in the stated audience
+  could act on the document without looking anything up that the document could have told them.
 
 ### 3. Mechanics (Copy Editing)
 
@@ -50,8 +87,18 @@ Evaluate documents across all 9 dimensions below. Each dimension is independent;
   - **Spotted pattern**: Bold key terms, use descriptive link text for scanners seeking specific items
   - **Layer-cake pattern**: Make headings self-explanatory and information-rich (readers may read only headings)
   - **Commitment pattern**: Rare full-read behavior; optimize for F-pattern anyway since commitment readers will read regardless
-- **Plain language**: Simple words, short sentences, conversational tone, accessible to target audience
-- **Inverted pyramid**: Conclusion/main point first, then supporting details
+- **Plain language**: short sentences and a conversational tone, and the plainer word wherever it
+  loses nothing. Plain language is about the sentences around a term of art, not about deleting the
+  term of art.
+- **Front-load the conclusion, and for anything a reader has to act on, open with the outcome rather
+  than the mechanism.** This is the same rule `structure-reviewer` checks at step 8. Two cautions on
+  where the support for it actually comes from, because both are widely miscited: "bottom line up
+  front" is doctrine - the US Army writing standard requires it and cites no study, and the Nielsen
+  Norman Group's inverted-pyramid article claims improved comprehension and cites no controlled
+  study. And the F-pattern below is a **failure mode** those same authors call "bad for users and
+  businesses", not a justification. The real support is the signalling and pre-training research
+  (median d = 0.41 over 28 tests, and d = 0.75 over 16), and it reverses for high-expertise readers.
+  Evidence and sources: `skills/sound-like-me/references/objective-first-example.md`.
 
 ### 6. Accessibility & Inclusivity
 
@@ -59,7 +106,7 @@ Evaluate documents across all 9 dimensions below. Each dimension is independent;
 - Bias-free, inclusive language
 - No culture-specific idioms or regional expressions
 - Gender-neutral language where appropriate
-- Reading level appropriate for audience
+- Every term the stated audience would not already know is explained where it first appears
 - No reliance on color alone for meaning
 
 ### 7. Formatting & Visual Hierarchy

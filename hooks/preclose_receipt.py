@@ -28,7 +28,7 @@ import json
 import os
 from typing import Any, Dict, NamedTuple, Optional
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 
 class ReceiptVerdict(NamedTuple):
@@ -98,6 +98,7 @@ def build_receipt(
     dump_bytes: int,
     output_sha256: str,
     worktree: Dict[str, Any],
+    liveness: Dict[str, Any],
 ) -> Dict[str, Any]:
     """Assemble a receipt. Keyword-only: a transposed status/reason would be silent."""
     if status not in ("passed", "failed"):
@@ -117,6 +118,7 @@ def build_receipt(
         "dump": {"path": dump_path, "byte_size": dump_bytes},
         "output": {"sha256": output_sha256},
         "worktree": worktree,
+        "liveness": liveness,
     }
 
 
@@ -136,11 +138,55 @@ def _stat(path: Any) -> Optional[os.stat_result]:
         return None
 
 
+def _liveness_verdict(receipt, live_activity) -> ReceiptVerdict:
+    """Re-read the one fact in the receipt that goes stale on its own.
+
+    The checklist establishes that a session has stopped, and the removal happens
+    later. Nothing carried that across: measured 2026-09-13, a 57-byte progress
+    note stayed hash-stable for over a minute while the session went on working,
+    so the output-freshness check above holds steady across exactly the interval
+    in which liveness changes.
+
+    `#{window_activity}` is tmux's own record of when the pane last produced a
+    byte, so comparing it is an equality test with no threshold and no sleep.
+    """
+    liveness = receipt.get("liveness")
+    recorded = liveness.get("activity") if isinstance(liveness, dict) else None
+    if not isinstance(recorded, str):
+        return ReceiptVerdict(
+            False,
+            "this receipt records no terminal activity to compare against, so "
+            "whether the session has started working again cannot be established",
+        )
+    now = live_activity() if callable(live_activity) else live_activity
+    if now is None:
+        return ReceiptVerdict(
+            False,
+            "could not re-read this session's terminal, so this guard cannot "
+            "confirm it is still stopped",
+        )
+    if now == recorded:
+        return ReceiptVerdict(True)
+    if not now:
+        # Its terminal has gone since the checklist ran. Whatever else that is,
+        # it is not a session that has started working again. This test must stay
+        # BELOW the None test above: "could not ask" is also falsy, and reading it
+        # as "the terminal has gone" allows a removal nobody checked.
+        return ReceiptVerdict(True)
+    return ReceiptVerdict(
+        False,
+        "its terminal has produced output since the checklist ran, so it is "
+        "working again and the saved copy is no longer its final word",
+    )
+
+
 def _worktree_verdict(receipt, require_worktree_clean: bool) -> ReceiptVerdict:
     """The last gate: a removal that DELETES the worktree needs it clean."""
     if not require_worktree_clean:
         return ReceiptVerdict(True)
-    worktree = receipt.get("worktree") or {}
+    worktree = receipt.get("worktree")
+    if not isinstance(worktree, dict):
+        worktree = {}
     if not worktree.get("applicable"):
         return ReceiptVerdict(
             False,
@@ -156,12 +202,20 @@ def _worktree_verdict(receipt, require_worktree_clean: bool) -> ReceiptVerdict:
     return ReceiptVerdict(True)
 
 
+def _final_verdict(
+    receipt, require_worktree_clean: bool, live_activity
+) -> ReceiptVerdict:
+    worktree = _worktree_verdict(receipt, require_worktree_clean)
+    return worktree if not worktree.ok else _liveness_verdict(receipt, live_activity)
+
+
 def validate_receipt(
     path: Path,
     *,
     expected_session_id: str,
     expected_tool: str,
     live_output,
+    live_activity,
     require_worktree_clean: bool,
 ) -> ReceiptVerdict:
     """Decide whether `path` proves the checklist ran for `expected_session_id`.
@@ -220,7 +274,9 @@ def validate_receipt(
             )
         return ReceiptVerdict(
             False,
-            "receipt %s has unrecognised schema_version %r; this guard understands %d"
+            "receipt %s has unrecognised schema_version %r; this guard understands "
+            "%d. Re-run the checklist; if that reproduces the same version, "
+            "reinstall ~/.claude/hooks so guard and runner match."
             % (path, version, SCHEMA_VERSION),
         )
 
@@ -277,7 +333,7 @@ def validate_receipt(
         if recorded_nothing and code in ("unknown", "screen"):
             # agent-deck answered and there is nothing readable, exactly as the
             # receipt says. Consistent, so this is not a reason to refuse.
-            return _worktree_verdict(receipt, require_worktree_clean)
+            return _final_verdict(receipt, require_worktree_clean, live_activity)
         return ReceiptVerdict(
             False,
             "could not read this session's current output, so this guard cannot "
@@ -293,4 +349,4 @@ def validate_receipt(
             "saved copy is no longer its final word",
         )
 
-    return _worktree_verdict(receipt, require_worktree_clean)
+    return _final_verdict(receipt, require_worktree_clean, live_activity)

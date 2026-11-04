@@ -29,7 +29,7 @@ fi
 
 CAP=${CONDUCTOR_SIGNALS_CAP:-3}
 
-# Contract section 4 thresholds. Named because jbrooksbartlett-cjxs is an open
+# Contract section 4 thresholds. Named because hq-cjxs is an open
 # proposal to change the swap one, and a literal repeated at two call sites is
 # how half a threshold change ships.
 SWAP_VETO_MB=${CONDUCTOR_SIGNALS_SWAP_VETO_MB:-2000}
@@ -281,10 +281,10 @@ CLOSURE_VERBS='(clos(e|es|ed|ing)|fixes|fixed|resolv(e|es|ed))'
 #   - A leading `[^A-Za-z]` stops "Reno closes <id>" and "Cabinet closes <id>"
 #     from reading as denials.
 #   - `n't` replaces an earlier `n.t`, which matched "net"/"nat"/"nut". bd mints
-#     random id suffixes, so `jbrooksbartlett-9net closed by PR #12` was being
+#     random id suffixes, so `hq-9net closed by PR #12` was being
 #     silently suppressed - a false negative on the signal that must not miss.
 #   - `cannot` and `unable` are separate words, not reachable through `not`:
-#     switchboard PR #30 quotes a UI error, "cannot close jbrooksbartlett-0s2:
+#     switchboard PR #30 quotes a UI error, "cannot close hq-0s2:
 #     7 open child issue(s); close children first", and that bead has seven open
 #     children. Caught by running against the live queue, not by the suite.
 NEGATORS="((^|[^A-Za-z])(not|never|without|no|cannot|unable)|n't)"
@@ -309,7 +309,7 @@ declares_closure() {
   local hits
   hits=$(grep -iE "${CLOSURE_VERBS}$3$2" <<<"$1") || return 1
   # A clause carrying no denial is a declaration. A real merged PR reads "This
-  # is a PARTIAL fix. It does not close jbrooksbartlett-av0."
+  # is a PARTIAL fix. It does not close hq-av0."
   #
   # One word may sit between the negator and the verb, because English puts one
   # there: "does not ACTUALLY close", "does not FULLY resolve" both slipped past
@@ -344,7 +344,7 @@ collect_merged_prs() {
   since=$(days_ago "$PR_DAYS" %Y-%m-%dT%H:%M:%SZ 1970-01-01T00:00:00Z)
 
   # Read into an array rather than word-splitting. `for path in ${REPOS//:/ }`
-  # split `/Users/me/My Repo` into two fragments, neither of which exists, so
+  # split `/home/me/My Repo` into two fragments, neither of which exists, so
   # the repo vanished from signal 1 with no warning at all.
   local repo_list
   IFS=: read -ra repo_list <<<"$REPOS"
@@ -383,8 +383,8 @@ collect_merged_prs() {
     # With no matches the glob yields its own literal text, which then reports
     # an unreadable repo whose name is the empty string.
     [ -e "$f" ] || continue
-    # A repo whose PR list could not be read contributes nothing, and "GHE was
-    # unreachable" must never read as "no complete-but-open beads". GHE was down
+    # A repo whose PR list could not be read contributes nothing, and "the git host was
+    # unreachable" must never read as "no complete-but-open beads". It was down
     # for ~16 hours on 2026-08-15/16; that must show as a gap, not a clean 0.
     if ! jq -e . "$f" >/dev/null 2>&1; then
       printf '%s (could not list merged PRs)\n' \
@@ -440,7 +440,7 @@ sort -u -k1,1 "$TMP/signal1" >"$TMP/signal1.sorted"
 # The dependent count has to come from `bd show`, which accepts every id in one
 # call. `bd list --json` emits the key with a plausible 0 for every bead - on a
 # bead `bd show` reports 6 dependents for - so the bulk read would present every
-# blockage as costless. Filed as jbrooksbartlett-n9x6.
+# blockage as costless. Filed as hq-n9x6.
 : >"$TMP/deps.tsv"
 if [ -s "$TMP/signal1.sorted" ]; then
   # shellcheck disable=SC2046
@@ -645,7 +645,7 @@ if [ "$S1" -gt 0 ]; then
   printf '     finish it, or silence it with  bd label add <id> signal1-ack\n'
 fi
 printf '     BLIND SPOT: only beads whose deliverable is a PR. Research, document and operator\n'
-printf '     beads complete without one and are invisible here. See %s\n' "$(bead_label jbrooksbartlett-uixd)"
+printf '     beads complete without one and are invisible here. See %s\n' "$(bead_label hq-uixd)"
 
 printf '\n2  dispatchable-now ........... %-4s target 0\n' "$(render_count "$S2" "$S2_CONF")"
 printf '     ready(non-epic) %s | active %s of cap %s | parked %s (not counted, contract s4)\n' \
@@ -663,7 +663,7 @@ fi
 if [ "$SWAP_LOW" = 1 ] && [ "$SAMPLED" = "true" ] && [ "$DELTA" -le 0 ]; then
   printf '     READINGS DISAGREE: swap-free vetoes but swapouts delta is %s, so the machine is not\n' "$DELTA"
   printf '     paging. swap-free is a high-water mark. The threshold Jonny agreed still governs\n'
-  printf '     this run; the proposal to change it is %s\n' "$(bead_label jbrooksbartlett-cjxs)"
+  printf '     this run; the proposal to change it is %s\n' "$(bead_label hq-cjxs)"
 fi
 if [ "$S2" -gt 0 ]; then
   printf '     Dispatch %s now. Contract s3: ready means dispatch - no approval, no announcement-and-wait.\n' "$S2"

@@ -3,97 +3,102 @@
 Detailed procedures for Phase 1-4 of Step 8 (Live Service Testing).
 Read this file when Step 8 instructs you to `Read references/live-testing-guide.md`.
 
-## Authentication Prerequisites
+## Local Configuration and Authentication
 
-Pre-flight auth checks before starting the service.
+Use this guide only when a local service request directly verifies the changed behavior.
+For libraries, documentation, or build-only changes, use the relevant local interface in SKILL.md.
 
-### Auth Failure Handling
+Before startup, inspect the repository's documented local setup and all dependency targets.
+A localhost listener can still call production dependencies. Use existing local fixtures,
+fakes, or emulators; do not route dependencies to a real environment to make startup succeed.
+Do not call deployed services, remote model gateways, or cloud token endpoints as a workaround.
 
-If any auth check fails:
+Use only the authentication setup already documented for local verification. Do not copy
+secrets, print tokens, change global credentials, or disable authentication automatically.
+If the setup requires unavailable credentials, record the exact error and affected criterion
+as BLOCKED and ask for the missing prerequisite. Continue independent local checks.
 
-1. Report which check failed and the exact error
-2. **Investigate common fixes first** — try the remediation command (e.g.,
-   `gcloud auth application-default login`), check for integration test configs
-   that bypass auth, or write an in-process integration test with a fake gRPC
-   stub. Setting `serviceauth.enabled: false` in `-user.conf` requires explicit
-   user permission in auto-mode (classified as auth-weakening)
-3. **Re-run the failed check** after attempting fixes
-4. Only if ALL remediation attempts fail: abort live testing and proceed to Step 9
-5. Record the auth failure as a FAIL in the evidence document, listing each
-   remediation attempted and why it failed
+An existing in-process integration test with local fake dependencies can verify the real
+handler. State that it does not verify transport or authentication when it bypasses those layers.
 
 ## Service Startup Procedures
 
 ### Build System Detection
 
-Detect the project's build system from its manifest, then use its own documented run command:
+Detect the project's build system from its manifest, then use its own documented run command.
+If the repository has its own `CLAUDE.md` or contributor guide at its root, read it before running anything.
 
-| Marker                        | Build system | Build                    | Run locally                |
-| ----------------------------- | ------------ | ------------------------ | -------------------------- |
-| `package.json`                | Node/npm     | `npm ci`                 | `npm start` / `npm run dev` |
-| `pyproject.toml` / `setup.py` | Python       | `uv sync` / `pip install -e .` | the project's entry point or `uvicorn`/`flask` command |
-| `Makefile`                    | make         | `make build`             | `make run`                 |
-| `docker-compose.yml`          | compose      | `docker compose build`   | `docker compose up`        |
+| Marker                        | Build system | Build                                  | Run locally                                            |
+| ----------------------------- | ------------ | -------------------------------------- | ------------------------------------------------------ |
+| `package.json`                | Node/npm     | `npm ci`                               | `npm start` / `npm run dev`                            |
+| `pyproject.toml` / `setup.py` | Python       | `uv sync` / `pip install -e .`         | the project's entry point or `uvicorn`/`flask` command |
+| `pom.xml`                     | Maven        | Use the documented local build target  | Use the documented local entry point and local dependency configuration |
+| `BUILD` / `BUILD.bazel`       | Bazel        | `bazel build //path:target`            | `bazel run //path:target`                              |
+| `build.sbt`                   | SBT          | Use the documented local build target  | Use the documented local run target; report a blocker if unavailable |
+| `Makefile`                    | make         | `make build`                           | `make run`                                             |
+| `docker-compose.yml`          | compose      | `docker compose build`                 | `docker compose up`                                    |
 
 Read the project's own README or `scripts` block before inventing a command.
 
+#### Large Bazel monorepos
+
+A service in a large Bazel monorepo often has no documented per-service run command.
+`bazel run //path/to/component` usually works when `BUILD.bazel` has a target named the same as the
+directory. When it does not, read the `BUILD.bazel` and name the service target explicitly rather than guessing.
+
+Three traps an agent walks into unprompted:
+
+- Target specific packages; never `bazel build //...` or `bazel test //...`. In a large monorepo an
+  unscoped build is not a slow command, it is an unusable one.
+- Never use `bazel clean`; the cache handles invalidation. A service that will not start is precisely
+  when reaching for `clean` feels productive.
+- Do not modify `.bazelrc` files or shared build configuration.
+
+A service that dies immediately on a missing environment variable is usually a local-setup step,
+not a broken build. Check the repository's guide for setting environment variables before concluding otherwise.
+
 ### Standard Ports
+
+Common defaults; confirm against the service's own configuration.
 
 | Port | Protocol | Purpose                 |
 | ---- | -------- | ----------------------- |
 | 5990 | gRPC     | Primary gRPC server     |
 | 8080 | HTTP     | HTTP server / REST API  |
-| 5700 | HTTP     | Health/metrics |
+| 5700 | HTTP     | Health/metrics          |
+
+### Starting the Service
+
+Launch the repository's documented local command as a background process. Record its PID,
+working directory, ports, configuration, and unique log path in the evidence.
+Persist these values for later commands; do not assume shell variables persist between tool calls.
+Do not reuse a fixed log path that can overwrite another verification run.
 
 ### Readiness Polling
 
-Poll for up to 60 seconds (30 attempts, 2 seconds apart):
-
-```bash
-for i in $(seq 1 30); do
-  if grpcurl -plaintext -max-time 2 localhost:5990 grpc.health.v1.Health/Check 2>/dev/null | grep -q SERVING; then
-    echo "Service ready"
-    break
-  fi
-  sleep 2
-done
-```
-
-Fallback checks if gRPC health check is not available:
-
-- HTTP: `curl -s -o /dev/null -w '%{http_code}' localhost:8080/_meta/0/info` returns `200`
-- HTTP health endpoint: `curl -s -o /dev/null -w '%{http_code}' localhost:5700/readiness` returns `200`
+Use the service's documented local readiness interface with a bounded timeout.
+Preserve the response and exit status. Report a timeout as a startup blocker, not success.
+Readiness alone does not verify the changed endpoint.
 
 ### Startup Failure Handling
 
-If the service fails to start within 60 seconds:
-
-1. Capture stderr from `/tmp/service-stdout.log`
-2. **Consult the Common Local Startup Blockers table below** — check each row
-   against the error output and attempt any matching fixes
-3. **Retry startup** after applying fixes (allow another 60 seconds)
-4. Only if startup still fails after consulting the blockers table and retrying:
-   proceed to Step 9
-5. Include the error in the evidence document as a FAIL result, listing each
-   blocker checked and fix attempted
+If startup fails or readiness times out, capture the actual error from the retained log.
+Inspect the matching local setup below and retry only after a relevant safe change.
+Record unavailable prerequisites as BLOCKED and observed incorrect behavior as FAIL.
+Continue independent checks in Step 9; do not replace a blocked endpoint with an unrelated one.
 
 ### Common Local Startup Blockers
 
-Before falling back to workarounds, try these solutions for common issues:
+| Blocker | Safe local investigation |
+| ------- | ------------------------ |
+| Missing secrets or authentication | Inspect the documented local test setup; do not copy credentials or weaken authentication. |
+| PubSub or another external dependency | Use a repository-supported local emulator or fake and verify its target address. |
+| Service discovery or name resolution | Use documented local routing; do not select a real region as a workaround. |
+| Event sender or remote configuration | Use documented local fixtures; do not disable behavior that a required criterion needs. |
 
-| Blocker                 | Symptom                                     | Solution                                                                                                                                   |
-| ----------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| Secret-store lookup failure | `MissingSecretException`             | Point the client at a local secret override in the service config, and set a local namespace |
-| PubSub connection       | Publisher creation fails                    | Run `gcloud beta emulators pubsub start --project=<project> --host-port=localhost:8085` and set `pubsub.use-emulator: true` in user conf   |
-| Service discovery resolution | Channel creation fails for internal service targets | Point the client at the right discovery domain in the service config, or via its documented env var |
-| Service auth            | Auth enforcement blocks local calls         | *Primary:* write an in-process integration test wiring the real handler with a hand-rolled fake gRPC stub — this avoids the auth layer entirely and is the most robust local verification. *Manual fallback:* set `serviceauth.enabled: false` in `-user.conf` — ⚠️ auto-mode classifies this as auth-weakening and will deny it; the agent must ask the user for explicit permission before applying this fix. |
-| Event sender            | EventSender initialization fails            | Set `event-sender.enabled: false` in user conf                                                                                             |
-| Remote config           | RemoteConfig resolution fails               | Set `remoteconfig.enabled: false` in user conf                                                                                             |
-
-Look for patterns in the project's integration test (often `ContainerIT.java` or
-similar) — it typically contains all the config overrides needed for local execution.
-Also check if a `-user.conf` file exists (often `.gitignored`) or look at other
-services in the monorepo for examples.
+Inspect existing integration tests and local configuration for supported setups. Record
+which dependency is fake and which behavior remains unverified. If no safe local setup
+exists, report the prerequisite as BLOCKED rather than guessing configuration overrides.
 
 ## Test Scenario Generation Heuristics
 
@@ -188,6 +193,13 @@ curl -s -X POST http://localhost:8080/api/path \
 | repeated         | `[]` (empty) and `[item1, item2]` (populated) | Test empty and populated                     |
 | message (nested) | Full sub-message or omit entirely             | Test present and absent                      |
 
+### Authenticated Requests
+
+Use the repository's documented local authenticated client, if available without remote
+token requests. Do not invent impersonation settings or disable service authentication.
+If authenticated local calls are unavailable, record the blocker and the coverage limits
+of any existing in-process behavioral test.
+
 ## Response Validation Rules
 
 ### Deterministic Fields
@@ -228,16 +240,22 @@ For scenarios where behavior changes between base and feature branch:
 
 When Before/After scenarios are present in the scenario matrix:
 
-1. **Capture "after" responses** on the feature branch (service already running from Phase 1)
-2. **Stop the service**: `kill $SERVICE_PID`
-3. **Checkout base branch**: `git stash && git checkout <base-branch>`
-4. **Build on base branch**: Run the build command
-5. **Start service on base branch**: Launch and poll for readiness
-6. **Capture "before" responses**: Send the same requests
-7. **Stop the base branch service**: `kill $SERVICE_PID`
-8. **Return to feature branch**: `git checkout <feature-branch> && git stash pop`
-9. **Rebuild and restart**: Build and start service for remaining standard scenarios
-10. **Compare**: Verify the behavioral change between before and after responses
+1. Record the feature checkout's HEAD, status, and tracked/untracked verification scope.
+   Capture all "after" scenarios there, including relevant uncommitted and untracked changes.
+2. Create a separate detached baseline worktree at the exact base commit recorded in Step 1
+   of SKILL.md. Use Git's worktree add operation with its detach option and a new local path.
+   Record that path and resolved commit. Do not stash, checkout, reset, or clean the feature checkout.
+3. Build and run the baseline from its own directory with separate artifacts, logs, and ports.
+   If ports cannot differ, stop only the owned feature process before starting the baseline.
+   Do not copy feature changes or secrets into the baseline.
+4. Send identical local inputs and capture baseline output and exit status. Record missing
+   baseline interfaces as observed absence, not an invented successful response. If the
+   baseline cannot run, record the blocker and do not claim a verified comparison.
+5. Compare the expected changed fields and relevant unchanged behavior. Preserve raw responses;
+   normalize nondeterministic fields only in separate comparison copies.
+6. Stop only processes started for verification using their recorded process identifiers. Confirm the
+   feature checkout and its changes remain intact. Keep the baseline worktree and report
+   its path; do not remove worktrees, files, or artifacts without explicit authorization.
 
 ## Result Formatting
 

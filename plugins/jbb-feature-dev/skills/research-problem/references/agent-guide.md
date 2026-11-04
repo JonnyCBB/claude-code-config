@@ -14,15 +14,33 @@ Before making ANY Task tool calls, output a verification table that cross-checks
 
 | Question | Agent in Research Questions | Agent I Will Spawn | Match? |
 |----------|---------------------------|-------------------|--------|
-| Q1       | web-search-researcher | web-search-researcher | Y |
-| Q2       | codebase-explorer          | codebase-explorer | Y |
+| Q1       | jbb-feature-dev:web-search-researcher | jbb-feature-dev:web-search-researcher | Y |
+| Q2       | jbb-feature-dev:codebase-explorer | jbb-feature-dev:codebase-explorer | Y |
 | ...      | ...                        | ...               | ... |
 
 All rows show Y? Proceed with spawning.
 Any row shows N? STOP. Reconcile — update the Research Questions (with explanation) or fix the agent.
 ```
 
-**CRITICAL**: When writing the `subagent_type` parameter in Task tool calls, COPY the exact agent type string from your Research Questions in Step 2. Do NOT type it from memory or from a downstream summary.
+**CRITICAL**: When writing the `subagent_type` parameter, COPY the exact agent type string from your Research Questions in Step 2. Do NOT type it from memory or from a downstream summary.
+
+### Agent types are plugin-qualified, and the bare name fails
+
+Every agent named anywhere in this skill is reached as **`jbb-feature-dev:<name>`**. The bare
+name is not an alias — it is rejected outright:
+
+```
+Agent type 'codebase-explorer' not found. Available agents: ... eng-utils:codebase-explorer,
+jiffy-toolkit:codebase-explorer, jbb-feature-dev:codebase-explorer ...
+```
+
+Measured against the running binary. Three plugins ship an agent called
+`codebase-explorer`, so there is no unambiguous bare form for the runtime to resolve. Write
+`jbb-feature-dev:codebase-explorer`, `jbb-feature-dev:web-search-researcher`,
+`jbb-feature-dev:thoughts-explorer`, and so on for every agent in this file, including each row of
+the Domain Expert Table. A wrong name costs a mid-research respawn, and an executor whose
+spawn errors is one nudge away from doing the research itself — which is the failure this
+step exists to prevent.
 
 ## Batch Execution Rules
 
@@ -62,7 +80,7 @@ You MAY combine multiple related questions into a single subagent IF:
 - The questions are closely related and can be answered by the same source/agent type
 - It's more efficient than spawning separate agents
 - **Tell the user which questions you're combining and why**
-  Example: "Combining questions 1 & 2 into codebase-explorer since both involve search-api video detection"
+  Example: "Combining questions 1 & 2 into codebase-explorer since both involve the same API's request validation"
 
 ## Direct Question Handling
 
@@ -79,25 +97,25 @@ For guidance on choosing sub-agent models (when to use Sonnet vs. the user's def
 
 ## Default Agent Choice
 
-**Default subagent choice: codebase-explorer** for questions the code can answer; **web-search-researcher** when the answer lives outside the repo.
+**Default subagent choice: codebase-explorer** for questions the code can answer; **web-search-researcher** when the answer lives outside the repo on the public web.
 
 **Before defaulting, check the question against these routing rules** — historical analysis of 69 research plans showed live-system questions were routinely misrouted to doc-searchers and left unanswered:
 
-| Question needs...                                                                            | Route to                                             |
-| -------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| Production behavior: metrics, latency/error baselines, SLOs, alerts, incidents, logs, traces | web-search-researcher                     |
-| Deployment state: pods, canaries, rollout status                                             | web-search-researcher                     |
-| Service topology: who calls whom, service catalog, component ownership                       | web-search-researcher                     |
-| Data: warehouse datasets, dataset contents/schemas, lineage, scheduled workflows             | web-search-researcher                     |
-| Experiment state: experiment results and exposures                                           | web-search-researcher                     |
-| Live Slack thread/channel content                                                            | web-search-researcher (live Slack tools)  |
-| GitHub PR/issue/CI state                                                                     | web-search-researcher (gh CLI via Bash)   |
-| Docs, indexed Slack search, Drive/RFCs, issue tracker, people/teams                          | web-search-researcher                     |
+| Question needs...                                                                            | Route to                                                                                     |
+| -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Production behavior: metrics, latency/error baselines, SLOs, alerts, incidents, logs, traces | Main context, using whatever observability tool or MCP server the user has connected; otherwise an Open Question naming the system to query |
+| Deployment state, service topology, ownership, dataset contents                              | Main context with the user's connected tools; otherwise an Open Question                     |
+| GitHub PR/issue/CI state                                                                     | jbb-feature-dev:codebase-explorer (gh CLI via Bash), or a Direct `gh` call                   |
+| Code structure, configuration, schemas checked into a repo                                   | jbb-feature-dev:codebase-explorer                                                            |
+| Public docs, library behavior, release notes, prior art                                      | jbb-feature-dev:web-search-researcher                                                        |
+| Earlier research, plans, decisions in `~/.claude/thoughts/`                                  | jbb-feature-dev:thoughts-explorer                                                            |
+
+Do not route a live-system question to a doc-searcher and accept "not found" as the answer. If no connected tool can query the system, say so in the document.
 
 ## Codebase Research Agents
 
-- Use **codebase-explorer** (subagent_type: `"codebase-explorer"`) to find files AND understand how code works in a single pass
-- **IMPORTANT**: This is NOT the built-in `Explore` agent type. Always use subagent_type `"codebase-explorer"`, not `"Explore"`.
+- Use **codebase-explorer** (subagent_type: `"jbb-feature-dev:codebase-explorer"`) to find files AND understand how code works in a single pass
+- **IMPORTANT**: This is NOT the built-in `Explore` agent type, and the bare `"codebase-explorer"` does not resolve. Use `"jbb-feature-dev:codebase-explorer"`.
 - Prompt patterns:
   - For locating files: "where is X?" or "find files for X"
   - For understanding implementation: "how does X work?"
@@ -113,9 +131,12 @@ For guidance on choosing sub-agent models (when to use Sonnet vs. the user's def
 
 ## Documentarian Principle
 
-**IMPORTANT**: All agents are documentarians, not critics. They will describe what exists without suggesting improvements.
+Document by default; permit evidence-backed evaluation when explicitly requested within scope.
 
-**Empirical Testing Principle**: When you discover a tool, API, or configuration that is relevant to the research question, attempt to verify it works by calling it with a minimal test input. Report both the existence AND the empirical result. This does not violate the documentarian principle — you are documenting empirical behavior, not evaluating or suggesting improvements.
+**Empirical Testing Principle**: Resolve material questions through authorized, available
+reads within budget. Inspect mixed-action tools and commands before executing; do not mutate
+records, send messages, connect servers, or change settings. Report exact action, source,
+response, available call ID, and limits. Tool registration or help is not end-to-end proof.
 
 ## Confidence Signaling
 
@@ -134,10 +155,10 @@ focus on low-confidence areas.
 
 ### Close What You Can Before You Report It
 
-Instruct every research agent: **before listing anything under "areas of low confidence" or
-"inconclusive searches", check whether one more tool call, file read, or command would close
-it — and if so, run it.** Report the gap only if you attempted it and it failed, or if closing
-it needs access you do not have; say which of the two it was.
+Instruct every research agent: before reporting low confidence or inconclusive searches,
+check whether authorized, available evidence can close the material gap within budget.
+Several safe reads may form one attempt. Report attempts, classified failures, and verified
+access, safety, scope, or budget limits. Unfinished material evidence remains incomplete.
 
 This matters because a gap listed here flows into the synthesis and, if nobody notices it was
 cheap to close, into the finished document's Open Questions. Observed failure: an agent ran
@@ -149,26 +170,46 @@ Two specific habits to avoid:
 
 - Writing "this could be confirmed by [instrument]" instead of using that instrument. If you
   can name what would settle it, you are one step from settling it.
-- Grounding an absence claim in an index, cache, or capped listing. Prefer a count or an
-  existence check against the live source, and say which you used.
+- Grounding an absence claim in an index, cache, or capped listing. Verify source/query
+  coverage through authorized live reads; record the query, scope, result, and missing checks.
+  Empty results establish absence only within that coverage.
 
 ## External Research Agents
 
 **web-search-researcher** -- use for:
 
-- Recommended/approved tools and libraries, and how others solved the same problem
-- Relevant Slack discussions -- both the historical index AND live thread/channel reads (prefer live reads when the exact thread matters or the index looks stale)
-- Google Docs/Slides/Sheets
-- Relevant email threads (Gmail) about decisions or announcements
-- Meeting/calendar context
-- People/team/ownership facts
-- GitHub PR/issue/CI state (gh CLI via Bash)
-- Production behavior of named services: metrics, SLOs, alerts, incidents, logs, traces
-- Deployment state: pods, canaries, rollout status
-- Service topology: production callgraph, service catalog, component ownership
-- Data questions: warehouse queries, dataset schemas/contents, lineage, scheduled workflows
-- Anything where the honest answer requires querying a live system rather than reading about it
-- Discovering whether an MCP server exists that could answer an otherwise-unanswerable question (report-only -- name candidate servers in the findings; do not invoke them)
+- External documentation and resources
+- Recommended tools and libraries, and how others solved the same problem
+- Release notes, API references, and anything that may have changed after the training cutoff
+
+For live-system questions (production behavior, deployment state, service topology, datasets),
+see the routing table in `## Default Agent Choice`: use the user's connected tools from the main
+context, or record the question as open. Do not ask web-search-researcher to answer them.
+
+**LINKS requirement**: Instruct these agents to return links with their findings, and include those links in the final report.
+
+## Domain Expert Table
+
+**IMPORTANT**: Domain experts serve two distinct roles — **primary researcher** (Step 3) and
+**technical verifier** (Step 7). Both should be considered when a domain pattern matches.
+The Domain Expert Check in Step 2 (`references/plan-templates.md`) determines which role(s)
+to use. This section governs spawning behavior.
+
+| Domain Pattern                         | Expert Agent                          | When to Use                                          |
+| -------------------------------------- | ------------------------------------- | ---------------------------------------------------- |
+| ML training, model code, PyTorch       | jbb-feature-dev:ml-pipeline-reviewer  | ML pipeline, training, and model-code questions      |
+
+Use `${CLAUDE_PLUGIN_ROOT}/skills/shared-references/domain-agent-registry.md` as the source of truth
+for domain detection; this table only summarizes it.
+
+### Domain Expert as Primary Researcher (Step 3)
+
+Use a domain expert instead of codebase-explorer when the question requires domain-specific
+knowledge, not just file discovery. For example:
+
+- "Why does validation loss diverge after epoch 3?" → `ml-pipeline-reviewer` (knows training-loop
+  pitfalls, data-loader leakage, optimizer settings — will check things a generalist wouldn't think of)
+- "Where is the training loop code?" → `codebase-explorer` (pure file discovery)
 
 **When to spawn as primary researcher:**
 
@@ -179,7 +220,7 @@ Two specific habits to avoid:
 ### Domain Expert as Verifier (Step 7)
 
 When a domain expert matches the research topic, it MUST be spawned in Step 7 as a
-**Technical Accuracy Verifier** alongside the generic reviewer personas (for Medium and
+**Domain Expert Verifier** alongside the generic reviewer personas (for Medium and
 Complex research). See `references/review-personas.md` for the verifier persona definition
 and prompt template.
 
@@ -191,14 +232,9 @@ and prompt template.
 - The domain expert WAS used as primary researcher but findings from OTHER agents touch
   the domain (cross-check between agents)
 
-**When to skip verification:**
+**When the verifier is not added** (the generic reviewer personas still run — this governs
+only whether the domain expert joins them):
 
-- Simple complexity (unless user requests it)
+- Simple complexity, unless the user asks for it
 - No domain expert matches the research topic
 
-## Agent Usage Tips
-
-- Start with locator agents to find what exists, then use analyzer agents on promising findings
-- Run multiple agents in parallel when they're searching for different things
-- Each agent knows its job -- just tell it what you're looking for, don't over-specify HOW to search
-- Remind agents they are documenting, not evaluating or improving

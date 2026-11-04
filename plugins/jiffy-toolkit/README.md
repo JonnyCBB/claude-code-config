@@ -12,9 +12,9 @@ claude plugins add github.com/JonnyCBB/claude-code-config/plugins/jiffy-toolkit
 
 | Skill                        | Command                         | Description                                                                                                                                                                                |
 | ---------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| teach-me                     | `/teach-me [concept]`           | Generate interactive scrollytelling HTML pages that progressively explain any concept using GSAP animations and optional Manim for math. [Docs](https://your-internal-docs.example/) |
-| frontend-slides              | `/frontend-slides`              | Create animation-rich HTML presentations from scratch or by converting PowerPoint files. [Docs](https://your-internal-docs.example/)                                         |
-| context-and-skills-standards | `/context-and-skills-standards` | Evidence-based standards for writing CLAUDE.md, AGENTS.md, and skill files                                                                                                                 |
+| teach-me                     | `/teach-me [concept]`           | Generate interactive scrollytelling HTML pages that progressively explain any concept using GSAP animations and optional Manim for math. |
+| frontend-slides              | `/frontend-slides`              | Create animation-rich HTML presentations from scratch or by converting PowerPoint files.                                         |
+| context-and-skills-standards | `/context-and-skills-standards` | Reduce a skill package or a context file to its essence. Default verdict is DELETE; produces a deletion list, plus what belongs in a different file, with net line counts                  |
 | sound-like-me                | `/sound-like-me`                | Remove signs of AI-generated writing from text, optionally rewriting in a named voice. Detects 33 patterns. Per-register personas in `references/`, one per destination surface            |
 | editorial-standards          | `/editorial-standards`          | Editorial standards and technical writing best practices for document review                                                                                                               |
 | diagram-standards            | `/diagram-standards`            | Diagram standards including type selection, color palettes, WCAG 2.2 accessibility                                                                                                         |
@@ -35,11 +35,8 @@ Generate interactive scrollytelling HTML pages that progressively explain any co
 - Optional Manim integration for mathematical content
 - Agent team debate mode for visualization choices (when `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`)
 - Visual QA with Playwright screenshots to catch rendering issues
-- Publish to Snow for SSO-protected sharing
 
 **Output:** `~/.claude/teach-me/[slug]/index.html`
-
-For a full walkthrough with examples, see the [teach-me documentation](https://your-internal-docs.example/).
 
 ### /frontend-slides
 
@@ -59,35 +56,26 @@ Create zero-dependency, animation-rich HTML presentations that run entirely in t
 
 **Output:** `~/.claude/presentations/[name]/` (multi-file) or single HTML file
 
-For a full walkthrough with examples, see the [frontend-slides guide](https://your-internal-docs.example/).
+## Agents (12)
 
-## Agents (6)
-
-| Agent                        | Purpose                                                  |
-| ---------------------------- | -------------------------------------------------------- |
-| web-search-researcher        | External documentation and web research                  |
-| web-search-researcher | internal tools, docs, live Slack, people/teams   |
-| codebase-explorer            | Find files and understand code across repos              |
-| context-and-skills-reviewer  | Review CLAUDE.md/AGENTS.md/skill files against standards |
-| document-editor-reviewer     | Editorial review of technical documents                  |
-| visual-aid-recommender       | Recommend diagrams and visualizations for documentation  |
+| Agent                       | Purpose                                                                         |
+| --------------------------- | ------------------------------------------------------------------------------- |
+| web-search-researcher       | External documentation and web research                                         |
+| codebase-explorer           | Find files and understand code across repos                                     |
+| context-and-skills-reviewer | Removal review of a skill or context file, from a context that did not write it |
+| structure-reviewer          | /review-document: section order, headings, flow                                 |
+| prose-quality-reviewer      | /review-document: grammar, clarity, word choice                                 |
+| visual-aid-reviewer         | /review-document: diagram opportunities and rewrites                            |
+| accessibility-reviewer      | /review-document: alt text, contrast, link text, terminology                    |
+| agent-readability-reviewer  | /review-document: how parseable the document is for AI agents                   |
+| engagement-reviewer         | /review-document: reader interest, examples, callouts                           |
+| consistency-checker         | /review-document: terminology and formatting consistency                        |
+| doc-review-calibrator       | /review-document: verifies and calibrates findings                              |
+| doc-review-deduplicator     | /review-document: merges duplicate findings                                     |
 
 ## Prerequisites
 
-### MCP Servers (bundled)
-
-- `atlassian-mcp` — Jira integration
-- `slack-mcp` — Slack search and reading
-- `bandmanager-mcp` — people, groups and memberships
-- `mcp-explorer-mcp` — MCP server discovery
-
-
-
-`mcp-explorer-mcp` is a further exception: it resolves under neither plugin prefix, and its two tools are declared as bare `mcp__mcp-explorer-mcp__*` names. Both agent files carry an inline note explaining why; read that before changing them.
-
-### Org-Managed Connectors (enable in claude.ai settings)
-
-- GDrive MCP — Google Drive access
+No MCP servers are required. The agents use only built-in tools (Read, Grep, Glob, Bash, WebSearch, WebFetch) and the `gh` CLI.
 
 ### Optional
 
@@ -96,5 +84,4 @@ For a full walkthrough with examples, see the [frontend-slides guide](https://yo
 - Manim (for teach-me mathematical content)
 - python-pptx, decktape (for frontend-slides export)
 
-**This plugin is self-sufficient.** It declares the MCP servers its agents use and references
-only `mcp__plugin_jiffy-toolkit_*` names. Do not repoint them at another plugin's prefix.
+**This plugin is self-sufficient.** It references no MCP server and no other plugin.

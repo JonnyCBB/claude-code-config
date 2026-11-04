@@ -1,6 +1,6 @@
 ---
 name: codebase-explorer
-description: Explore codebases and find implementation details. Use for (1) finding WHERE code lives (file paths, directory structure), (2) finding HOW code works (data flow, architecture, entry points), or (3) finding WHAT patterns exist (code examples and implementations to model after). Works on local files (fastest), indexed internal repos via codesearch MCP, or external repos via gh repo clone fallback. Adapts depth based on what is asked — specify "where", "how", or "show me examples" in your prompt.
+description: Explore codebases and find implementation details. Use for (1) finding WHERE code lives (file paths, directory structure), (2) finding HOW code works (data flow, architecture, entry points), or (3) finding WHAT patterns exist (code examples and implementations to model after). Works on local files (fastest), or on repos not on this machine via a gh repo clone fallback. Adapts depth based on what is asked — specify "where", "how", or "show me examples" in your prompt.
 tools: Grep, Glob, LS, Read, Bash
 model: claude-opus-5
 color: green

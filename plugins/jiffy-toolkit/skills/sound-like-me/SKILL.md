@@ -46,23 +46,23 @@ A persona rewrites in one person's voice. Apply it before the final non-negotiab
 
 **Pick the register from these signals only, in order:**
 
-1. The calling skill states it. `/submit-pr` passes `ghe-pr-body`.
+1. The calling skill states it. `/submit-pr` passes `github-pr-body`.
 2. The user states it, in prose ("for Slack", "this RFC") or as `--register=<name>`.
 3. Neither fires: ask which surface the text is for.
 
 **Slack takes one more question.** "For Slack" names the surface but not the register, and the two Slack registers differ more from each other than either differs from a GitHub comment. Ask whether it is a quick reply or a post to the channel. Skip the question only when the user has already settled it in words ("reply to them", "post an update to the channel").
 
-Never infer the register from the input text's shape. Register is a property of the destination, and an AI draft's structure reflects whatever drafted it rather than where it is going. A mismatched register measured worse than no persona at all: it deleted every heading and imported the wrong register's hedging. The figures, and the scale they are on, are in `references/persona-jbb-ghe-pr-body.md`.
+Never infer the register from the input text's shape. Register is a property of the destination, and an AI draft's structure reflects whatever drafted it rather than where it is going. A mismatched register measured worse than no persona at all: it deleted every heading and imported the wrong register's hedging. The figures, and the scale they are on, are in `references/persona-jbb-github-pr-body.md`.
 
-| Register         | Surface                            | File                                       |
-| ---------------- | ---------------------------------- | ------------------------------------------ |
-| `ghe-comment`    | GitHub review comments and replies | `references/persona-jbb-ghe-comment.md`    |
-| `ghe-pr-body`    | Pull request descriptions          | `references/persona-jbb-ghe-pr-body.md`    |
+| Register         | Surface                            | File                                        |
+| ---------------- | ---------------------------------- | ------------------------------------------- |
+| `github-comment` | GitHub review comments and replies | `references/persona-jbb-github-comment.md`  |
+| `github-pr-body` | Pull request descriptions          | `references/persona-jbb-github-pr-body.md`  |
 | `slack-reply`    | Short Slack replies                | `references/persona-jbb-slack-reply.md`    |
 | `slack-longform` | Long Slack broadcast posts         | `references/persona-jbb-slack-longform.md` |
 | `doc-formal`     | Google Docs and RFCs               | `references/persona-jbb-doc-formal.md`     |
 
-Read only the matching file. Each lists the core rules its register suspends. No persona may suspend §20, §21 or §22. No persona may suspend §14 or §19 either, with one exception: both are unenforced for `doc-formal`, because Google Docs re-applies em dashes and curly quotes whatever this skill emits, so enforcing them there only implies a cleanliness the output does not have. The suspension mechanism covers the numbered rules only. "The objective goes first, in plain words" sits outside it, because it governs what a message contains rather than how it is worded, so there is nothing there for a register to trade away.
+Read only the matching file. Each lists the core rules its register suspends. No persona may suspend §20, §21 or §22. No persona may suspend §14 either, with one exception: it is unenforced for `doc-formal`, because Google Docs re-applies em dashes whatever this skill emits, so enforcing it there only implies a cleanliness the output does not have. §19 is not a rule to suspend: quote style is neutral for this voice. The suspension mechanism covers the numbered rules only. "The objective goes first, in plain words" sits outside it, because it governs what a message contains rather than how it is worded, so there is nothing there for a register to trade away. Its checks 5 and 7 are the exception and carry their own scope inline: they are about structure and code font, which are properties of the destination, and the persona files hold the measured rates.
 
 If the user pastes a writing sample instead of naming a register, match its habits directly and skip the persona files.
 
@@ -81,19 +81,28 @@ simply the first thing you write, which is why only that persona file carries a 
 This decides what the message contains and what comes first, so no amount of pattern-fixing reaches
 it: every individual sentence in the Before example is clean prose.
 
-Four checks, in order:
+Seven checks, in order. The first four decide what the message contains; 5 to 7 decide its shape,
+and carry their own register scope.
 
 1. **Open with what you want to be true afterwards**, not with the change you want the reader to
    make. Position is not enough on its own: the Before example leads with the objective in its
    second paragraph and still got asked for one. The opening has to survive a reader who knows their
    own system and nothing about yours, so name what is theirs and explain what is yours.
+   **State the outcome in the reader's vocabulary, not yours.** The exemplar opens with "Orbit being
+   able to do everything Layout Pilot can do", and Layout Pilot is the reader's own system. An outcome
+   phrased in your names is still a mechanism to them.
    **Never infer the objective.** If the source only says what the author wants done, that is all
    you know; leading with a goal they did not state is a fabrication, and rule 3 above outranks this
    check. Measured: given notes saying only that a job takes 11 hours and once took 3, a run of this
    check opened with "I want it back to finishing in a few hours", a target the author never set.
    When no objective is stated, either ask for one or lead with the ask as they wrote it.
 2. **Name only what the reader needs in order to act.** If they would have to look it up, and the
-   sentence still works without it, cut it.
+   sentence still works without it, cut it. **"They" means this reader.** A name the reader owns is
+   not clutter, it is the shortest way to say the thing, and stripping it makes them translate your
+   paraphrase back into their own vocabulary. The exemplar in
+   `references/objective-first-example.md` uses roughly 29 names and glosses none of them, because
+   the reader wrote them; the Before example's reader owned the sandbox and
+   had never seen the service being described. Whether a word looks technical is not the test.
 3. **Evidence when they ask, when it is the blocker, or when the destination requires it.** Not to
    win an argument nobody is having.
 4. **Do not add asks, and never remove one the author wrote.** Extra questions bolted onto a
@@ -102,6 +111,53 @@ Four checks, in order:
    deleting it means they get half an answer and have to come back tomorrow, which is worse than a
    slightly longer message. Measured: a run of this check silently dropped one of the author's two
    questions, and a blind reader picked the version that kept both.
+5. **Give each ask its own heading, and say what kind of item it is.** Four bold questions the
+   reader can answer one at a time and in any order beats one paragraph containing four. Label the
+   ones that are not asks: "this one's a question rather than an ask" tells them it costs a sentence.
+   Applies to any message carrying more than one ask. Not to `slack-reply`, which is measured at no
+   structure at all.
+6. **Put every identifier after the claim it supports.** "Orbit refuses every external-action step
+   just to be safe. I measured it across all 14 workflows and 8 of the 9 are reads (fetch-uri,
+   resolve-asset-uris, validate-catalog)." The reader learns why they are being handed a list before
+   they are handed one. The Before example does the reverse, and its measurements land before the
+   reader has any reason to care about them.
+7. **On the conversational surfaces, do not set names in code font.** The exemplar sets zero
+   identifiers in backticks and the Before example sets eighteen. Code font on every name is what
+   makes a request look like a configuration diff rather than a question from a colleague.
+   **This is register-scoped and the personas already measure it**, so read the rate rather than
+   applying one rule everywhere: `slack-longform`, `slack-reply` and `doc-formal` are all measured at
+   **0.0%** backticks, `github-comment` at 9.6%, and `github-pr-body` at **43.3%** with a standing
+   instruction to backtick every identifier. A pull request body is not a message in this sense.
+   Everywhere the rate is near zero, paths, commands and error strings may still keep their
+   formatting; the names of systems, methods and steps do not need it.
+
+**Length is not the target, and tuning on it cuts the wrong things.** The message that worked is
+longer than the one that was sent back, and names more things, not fewer; the counted comparison is
+in `references/objective-first-example.md`. Read Version A against Version B alone and the apparent
+lesson is "say less, name less". That lesson is wrong and it is expensive, because the things it cuts
+first are the reader-owned names and the sentences that tell the reader which parts are genuinely
+theirs.
+
+**Three things that read like throat-clearing and are not.** All three were cut by editors applying
+an earlier version of this section to a message that had already succeeded:
+
+- **What you already tried, and what you cannot do yourself.** "I've done our homework first" and
+  "four things left that I can't fix myself" tell the reader which part is theirs. Cutting them makes
+  the reader wonder whether you looked.
+- **Urgency, stated plainly, at both ends.** "None of them urgent today" and "no rush on any of it"
+  are not a repetition when four asks sit between them.
+- **An offer to do the work yourself.** Check 4 bars extra asks. An offer is the opposite of an ask:
+  it removes work from the reader rather than adding it.
+
+**This section was checked rather than asserted, twice.** Four editors given the checks as they stood
+without any of the above, plus the "pretty good" message with no hint it had been praised, **all four
+said revise before sending** - proposing between them to cut the reader-owned step names, the two
+urgency statements, the offer to raise the pull requests, and the "done our homework" line. A second
+run then put three editors per arm on a **held-out** message quoted in neither arm's rule text: the
+old checks produced **9 proposed cuts to those same features and the revised checks produced 0**,
+while both arms flagged the objective-first defect 3 of 3, which is the control. Both runs, their
+tables, and what they do not show are in `references/objective-first-example.md`, along with the
+counted comparison, both messages verbatim, and the confound.
 
 **The failure mode of check 1, printed so it cannot be read past.** Seven review agents read the
 abstract version of this rule and none of them caught it. An eval did, on the first run.
@@ -125,8 +181,7 @@ and rule 3 forbids it whatever this section says.
 **What to write instead**: lead with the ask the author actually made, in their words. "Our weekly
 listener-cohort backfill is queueing behind interactive queries, and I'd like the quota on
 `analytics-adhoc` raised from 500 slots to 1500." No invented goal, and the reader still learns why
-the message exists in the first sentence. The full run is at
-`~/.claude/thoughts/shared/evidence/2026-08-28-objective-first-eval/`.
+the message exists in the first sentence.
 
 **What this does not ban, and must not be read as banning.** Bounding your own evidence ("I don't
 have large scale data to back up any of these statements"), scoping your own authority, naming a
@@ -159,13 +214,14 @@ a request for a steer to a favour it was asking for.
 The test before sending: would a colleague have written this between two meetings? If it reads like
 a report, rewrite it.
 
-**Before** (a real request to a support channel, 2026-08-28, first two sentences of each paragraph).
-**Quoted verbatim, em dash and all**: it breaks §14 four sentences in, which is part of the evidence.
+**Before** (a real request to a support channel, 2026-08-28, first two sentences of each paragraph,
+with the system names swapped for invented ones). **Quoted with its em dash**: it breaks §14 four
+sentences in, which is part of the evidence.
 Secondhand text is never rewritten, so leave this block exactly as it is:
 
-> Hi @honk-goalie! Could we add two hosts to the agent-runtime sandbox allowlist?
+> Hi @devbox-oncall! Could we add two hosts to the devbox sandbox allowlist?
 >
-> **What we're trying to do:** run `seal-agent-service`'s live verification on a Honk pod instead of
+> **What we're trying to do:** run `orbit-agent-service`'s live verification on a devbox pod instead of
 > a laptop. We measured it, and everything else already works — the full 8,360-test suite runs there
 > in about 4 minutes [...]
 
@@ -174,16 +230,16 @@ achieve?"*
 
 **After** (the rewrite that was answered):
 
-> When I dispatch a session to honk to work on my repo, seal-agent-service, I want it to do live
-> verification to check that the changes that it's made actually works. [...] On the honk pod it
-> can't reach Vertex AI so we don't get actual agent responses.
+> When I dispatch a session to devbox to work on my repo, orbit-agent-service, I want it to do live
+> verification to check that the changes that it's made actually works. [...] On the devbox pod it
+> can't reach Nimbus AI so we don't get actual agent responses.
 >
-> I want to unblock this so that we can get agent responses when running on honk pods.
+> I want to unblock this so that we can get agent responses when running on devbox pods.
 
 The After names a handful of things and the reader needs nearly all of them, against a Before that
 names an order of magnitude more. It states an outcome rather than an edit to a named field in a
 named file, and it hands the problem over rather than the fix. It is barely shorter, so brevity was
-not what fixed it. Both messages verbatim, the reply, and the counted identifiers on each side are
+not what fixed it. Both messages in full, the reply, and the counted identifiers on each side are
 in `references/objective-first-example.md`, which is where those numbers live.
 
 ## PERSONALITY AND SOUL
@@ -396,16 +452,9 @@ Before returning the final rewrite, scan it for `—` and `–`. Any hit means t
 > **After:**
 > The product launches in Q3. User research showed a preference for simplicity. Next step: schedule a follow-up meeting.
 
-### 19. Curly Quotation Marks
+### 19. Quotation Marks
 
-**Problem:** ChatGPT uses curly quotes (“...”) instead of straight quotes ("...").
-
-**Plain-text destinations only.** Unenforced for the `doc-formal` register, for the same reason as §14: Google Docs converts straight quotes and apostrophes on input. Curly quotes are measured at 57.1% in his own RFC prose, which is platform behaviour rather than a choice.
-**Before:**
-
-> He said “the project is on track” but others disagreed.
-> **After:**
-> He said "the project is on track" but others disagreed.
+**Not a tell for this voice.** Curly and straight quotes both sound like him. Quote style is never evidence of AI writing, in any register, alone or stacked with other signals. Do not flag it, and spend no edit converting it. Keep the style already present in the source or typed by the user. Where a platform converts automatically (Google Docs, most CMSes), let it convert.
 
 ## COMMUNICATION PATTERNS
 
@@ -570,7 +619,7 @@ A clean human writer can hit several of the patterns above without any AI involv
 - **Formal or academic vocabulary.** AI overuses _specific_ fancy words (see §7), not all fancy words. Don't flatten "ostensibly" or "constituent" just because they sound brainy.
 - **Letter-style opening or closing on a comment.** Salutations and sign-offs predate ChatGPT by centuries.
 - **Common transition words in isolation.** _Additionally_, _moreover_, _consequently_ are AI-coded only when piled up. One _however_ is not a tell.
-- **Curly quotes alone.** macOS, Word, Google Docs, and most CMSes auto-curl by default. Curly quotes only count when stacked with other tells.
+- **Curly quotes.** Never a tell for this voice, alone or stacked (§19). Platforms auto-curl regardless of who wrote the text.
 - **Em dashes alone.** Many editors and journalists use them often. Em dashes are evidence only when paired with formulaic sales-y rhythm.
 - **One short emphatic sentence.** Humans use clipped sentences to land a point. Flag staccato drama only when several short fragments appear in a row and inflate the tone.
 - **"Honestly" or "look" mid-sentence.** These are ordinary in casual writing. The tell is the standalone theatrical opener, not the word itself.
@@ -604,7 +653,7 @@ When you see these, lean toward leaving the prose alone — they are evidence of
 
 ## Process and Output
 
-1. Read the input carefully. If it is addressed to a person who has to act on it, run the four checks in "The objective goes first, in plain words", and fix what they catch before touching the prose.
+1. Read the input carefully. If it is addressed to a person who has to act on it, run the seven checks in "The objective goes first, in plain words", and fix what they catch before touching the prose.
 2. Identify every instance of the patterns above.
 3. Write a **draft rewrite**. Check that it reads naturally aloud, varies sentence length, prefers specific details and simple constructions (is/are/has), and keeps the appropriate register.
 4. Ask three questions: **"What makes the below so obviously AI generated?"**, **"Does the rewrite state any fact, name, number, date, or citation that isn't in the source?"** and, where the objective check ran, **"What did it remove, and would the reader have needed it to act?"** Answer briefly. A fabrication is a defect even when it sounds more human than the vague original, and so is a cut the reader needed. In pasted-text and file modes, name what the objective check dropped. **In embedded mode, do not drop anything**: the calling skill owns its content and gets no audit bullets to read, so apply check 1 and reorder freely, but where checks 2 to 4 would cut a caller's fact, leave it in. A silent deletion is the one edit this skill makes that no later pass can detect.
@@ -614,4 +663,4 @@ In pasted-text mode, deliver the draft, the brief "still-AI" bullets, the final 
 
 ## Reference
 
-Patterns from [Wikipedia:Signs of AI writing](https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing), maintained by WikiProject AI Cleanup. Persona rates and exemplars were fitted from the corpus at `~/.claude/thoughts/shared/research/corpus/sound-like-me/`, and the research behind the register split is at `~/.claude/thoughts/shared/research/2026-08-06-humanizer-persona-layer.md`.
+Patterns from [Wikipedia:Signs of AI writing](https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing), maintained by WikiProject AI Cleanup. Persona rates were fitted 2026-08-06 from the author's own real messages, sampled per destination surface; each persona file states its own sample size and method. Neither that corpus nor the register-split research ships with this skill, so the rates cannot be re-derived here.

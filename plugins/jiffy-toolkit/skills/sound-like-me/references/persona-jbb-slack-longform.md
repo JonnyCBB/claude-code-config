@@ -58,7 +58,7 @@ Three rates carry most of the register's identity.
 
 **The spaced hyphen at 71.4% is a real habit, not an artifact.** An earlier pass called it a
 three-sample over-fit because PR-body targets had it 0 of 8. That retraction was itself wrong: it
-appears in 5 of 7 long posts, 0 of 44 short replies, and 0 of 261 GHE comments. It is bound to this
+appears in 5 of 7 long posts, 0 of 44 short replies, and 0 of 261 GitHub comments. It is bound to this
 register. It does two jobs: separating a `TL;DR` from its summary (`TL;DR - Use Claude Sonnet 5`)
 and marking an appositive inside a parenthetical (`a directed acyclic graph - DAG`).
 
@@ -75,7 +75,8 @@ reason.
 ## 3. Exemplars
 
 Three real posts, selected from the four carrying no Claude attribution. Colleague names redacted
-to `@colleague`. Links shown as `<link|text>`, which is Slack's own format. Otherwise verbatim.
+to `@colleague`, and in the third the internal system names are swapped for invented ones. Links
+shown as `<link|text>`, which is Slack's own format. Otherwise verbatim.
 
 **1. A recommendation, hedged throughout, ending by naming the limits of his own evidence.**
 
@@ -99,9 +100,9 @@ to `@colleague`. Links shown as `<link|text>`, which is Slack's own format. Othe
 
 **3. Greeting with emoji, acronym expanded on first use, spaced hyphen inside a parenthetical.**
 
-> Hey hey :wave::skin-tone-5: that's precisely what I thought the goal was before yesterday's deep dive meeting. But now it sounds like @colleague and @colleague would prefer the integration with Multiverse to happen in Home Pilot Runner (HPR) and then SEAL will call Home Pilot Runner with the required inputs for the multiverse run. I think the overall idea is that HPR contains the primitives for creating things on Home and then clients like Home Pilot UI and SEAL agent simply call HPR for these things.
+> Hey hey :wave::skin-tone-5: that's precisely what I thought the goal was before yesterday's deep dive meeting. But now it sounds like @colleague and @colleague would prefer the integration with Testbed to happen in Layout Pilot Runner (LPR) and then Orbit will call Layout Pilot Runner with the required inputs for the testbed run. I think the overall idea is that LPR contains the primitives for creating things on the home page and then clients like Layout Pilot UI and Orbit agent simply call LPR for these things.
 >
-> Regardless, something that seems to need to change is the composition for SEAL in multiverse. There's a composition in Multiverse named Composition 121 (as I understand it, a composition is a set of workflows stitched together into a directed acyclic graph - DAG). Some of the workflows in that composition use LLM judges for evaluation. However, these don't work for our use case(s) so we want to change these to calculate deterministic metrics (e.g. the number of shelves in a new shelf or simply just the presence of a new shelf). This change needs to happen regardless of the HPR stuff.
+> Regardless, something that seems to need to change is the composition for Orbit in testbed. There's a composition in Testbed named Composition 121 (as I understand it, a composition is a set of workflows stitched together into a directed acyclic graph - DAG). Some of the workflows in that composition use LLM judges for evaluation. However, these don't work for our use case(s) so we want to change these to calculate deterministic metrics (e.g. the number of shelves in a new shelf or simply just the presence of a new shelf). This change needs to happen regardless of the LPR stuff.
 
 What to take from these, as behaviour:
 
@@ -136,7 +137,7 @@ What to take from these, as behaviour:
   isolated. Running more samples of two texts that differ in several ways only tightens the estimate
   of a quantity that still cannot be attributed, which is a measurement that gets more confident
   without getting more informative.
-- **Expand an acronym on first use, then use it**: "Home Pilot Runner (HPR)".
+- **Expand an acronym on first use, then use it**: "Layout Pilot Runner (LPR)".
 - **Parentheticals do real work and nest an appositive on a spaced hyphen**: "(as I understand it, a
   composition is a set of workflows stitched together into a directed acyclic graph - DAG)".
 - **CAPS for one word, not a phrase.** "MUCH better", not "MUCH BETTER".
@@ -151,12 +152,12 @@ What to take from these, as behaviour:
 | §18 emoji                        | **Suspend**                                                        | measured, 71.4%                                    |
 | §24 hedging                      | **Suspend.** Hedging is the register's spine                       | measured, 28.6% plus pervasive non-keyword hedging |
 | §23 filler phrases               | **Suspend**, and specifically protect "Regardless,"                | observed in 2 of 3 exemplars                       |
-| §13 passive voice                | **Relax**                                                          | **assumed** from `ghe-comment`; not measured here                     |
+| §13 passive voice                | **Relax**                                                          | **assumed** from `github-comment`; not measured here                     |
 | §10 rule of three                | **Relax.** The only register where it is not near-zero             | measured, 14.3%, but on n=7 that is one post       |
 | §17 title case in headings       | Not applicable. No headings exist                                  | measured, 0 of 7                                   |
 | §15 boldface                     | **Keep mostly enforced.** Single-asterisk only, one span at a time | measured, 14.3%                                    |
 | §16 inline-header vertical lists | **Keep enforced**                                                  | bare labels are not bold lead-ins                  |
-| §14, §19, §20, §21, §22          | **Never suspended**                                                | the five non-negotiables                           |
+| §14, §20, §21, §22          | **Never suspended**                                                | the four non-negotiables                           |
 
 Affirmative behaviours with no corresponding core rule:
 

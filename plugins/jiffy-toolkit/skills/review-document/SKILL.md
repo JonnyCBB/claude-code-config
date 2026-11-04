@@ -19,6 +19,12 @@ argument-hint: "<path-or-url> [--review-only]"
 
 Multi-agent document review and editing via a 4-phase pipeline.
 
+**Default prose policy: ASD-STE100 Simplified Technical English (STE)-informed, outcome-first writing.**
+Apply the [STE-informed review guidance](references/editorial-reference.md#ste-informed-review)
+to findings, suggested edits, and the review summary. This is a clarity review, not formal STE
+certification. Respect document type, audience, and edit-safety rules; restructuring and subjective
+rewrites remain recommendations, not automatic edits.
+
 ## Arguments
 
 - First argument (required): file path (`.md`, `.html`) or Google Docs URL
@@ -59,8 +65,8 @@ Determine the document format from the argument:
 Read the full document — no limit/offset:
 
 - **Markdown or HTML**: use the `Read` tool
-- **Google Docs**: use your Google Drive connector's document-read tool (e.g. `mcp__claude_ai_Google_Drive__read_file_content`)
-  - This read is **required** before any update call in Phase 4. It returns document structure with tabs, content, character indexes, and comments.
+- **Google Docs**: use your Google Docs connector's document-read tool
+  - This read is **required** before any update call in Phase 4. For a large document, read its outline first and then read it section by section if the connector supports that.
 
 ### Step 4: Auto-detect document type
 
@@ -110,6 +116,7 @@ Evaluation context:
 - Document type: [RFC | README | tutorial | design-doc | api-doc | skill-definition | technical-document]
 - Target audience: [description]
 - Review mode: [edit | review-only]
+- Prose policy: STE-informed and outcome-first, per references/editorial-reference.md#ste-informed-review; not formal compliance validation
 - Document length: [word count]
 ```
 
@@ -122,6 +129,7 @@ For each of the 7 specialist agents, build a prompt containing:
 - The full document content
 - The evaluation context from Phase 1
 - Instruction to emit findings in finding-schema format
+- Instruction to read `references/editorial-reference.md` and apply its STE-informed review guidance to the assigned dimension
 
 Do NOT embed reference file content in the prompt — each agent loads its own references per its definition.
 
@@ -133,10 +141,10 @@ Send a single message with 7 Agent tool calls:
 
 | Agent                                      | Dimension                                                                  |
 | ------------------------------------------ | -------------------------------------------------------------------------- |
-| `jiffy-toolkit:structure-reviewer`         | Section ordering, heading hierarchy, logical flow, missing sections        |
+| `jiffy-toolkit:structure-reviewer`         | Section ordering, heading hierarchy, logical flow, missing sections, outcome-first opening        |
 | `jiffy-toolkit:prose-quality-reviewer`     | Grammar, clarity, conciseness, acronym enforcement                         |
 | `jiffy-toolkit:visual-aid-reviewer`        | Diagram opportunities, cluttered diagram rewrites, diagram code generation |
-| `jiffy-toolkit:accessibility-reviewer`     | Alt text, heading levels, color contrast, link text                        |
+| `jiffy-toolkit:accessibility-reviewer`     | Alt text, heading levels, color contrast, link text, unexplained terms                        |
 | `jiffy-toolkit:agent-readability-reviewer` | LLM parsability, structured data, cross-references                         |
 | `jiffy-toolkit:engagement-reviewer`        | Examples, callouts, collapsible content (format-aware)                     |
 | `jiffy-toolkit:consistency-checker`        | Terminology, formatting, style consistency                                 |
@@ -198,13 +206,13 @@ The deduplicated list is the input for Phase 4.
 2. Apply `suggested_edit` as a replacement
 3. For insertions (diagram code, alt text), insert at the identified location
 
-**Google Docs**: Use your Google Drive connector's document-update tool (e.g. `mcp__claude_ai_Google_Drive__update_file`):
+**Google Docs**: Use your Google Docs connector's document-update tool:
 
-1. **Re-read before editing**: read the document again — the pipeline took several minutes and character indexes from Phase 1 may be stale
-2. Use `replace_text` for text substitutions
-3. Use `insert_content` for diagram insertions, heading additions
-4. Use `insert_text` for inline insertions (acronym expansions)
-5. Batch multiple operations into a single tool call where possible
+1. **Re-read before editing**: read the document again — the pipeline took several minutes and the document may have changed since Phase 1
+2. Use a text-replace edit for text substitutions and acronym expansions
+3. Use an insert edit for diagram insertions and heading additions
+4. When the document is not the user's own, submit changes as suggestions if the connector supports it
+5. Batch multiple edits into a single call where possible; each edit's target text must already exist before the call
 
 **3. Print inline summary**:
 

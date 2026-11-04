@@ -85,7 +85,7 @@ Values:
 - `STRUCTURE` — document organization, section ordering, logical flow, heading hierarchy, missing sections
 - `PROSE` — grammar, spelling, clarity, conciseness, word choice, sentence structure, tone
 - `VISUAL` — diagrams, tables, figures, formatting, visual hierarchy, whitespace usage
-- `ACCESSIBILITY` — alt text, color contrast, screen reader compatibility, heading levels for navigation, link text quality
+- `ACCESSIBILITY` — alt text, color contrast, screen reader compatibility, heading levels for navigation, link text quality, and a term or product name the stated audience would not know left unexplained at first use (acronyms specifically stay with `PROSE`, because `prose-quality-reviewer` checks them against the acronym allowlist)
 - `AGENT_READABILITY` — whether the document is parseable and unambiguous for AI agents consuming it (structured data, explicit cross-references, deterministic instructions)
 - `ENGAGEMENT` — reader interest, narrative flow, examples, analogies, callouts, actionability
 - `CONSISTENCY` — terminology consistency, formatting uniformity, cross-reference accuracy, style guide adherence

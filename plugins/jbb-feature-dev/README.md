@@ -8,172 +8,52 @@ Complete feature development workflow for Claude Code — from requirements gath
 claude plugins add github.com/JonnyCBB/claude-code-config/plugins/jbb-feature-dev
 ```
 
-## Common Workflows
+**This plugin is self-sufficient, and must stay that way.** Its skills and references may point at
+this plugin's own files, but not at a sibling plugin's, because a user installs one without the
+other. Where a sibling genuinely helps, name it and say what to do without it -
+`skills/submit-pr/references/pr-prose-rules.md` is the worked example.
 
-### Orchestrated Workflow (recommended)
+**If a plugin ever bundles an MCP server, know this:** Claude Code deduplicates MCP servers by URL
+and registers only whichever plugin loaded first. On a machine where two plugins declare the same
+server, the one that loads second has its `mcp__plugin_*` names resolve to nothing, and its agents
+fall back to `Read`, `Grep`, `Glob` and `Bash`. Naming the sibling plugin's copy
+(`mcp__plugin_<other>_*`) as an optional fallback in the agent's tool list keeps it working in
+either load order. Do not add the same server with `claude mcp add`: a user-scope server outranks
+both plugin copies and every plugin-prefixed name stops matching.
 
-`/orchestrate-feature-dev` is an end-to-end pipeline that chains the individual skills below via `claude -p` per stage with context isolation. It is the recommended entry point once you have a requirements document. The orchestrator inspects the output of `/map-feature-to-plans` and follows one of two paths: a 1-plan path that runs a single create/implement/review/verify chain, or an N-plan path that fans out parallel waves of plans, runs the contract handshake (`/contract-check` and `/verify-contract`) per plan, and aggregates verification before submitting one or more PRs. State is persisted to `~/.claude/thoughts/shared/orchestrator-state/<run-id>.json` so partial runs are resumable. Reach for the orchestrator when you want the whole pipeline executed without per-stage babysitting; reach for the individual skills below when you need to drive a single stage manually or compose a non-standard sequence.
+## Recommended process
 
-```mermaid
-flowchart TD
-    Start(["/orchestrate-feature-dev<br/>--requirements path"]) --> Research["/research-problem"]
-    Research --> CondOps{"ops-context or<br/>design-approach<br/>recommended?"}
-    CondOps -->|yes| ParallelOpsDesign["/operational-context<br/>and/or<br/>/design-approach<br/>in parallel"]
-    CondOps -->|no| MFP
-    ParallelOpsDesign --> MFP["/map-feature-to-plans"]
-    MFP --> Plan{"1 plan?"}
-    Plan -->|yes - 1-plan path| CreatePlan["/create-plan-tdd"]
-    CreatePlan --> Implement["/implement-plan-tdd"]
-    Implement --> Simplify["/simplify"]
-    Simplify --> Review["/jbb-feature-dev:code-review<br/>single pass"]
-    Review --> Verify["/verify-implementation<br/>--requirements"]
-    Verify --> Commit["/commit"]
-    Commit --> SubmitPR["/submit-pr"]
-    SubmitPR --> Done(["PR + Slack DM"])
+Use `/jbb-feature-dev:implement-change` for a specified feature, fix, or approved task.
+It works in the current session and checkout; no research report or formal plan is required.
+
+1. Establish the objective, scope, checkout, fixed base, and permissions; implement minimally with runtime red-green TDD.
+2. Run three independent passes in order: Claude's built-in `/simplify`, `/jbb-feature-dev:code-review`, then `/jbb-feature-dev:verify-implementation`.
+3. Apply confirmed findings and keep direct local evidence. Submit only when authorized, then follow latest-head CI and explicit clean review.
+
+```text
+/jbb-feature-dev:implement-change Fix the stated bug; keep this as a local patch.
+/jbb-feature-dev:implement-change path/to/task-criteria.md
 ```
 
-```mermaid
-flowchart TD
-    Start(["/orchestrate-feature-dev<br/>--requirements path"]) --> Research["/research-problem"]
-    Research --> ParallelOpsDesign["/operational-context<br/>and/or<br/>/design-approach<br/>in parallel"]
-    ParallelOpsDesign --> MFP["/map-feature-to-plans<br/>4-persona DAG review"]
-    MFP --> Plan{"N plans?"}
-    Plan -->|N-plan path| WaveLoop["For each wave: parallel plans"]
-    WaveLoop --> PerPlan["/create-plan-tdd<br/>then /implement-plan-tdd"]
-    PerPlan --> AllDone{"all waves done?"}
-    AllDone -->|no| WaveLoop
-    AllDone -->|yes| Simplify["/simplify"]
-    Simplify --> Review["/jbb-feature-dev:code-review<br/>single pass"]
-    Review --> Aggregate["/verify-implementation<br/>then aggregate_verify.py"]
-    Aggregate --> Commit["/commit"]
-    Commit --> SubmitPR["/submit-pr<br/>+ stacked PRs if applicable"]
-    SubmitPR --> Done(["PR + Slack DM"])
-```
+A local-patch request does not authorize commits, pushes, or PR submission. The workflow never merges.
+Progress and evidence stay in the task record so work can resume after a blocker.
+See [implement-change](skills/implement-change/SKILL.md) for the procedure and
+[submit-pr's monitoring policy](skills/submit-pr/references/build-monitoring.md) for post-submission completion.
+`/simplify` is a Claude built-in, not a package shipped by this plugin.
 
-### Basic Workflow (Known, Small Feature)
-
-For features where the scope is well-understood and fits in a single implementation plan:
-
-```
-/elicit-requirements → /research-problem → /create-plan-tdd → /implement-plan-tdd → /code-review → /polish-code → /verify-implementation → /commit → /submit-pr
-```
-
-```mermaid
-flowchart TD
-    A["/elicit-requirements"] -->|requirements.md| B["/research-problem"]
-    B -->|research.md| C["/create-plan-tdd"]
-    C -->|plan.md| D["/implement-plan-tdd"]
-    D -->|code changes| E["/code-review"]
-    E -->|review.md| F["/polish-code"]
-    F --> G["/verify-implementation"]
-    G -->|verification.md| H["/commit"]
-    H -->|commits| I["/submit-pr"]
-```
-
-Each skill produces an artifact that feeds into the next:
-
-1. `/elicit-requirements` produces a requirements doc at `~/.claude/thoughts/shared/requirements/`
-2. `/research-problem` reads the requirements and produces a research doc at `~/.claude/thoughts/shared/research/`
-3. `/create-plan-tdd` reads the research and produces a TDD plan at `~/.claude/thoughts/shared/plans/`
-4. `/implement-plan-tdd` reads the plan and produces code changes (with checkmarks tracking progress in the plan)
-5. `/code-review` reviews the code changes and produces a review doc at `~/.claude/thoughts/shared/reviews/`
-6. `/polish-code` refines test coverage, simplifies code, and applies formatting (use `--non-interactive` for autonomous mode)
-7. `/verify-implementation` reads the plan and produces verification evidence at `~/.claude/thoughts/shared/verification/`
-8. `/commit` creates structured git commits with AI co-authorship
-9. `/submit-pr` creates or updates a GitHub PR with full lifecycle management (Jira, build monitoring, Slack notifications)
-
-### Advanced Workflow (Large Feature / Operational Context Needed)
-
-When operational context is important, design decisions need exploration, and/or the feature might be too large for a single plan:
-
-```
-/elicit-requirements → /research-problem → /operational-context → /design-approach → /map-feature-to-plans → [/create-plan-tdd → /implement-plan-tdd → /code-review → /polish-code] × N → /verify-implementation → /commit → /submit-pr
-```
-
-```mermaid
-flowchart TD
-    A["/elicit-requirements"] -->|requirements.md| B["/research-problem"]
-    B -->|research.md| E["/operational-context"]
-    B -->|research.md| D["/design-approach"]
-    E -->|ops-context.md| D
-    D -->|design-decision.md| C["/map-feature-to-plans"]
-    C -->|scoping.md| G
-    D -->|design-decision.md| G
-    A -->|requirements.md| G
-
-    subgraph G ["Repeat for each plan 1..N"]
-        direction LR
-        G1["/create-plan-tdd"] -->|plan.md| G2["/implement-plan-tdd"]
-        G2 -->|code changes| G3["/code-review"]
-        G3 -->|review.md| G4["/polish-code"]
-    end
-
-    A -->|requirements.md| H
-    G --> H["/verify-implementation"]
-    H -->|verification.md| I["/commit"]
-    I -->|commits| J["/submit-pr"]
-```
-
-Key differences from the basic workflow:
-
-- **`/operational-context`** gathers production metrics, SLOs, dependency health, and deployment status for the target service(s).
-- **`/design-approach`** spawns competing architect agents to explore different design approaches, then facilitates structured decision-making. Can follow directly from `/research-problem` or from `/operational-context`. Produces a design decision document that constrains downstream planning.
-- **`/map-feature-to-plans`** analyzes the research doc and determines if the feature should be split into multiple implementation plans. It consumes outputs from both `/operational-context` and `/design-approach`.
-- The artifacts from `/research-problem`, `/design-approach`, `/map-feature-to-plans`, AND `/operational-context` all feed into `/create-plan-tdd`.
-- The middle block (`/create-plan-tdd` → `/implement-plan-tdd` → `/code-review` → `/polish-code`) repeats N times, where N is the number of plans determined by `/map-feature-to-plans`.
-
-### Alternative Entry Point: /break-down-initiative
-
-For very large initiatives (PRDs, RFCs, epics) that contain multiple independent features:
-
-```
-/break-down-initiative → [/elicit-requirements → /research-problem → ...] × per feature
-```
-
-This decomposes a high-level document into independently-executable feature outlines using vertical slices. Each feature then enters its own full pipeline run (basic or advanced workflow).
-
-### Non-Interactive Mode
-
-All skills support `--non-interactive` mode for pipeline/automated use. In non-interactive mode, confirmation gates are skipped, decisions are made autonomously using decision-principles, and all autonomous decisions are logged with rationale.
+The individual skills below remain available when requirements need clarification, research or planning is useful,
+or only one operation is needed. They are not mandatory preparation stages for `/implement-change`.
+Read each skill's arguments and interaction rules; there is no plugin-wide non-interactive flag.
 
 ---
 
 ## Skill Reference
 
-### /orchestrate-feature-dev
+### /implement-change
 
-End-to-end pipeline orchestrator for jbb-feature-dev. Chains research, planning, implementation, review, verification, and PR submission via `claude -p` per stage with context isolation. Honors the DAG produced by `/map-feature-to-plans`; runs the contract handshake per plan in N-plan mode; aggregates verify results into the PR body.
-
-**Key features**:
-
-- Named-arg CLI: `--prompt`, `--requirements`, `--skip-research`, `--design`, `--slack-channel`, `--ticket`, `--restart`, `--branch`
-- 3 input modes: raw prompt; requirements only; requirements + design
-- Research always runs unless `--skip-research` is explicitly supplied
-- Conditional `/operational-context` + `/design-approach` (parallel when both recommended)
-- `/simplify` once after all wave implementations, then a single `/jbb-feature-dev:code-review` pass — no fix loop and no severity gate. Findings are addressed by judgement, code-style findings are addressed by default even at Minor/Enhancement, and anything left unfixed is filed as a deferred bead
-- Verify-fix loop after `/verify-implementation`
-- Resumable via `~/.claude/thoughts/shared/orchestrator-state/<run-id>.json`
-- Slack DM/channel routing via direct MCP
-- Adaptive PR strategy: single PR or stacked PRs via `/rebase-stack`
-- See `skills/orchestrate-feature-dev/references/` for the state-file schema, stage execution and model selection, agent prompts, escalation, Slack routing, and review-phase enforcement details.
-
-**Output**: PR (or stacked PRs) submitted to GitHub with verification summary in the body; state file at `~/.claude/thoughts/shared/orchestrator-state/<run-id>.json`; per-stage logs at `~/.claude/thoughts/shared/orchestrator-state/logs/<run-id>/`.
-
-**Examples**:
-
-```bash
-# Most common: requirements doc only
-claude -p '/orchestrate-feature-dev --requirements ~/.claude/thoughts/shared/requirements/2026-05-04-feature.md'
-
-# Resume after partial run
-claude -p '/orchestrate-feature-dev --requirements <path>'  # picks up from state file
-
-# Force full restart
-claude -p '/orchestrate-feature-dev --requirements <path> --restart'
-
-# Channel notification instead of DM
-claude -p '/orchestrate-feature-dev --requirements <path> --slack-channel C0123456789'
-```
+The recommended entry point for implementation. Accepts a task description or objective/criteria file.
+Returns a verified local patch, or an authorized PR with current CI, review evidence, and explicit verification limits.
+Follow the compact process above; [SKILL.md](skills/implement-change/SKILL.md) owns its guardrails.
 
 ### /elicit-requirements
 
@@ -206,7 +86,7 @@ Conduct comprehensive research across the codebase and beyond by spawning parall
 **Key features**:
 
 - Decomposes research into questions with dependency analysis
-- Spawns parallel sub-agents (codebase-explorer, web-search-researcher, web-search-researcher, domain experts)
+- Spawns parallel sub-agents (codebase-explorer, thoughts-explorer, web-search-researcher, domain experts)
 - Batch execution with context passing between batches
 - Iterative completeness review (max 2 iterations)
 - Multi-persona review phase for Medium/Complex research (Gap Analyst, Devil's Advocate, Source Critic, Coherence Reviewer, Scope Guardian)
@@ -228,10 +108,9 @@ Analyze a research document for a single feature and determine whether it should
 
 **Key features**:
 
-- Automated splitting heuristics: size (>600 LOC or >10 files), domain crossings (>2 boundaries), context budget (>50% context window), risk isolation
+- Single plan by default; each extra plan must cite a justification (context fit, risk / landing order, checkpoint, separate delivery), never size alone
 - Produces plan outlines with file lists, dependency graphs, and execution waves
-- Adaptive PR strategy (single PR <500 LOC, stacked PRs 500-1500 LOC, re-scope >1500 LOC)
-- No-op pass-through when splitting is unnecessary (common case)
+- PR strategy decided separately from plan count (one PR per repo unless plans must merge separately)
 - Redirects to `/break-down-initiative` if input is multi-feature
 
 **Output**: `~/.claude/thoughts/shared/scoping/YYYY-MM-DD-description.md`
@@ -241,28 +120,6 @@ Analyze a research document for a single feature and determine whether it should
 ```bash
 /map-feature-to-plans ~/.claude/thoughts/shared/research/2026-03-28-search-feature.md
 /map-feature-to-plans --non-interactive ~/.claude/thoughts/shared/research/2026-03-28-search-feature.md
-```
-
-### /operational-context
-
-Gather operational context (metrics, SLOs, dependencies, deployment health) for services to inform feature planning with real production data.
-
-**Key features**:
-
-- Accepts component names, system names, or team names
-- Spawns parallel web-search-researcher agents per component
-- Collects: latency (P50/P95/P99), error rates, RPS, CPU/memory utilization, SLO status, dependency health, deployment history, active alerts, recent incidents
-- Calculates risk assessment: error budget headroom, latency headroom, resource headroom, stability classification
-- Decision mapping table linking operational data to planning decisions (e.g., "P99 + new call P99 must be < upstream timeout")
-
-**Output**: `~/.claude/thoughts/shared/operational-context/<component>/YYYY-MM-DD.md`
-
-**Examples**:
-
-```bash
-/operational-context search-api
-/operational-context search-api search-brain --non-interactive --time-window 7d
-/operational-context "Search PA" --non-interactive
 ```
 
 ### /design-approach
@@ -290,75 +147,22 @@ Multi-architect design exploration before planning. Spawns competing architect a
 /design-approach --non-interactive ~/.claude/thoughts/shared/research/2026-03-28-search-feature.md
 ```
 
-### /create-plan-tdd
-
-Create detailed TDD implementation plans with wave-based parallelism and multi-persona review.
-
-**Key features**:
-
-- Test-Driven Development methodology: every task follows Red-Green-Refactor cycle
-- Wave 0 for shared test infrastructure setup
-- Wave-based parallelism: tasks within a wave have no mutual dependencies
-- Domain and language detection for specialized agents
-- Context gathering with parallel research agents
-- Multi-persona review loop (TDD Methodology reviewer + others based on plan characteristics)
-- Consumes research docs, scoping docs, and operational context docs as inputs
-
-**Output**: `~/.claude/thoughts/shared/plans/YYYY-MM-DD-description.md`
-
-**Examples**:
-
-```bash
-/create-plan-tdd
-/create-plan-tdd ~/.claude/thoughts/shared/research/2026-03-28-search-feature.md
-/create-plan-tdd --non-interactive ~/.claude/thoughts/shared/research/2026-03-28-search-feature.md
-```
-
-### /implement-plan-tdd
-
-Execute TDD implementation plans with wave-based parallel agents and worktree isolation.
-
-**Key features**:
-
-- Spawns separate RED and GREEN agents per task for strict TDD enforcement
-- RED phase: parallel failing-test agents in isolated worktrees → merge
-- GREEN phase: parallel implementation agents in isolated worktrees → merge
-- Integration check after each wave
-- Spec compliance review verifying implementation matches plan
-- Resume-safe: checkmarks in the plan track progress
-- Agent status protocol: DONE, DONE_WITH_CONCERNS, BLOCKED, NEEDS_CONTEXT
-- Final code quality review with language-specific code style reviewers
-
-**Output**: Code changes with checkmarked plan file
-
-**Examples**:
-
-```bash
-/implement-plan-tdd ~/.claude/thoughts/shared/plans/2026-03-28-search-feature.md
-/implement-plan-tdd --non-interactive ~/.claude/thoughts/shared/plans/2026-03-28-search-feature.md
-```
-
 ### /code-review
 
-Comprehensive multi-agent code review covering bugs, security, code style, test quality, and holistic review.
+Single-pass review of a branch, working tree or PR against its objective: correctness, scope, tests, reuse, performance, minimal code, readability, naming and comments.
 
 **Key features**:
 
-- Phase 1 (Context): gathers codebase patterns, conventions, sibling implementations, operational context
-- Phase 2 (Review): spawns parallel specialist agents — bug-catcher, security-reviewer, repo-rules-reviewer, language-specific code style/test reviewers, general-code-reviewer, domain experts
-- Phase 3 (Post-Review): sequential calibration (adversarial verification against actual code) and deduplication
-- Configurable severity filtering: default MEDIUM+, `--all-severities`, `--strict-severity` (HIGH+CRITICAL only)
-- Structured finding schema enabling automated PR comment submission via `/crit-pr-review`
-
-**Output**: `~/.claude/thoughts/shared/reviews/review_<PR>_<DATE>.md`
+- Two fresh read-only `general-purpose` assessors run concurrently on one snapshot: a general assessor (`checklist.md` plus `java.md`, `python.md` or `typescript.md`) and a bug assessor (`bug-review`)
+- Fix mode on your own work: applies validated findings, runs the repo's tests and lint, and commits only when authorized
+- Colleague mode on someone else's PR: read-only, gives an Approve / Request changes verdict and drafts comments; posts nothing
+- Security and repo conventions are left to a dedicated review bot or reviewer
 
 **Examples**:
 
 ```bash
-/code-review 123                      # Review PR #123
-/code-review my-feature-branch        # Review a branch
-/code-review 123 --all-severities     # Include LOW findings
-/code-review 123 --strict-severity    # Only HIGH+CRITICAL
+/code-review                          # Review the current branch (fix mode)
+/code-review 123                      # Review PR #123 (colleague mode if you are not the author)
 ```
 
 ### /polish-code
@@ -382,13 +186,13 @@ Final quality gate before `/submit-pr` with test enhancement, code simplificatio
 /polish-code --non-interactive                     # Autonomous mode — no prompts
 /polish-code --branch master                       # Compare against master
 /polish-code --staged                              # Only staged changes
-/polish-code src/main/java/com/example/            # Specific directory
+/polish-code src/example/                          # Specific directory
 /polish-code --non-interactive --branch master     # Autonomous mode against master
 ```
 
 ### /verify-implementation
 
-Generate reproducible verification evidence that an implementation plan was correctly executed.
+Generate reproducible local evidence against a task objective, acceptance criteria, or implementation plan. No formal plan or commit is required.
 
 **Key features**:
 
@@ -396,8 +200,8 @@ Generate reproducible verification evidence that an implementation plan was corr
 - Objective alignment check: maps every plan item to implementation evidence (PASS/FAIL/GAP)
 - **Live service testing** (Backend API domain): automatically starts the service, generates a test scenario matrix (happy path, full input, field omission, feature toggles, error inputs, graceful degradation, before/after), executes all scenarios via gRPC/REST, and records PASS/FAIL per scenario with full request/response transcripts
 - Before/after comparisons for behavioral changes
-- Generates standalone verification scripts
-- Verdicts: PASS (all pass), FAIL (critical failure), PARTIAL (non-critical failures)
+- Reuses existing local commands and records exact scenario inputs and outputs
+- Verdicts: PASS (all required criteria verified), FAIL (incorrect behavior), PARTIAL (blocked or missing evidence)
 - Optional requirements alignment check when requirements doc is provided
 
 **Output**: `~/.claude/thoughts/shared/verification/YYYY-MM-DD-description.md`
@@ -438,10 +242,10 @@ Full PR lifecycle management: create or update a GitHub PR with Jira integration
 
 - 3-phase lifecycle (Pre-Submit, Submit, Post-Submit)
 - Jira fuzzy transition matching with 0.6 confidence floor
-- Build monitoring via /loop with lint/format auto-fix
-- Auto-fix safety protocol (checks for active reviews before force-push)
-- Slack notifications for build status
-- Auto-merge support
+- Latest-head CI and an explicit clean review via `/loop`
+- Focused authorized corrections and refreshed verification evidence after each push
+- Slack notifications only when authorized and requested
+- Never merges or enables automatic merging
 - Architecture diagram generation for complex PRs
 - Discovers and follows repo-specific PR templates
 - Embeds verification results from `/verify-implementation`
@@ -455,7 +259,7 @@ Full PR lifecycle management: create or update a GitHub PR with Jira integration
 /submit-pr develop                            # Compare against develop branch
 /submit-pr --draft --no-jira                  # Draft PR, skip Jira
 /submit-pr --monitor --notify #my-channel     # Monitor build, notify on completion
-/submit-pr --auto-merge --non-interactive     # Auto-merge, auto-push
+/submit-pr --monitor --non-interactive        # Authorized push and latest-head monitoring; never merges
 ```
 
 ### /break-down-initiative
@@ -519,7 +323,7 @@ triaged.
 
 ## Hooks (1)
 
-This is the first plugin in the `jbb-claude-code-plugins` marketplace to ship a hook, so
+This is the first plugin in this marketplace to ship a hook, so
 the convention it establishes is written down here rather than left to be re-derived.
 
 | Event  | Command                                                          | Purpose                                                       |
@@ -529,19 +333,19 @@ the convention it establishes is written down here rather than left to be re-der
 ### The convention
 
 - **Hooks live at `<plugin-root>/hooks/hooks.json`.** The file is discovered by path; no
-  `hooks` key in `.claude-plugin/plugin.json` is needed or wanted. Verified against the
-  four enabled plugins from other marketplaces that already do this — `crit`,
-  `claude-codebeat`, `openai-codex` and `taskforce` — none of which declares the key.
+  `hooks` key in `.claude-plugin/plugin.json` is needed or wanted. Verified against
+  enabled plugins from other marketplaces that already do this, such as `crit` and
+  `openai-codex`, none of which declares the key.
 - **Reference every script through `${CLAUDE_PLUGIN_ROOT}`.** Never glob
   `~/.claude/plugins/cache/*/<plugin>/*/`: that cache holds many versions plus at least
   one non-version directory (`0.20.0.mislabelled-backup`), so a glob can resolve to a
   real file from a version other than the one running, and fail silently.
 - **Set a `timeout`.** Ours is 10s against a p95 two orders of magnitude below it (see
   Cost), so the timeout only ever fires on something pathological.
-- **Never write hooks to `~/.claude/hooks/`.** `~/src/codex-plugins/apply-to-user.sh`
-  moves the live `~/.claude` aside and replaces it wholesale, and
-  `~/.claude/hooks/sync-plugins.sh` destructively removes non-symlink plugin cache
-  directories at `SessionStart`. Shipping inside the plugin survives both.
+- **Never write hooks to `~/.claude/hooks/`.** A setup script or a `SessionStart` hook living
+  there can move the whole of `~/.claude` aside and replace it, or destructively remove plugin
+  cache directories that are not symlinks. Both have happened. A hook shipped inside the plugin
+  survives them; one written into the user's hooks directory does not.
 
 ### Plugin hooks are additive, not shadowing
 
@@ -602,25 +406,21 @@ Subtract bare interpreter startup before reading anything into the result —
 `python3 -c pass` alone is ~31 ms here, which is most of the median.
 
 The unit suite and the description-triggering eval set are deliberately not carried here —
-this marketplace ships markdown and shell, not a test tree. See `jbrooksbartlett-tlf` for
-where they live and how to re-run them.
+this marketplace ships markdown and shell, not a test tree. They live in the maintainer's own
+working repository, so this figure is not reproducible from a plugin install.
 
 ## Agents (14)
 
-Includes 4 research/discovery agents (codebase-explorer, web-search-researcher, thoughts-explorer, visual-aid-recommender), 8 code review agents (bug-catcher, security-reviewer, repo-rules-reviewer, general-code-reviewer, ml-pipeline-reviewer, quality-checker, review-calibrator, review-deduplicator), and 2 mode-aware language experts (python-expert, typescript-expert).
+Includes 4 research/discovery agents (codebase-explorer, thoughts-explorer, web-search-researcher, visual-aid-recommender), 8 code review agents (bug-catcher, security-reviewer, repo-rules-reviewer, general-code-reviewer, ml-pipeline-reviewer, quality-checker, review-calibrator, review-deduplicator; `/code-review` itself no longer dispatches them), and 2 mode-aware language experts (python-expert, typescript-expert).
 
-## Agent-Loaded Skills (36)
+## Agent-Loaded Skills
 
-Domain-specific knowledge automatically loaded by agents: code style patterns (3), ML model patterns (1), Kubernetes deployment patterns (1), experimentation and statistics (2), shared references and guidelines (6).
+Knowledge loaded by agents rather than invoked directly: code style patterns (`code-style-common`, `python-code-style`, `typescript-code-style`), review modes (`code-review-modes`), and shared references and guidelines (`shared-references`, `diagram-standards`).
 
 ## Prerequisites
 
-### MCP Servers (bundled)
-
-
-### Org-Managed Connectors (enable in claude.ai settings)
-
-- GDrive MCP
+- The `gh` CLI, authenticated against the GitHub host your repositories live on, for `/submit-pr`, `/crit-pr-review` and `/rebase-stack`.
+- The `bd` (beads) CLI for `/sweep-followups` and the `Stop` hook. Without a Beads queue the hook exits silently.
 
 ### Optional
 

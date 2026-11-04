@@ -25,8 +25,8 @@ summary line, use `slack-longform`.
 
 ## 2. Measured rates
 
-n=44, measured with `features.py` plus Slack-aware markup patterns, at
-`~/.claude/thoughts/shared/research/corpus/sound-like-me/`.
+n=44 real Slack replies by this author, measured with the same feature-detection script used for
+every persona here, plus Slack-aware markup patterns.
 
 | Feature             | Rate      | Regex or definition                                          |
 | ------------------- | --------- | ------------------------------------------------------------ |
@@ -71,7 +71,7 @@ mid-sentence capital in the fourth.
 
 **1. Result report, emoji at the end.**
 
-> Looks like that did the trick. I've been able to kick off an execution via SEAL: <link> :tada:
+> Looks like that did the trick. I've been able to kick off an execution via the agent: <link> :tada:
 
 **2. Surprise opener, two emoji, thinking aloud about what to do next.**
 
@@ -109,11 +109,11 @@ What to take from these, as behaviour:
 | §18 emoji                             | **Suspend.** Emoji are core to this register | measured, 40.9%                |
 | §24 hedging                           | **Suspend**                                  | measured, 18.2%                |
 | §23 filler phrases                    | **Suspend** for conversational openers       | observed in exemplars          |
-| §13 passive voice                     | **Relax**                                    | **assumed** from `ghe-comment`; not measured here |
+| §13 passive voice                     | **Relax**                                    | **assumed** from `github-comment`; not measured here |
 | §17 title case in headings            | Not applicable. There are no headings        | measured, 0.0%                 |
 | §15 boldface, §16 inline-header lists | **Keep enforced**                            | measured, both 0.0%            |
 | §10 rule of three                     | **Keep enforced**                            | measured, 0.0%                 |
-| §14, §19, §20, §21, §22               | **Never suspended**                          | the five non-negotiables       |
+| §14, §20, §21, §22               | **Never suspended**                          | the four non-negotiables       |
 
 Affirmative behaviours with no corresponding core rule:
 

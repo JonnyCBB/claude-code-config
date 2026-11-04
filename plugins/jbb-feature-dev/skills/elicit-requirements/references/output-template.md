@@ -1,8 +1,10 @@
 # Requirements Document Template
 
-Write the requirements document using this structure. Sections marked (required) must always
-be present. Sections marked (if applicable) should be included when relevant information was
-gathered during requirements elicitation.
+Write outcomes and observable evidence, not a proposed implementation or guessed test
+commands. A named technique belongs in Constraints only when its source establishes a
+compatibility, policy, or product need; otherwise it can be noted as a possible approach
+in Context. Keep owner-confirmed decisions, independently verified facts, reversible agent
+choices, and unconfirmed assumptions distinguishable.
 
 ## Compatibility Note
 
@@ -21,6 +23,7 @@ author: [agent]
 topic: "[feature/task description]"
 status: draft
 scope_mode: [mvp | complete | ambitious]
+scope_mode_confirmed: [true | false]
 related_ticket: "[ticket ID or N/A]"
 related_research: "[path to research doc or N/A]"
 ---
@@ -33,8 +36,8 @@ related_research: "[path to research doc or N/A]"
 
 ## Context \*
 
-[Current state: what exists today, what's changing, which systems are involved.
-Include repo paths and component names.]
+[Current state and relevant systems. Attribute researched facts to their sources;
+separate possible implementation approaches from required outcomes.]
 
 ## Terminology (if applicable)
 
@@ -54,28 +57,36 @@ Include only when a semantic fork was resolved during the interview.
 
 ## Acceptance Criteria
 
-> **Traceability requirement**: Number each acceptance criterion with a stable
-> identifier (AC-1, AC-2, etc.). These IDs are referenced by downstream
-> validation contracts and implementation plans. Sequential, gap-free numbering.
+GIVEN [meaningful starting condition]
+WHEN [event or action]
+THEN [what someone can observe or do, not a restatement of the precondition]
 
-AC-1:
-GIVEN [precondition]
-WHEN [action]
-THEN [expected outcome]
-
-AC-2:
-GIVEN [precondition]
-WHEN [action]
-THEN [expected outcome]
+[Include meaningful exclusions and failure behavior. For a time window, leave its
+reference event and boundary unresolved when not supplied. Do not invent the
+interaction shape, output contents, or clock start.
+Repeat for each distinct scenario. Do not add AC-N labels by default.]
 
 ## Success Criteria \*
 
-[How will we know this succeeded? Metrics, user behavior changes, or operational improvements.]
+[Observable result or type of evidence that would demonstrate success. Leave the
+choice of local verification command to the implementer unless an external constraint
+requires one; cite that constraint.]
 
 ## Constraints \*
 
-[Technical constraints, deadlines, dependencies, organizational constraints.
-Include any merge freezes, release cuts, or stakeholder approval requirements.]
+[Owner-stated or sourced compatibility, policy, product, timing, or dependency limits.
+Do not add general permissions to commit, deploy, spend, or message people.]
+
+## Decisions (if applicable)
+
+[Consequential choices the owner explicitly confirmed, with the answer's source.
+Do not infer approval from a document the owner has not reviewed.]
+
+## Technical Assumptions (if applicable)
+
+[Only low-impact reversible implementation choices needed to interpret the document:
+Decision: [choice]; Why: [basis]; Reversibility: [what changing it entails].
+These are agent choices, not owner-approved requirements.]
 
 ## Non-Functional Requirements (if applicable)
 
@@ -103,10 +114,14 @@ semantic fork — just unfamiliar). `/research-problem` should resolve these dow
 
 ## Assumptions (non-interactive mode only)
 
-[For each assumption made without human confirmation:]
+[For each unresolved consequential choice, never presented as owner approval. If
+scope mode was not chosen, set scope_mode: mvp as a drafting default with
+scope_mode_confirmed: false and record that provisional choice here:]
 
-ASSUMPTION: [what was assumed]
+ASSUMPTION: [unconfirmed choice]
+BASIS: [evidence, or state none]
 CONFIDENCE: [high | medium | low]
+OWNER: [decision owner if known, or unknown]
 IF WRONG: [what would need to change]
 
 In non-interactive mode, mirror each `UNKNOWN_TERM` marker here with CONFIDENCE=low and

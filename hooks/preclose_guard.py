@@ -78,6 +78,24 @@ def live_output(session_id: str, run, deadline: float, tool: str = "claude"):
     return lib.probe_session_output(session_id, run, min(remaining, 5.0), tool)
 
 
+def live_activity_stamp(row, run, deadline: float):
+    """This session's activity token, read RIGHT NOW.
+
+    None when there was no budget left to ask, which refuses - the same shape and
+    the same fail direction as live_output above.
+
+    The clamp is HALVED because last_activity_stamp spends it on two tmux calls,
+    where live_output above clamps a single one. Passed whole it would be a
+    per-call limit wearing the name of a total, and the module docstring records
+    what overrunning costs: a hook the harness kills renders no decision and the
+    tool call proceeds.
+    """
+    remaining = deadline - time.monotonic()
+    if remaining <= 0.2:
+        return None
+    return lib.last_activity_stamp(row, run, min(remaining, 3.0) / 2.0)
+
+
 # Stage A's three possible answers. "unverifiable" is not an error in the guard;
 # it is a determination that the removal cannot be checked - and, crucially, could
 # not have succeeded either.
@@ -193,6 +211,7 @@ def _check_targets(
             live_output=lambda row=row: live_output(
                 row["id"], run, deadline, row["tool"]
             ),
+            live_activity=lambda row=row: live_activity_stamp(row, run, deadline),
             require_worktree_clean=removal.prune_worktree,
         )
         if not verdict.ok:

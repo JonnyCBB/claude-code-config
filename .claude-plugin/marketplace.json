@@ -17,12 +17,12 @@
     {
       "name": "jbb-feature-dev",
       "source": "./plugins/jbb-feature-dev",
-      "description": "Complete feature development workflow: /elicit-requirements for requirements gathering, /research-problem for codebase research, /create-plan-tdd and /implement-plan-tdd for test-driven planning and execution, /code-review for multi-agent review, /verify-implementation for evidence generation, /commit and /submit-pr for git workflows."
+      "description": "Feature development with /implement-change: current-session minimal implementation, independent built-in /simplify, specialist code review, local objective verification, and authorized PR submission through latest-head CI and explicit clean review. Includes optional requirements, research, and standalone stage skills."
     },
     {
       "name": "eng-utils",
       "source": "./plugins/eng-utils",
-      "description": "Engineering utilities: /improve-codebase-architecture for codebase friction analysis and proposals, /system-architecture-doc and /c4-architecture for C4 architecture documentation, and /bug-hunter-3000 for multi-candidate bug investigation."
+      "description": "Engineering utilities: /improve-codebase-architecture for codebase friction analysis and proposals, /system-architecture-doc and /c4-architecture for C4 architecture documentation, and /prune-code."
     }
   ]
 }

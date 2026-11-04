@@ -2,7 +2,6 @@
 name: rfc-reviewer
 description: Use this agent to analyze and review technical documentation (RFCs, design docs, proposals) to evaluate the MERIT and LOGIC of proposals. Reviews focus SOLELY on technical soundness, problem-solution fit, implicit assumptions, and evidence - NOT on presentation, formatting, or document structure. This is a READ-ONLY agent that provides comprehensive review WITHOUT making changes to the document.
 tools: Read, Grep, Glob, LS, WebFetch, mcp__claude_ai_GDrive_MCP__get_document_structure, mcp__claude_ai_GDrive_MCP__get_document_section, mcp__claude_ai_GDrive_MCP__get_document_preview, mcp__claude_ai_GDrive_MCP__list_drive_files, mcp__claude_ai_GDrive_MCP__get_drive_file_content, mcp__claude_ai_GDrive_MCP__get_drive_file_metadata
-skills: [decision-principles]
 model: opus
 color: green
 ---
@@ -118,8 +117,8 @@ As a READ-ONLY review agent, you will:
 
 ## Decision-Making Principles
 
-When evaluating design choices, trade-offs, or open questions in the document, apply the
-decision-making principles from the `decision-principles` skill. Follow the decision workflow
+When evaluating design choices, trade-offs, or open questions in the document, follow this
+decision order
 (safety → evidence → simplicity → scope → latency → precedent) to assess whether the
 document's choices are well-justified.
 

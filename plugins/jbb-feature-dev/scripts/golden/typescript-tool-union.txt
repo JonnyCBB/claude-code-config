@@ -20,5 +20,3 @@ ReadMcpResourceTool
 TodoWrite
 WebFetch
 Write
-mcp__plugin_jbb-feature-dev_code-search-mcp__read_file
-mcp__plugin_jbb-feature-dev_code-search-mcp__search_code

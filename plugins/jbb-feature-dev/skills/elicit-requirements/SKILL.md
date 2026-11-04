@@ -6,7 +6,7 @@ description: >
   acceptance criteria, scope tradeoffs, success metrics). Spawns context-gathering agents
   when artifacts are provided. Uses wave-based depth progression and relentless tree-walking
   until shared understanding is reached.
-  Use when starting a new feature, before /research-problem or /create-plan-tdd.
+  Use when starting a new feature, before /research-problem or /implement-change.
   Trigger phrases: (1) "elicit requirements" (2) "gather requirements" (3) "requirements interview"
   (4) "what are we building" (5) "deep dive requirements" (6) "grill me"
   (7) "scope this feature" (8) "define requirements".
@@ -17,7 +17,7 @@ description: >
 
 Gather human-only context through structured questioning, supported by targeted automated
 research when uncertainty surfaces during the interview. The primary job is to ask questions
-that codebase-explorer, web-search-researcher, web-search-researcher, and /operational-context cannot answer — but
+that codebase-explorer, web-search-researcher, and thoughts-explorer cannot answer — but
 when the user is unsure or a recommendation has no grounding, spawn research mid-interview to
 discover which human-only questions still need asking (see Mid-Interview Research Triggers in
 `../shared-references/elicit-shared-patterns.md`).
@@ -26,8 +26,8 @@ discover which human-only questions still need asking (see Mid-Interview Researc
 
 Parse `$ARGUMENTS` for flags and input:
 
-- `--non-interactive`: Skip interview entirely. Read input, identify gaps, write requirements
-  with ASSUMPTION/CONFIDENCE/IF-WRONG markers.
+- `--non-interactive`: Skip interview and summary confirmation. Read input, research discoverable
+  gaps, write requirements with unconfirmed assumptions.
 - File path argument: Read the file as the initial task description.
 - No flags: Proceed to Step 1.
 
@@ -36,11 +36,15 @@ Parse `$ARGUMENTS` for flags and input:
 1. Read any provided file (ticket, research doc, goal description) FULLY.
 2. If the user provides links (Slack, Google Docs, Jira), use ToolSearch to discover
    relevant MCP tools and fetch that context.
-3. **Skip heuristic**: If the input already contains (a) clear objective, (b) context about
-   which components/files, (c) at least 2 acceptance criteria, and (d) scope boundaries —
-   skip to Step 6 (write requirements directly). Tell the user what you found and why
-   you're skipping the interview.
-4. If information is insufficient, proceed to Step 2.
+3. **Skip heuristic**: If the input has a clear objective, relevant context, at least two
+   acceptance criteria, and scope boundaries, skip only questions it answers. If scope
+   posture (MVP, complete, or ambitious) was not chosen, still ask Step 3's scope
+   question. Check for unanswered consequential choices (see `## Outcomes and Decision
+   Authority` in the shared reference); ask those in Step 4 before Step 5. If none
+   remain, tell the user why you're skipping redundant questions and proceed to Step 5. Never skip summary
+   confirmation in interactive mode.
+4. Otherwise proceed to Step 2. In non-interactive mode, research supplied artifacts
+   where useful, then write without asking for answers or confirmation.
 
 ## Step 2: Context Sprint (Optional)
 
@@ -55,13 +59,12 @@ For the artifact → agent dispatch table and spawning rules, see `../shared-ref
 
 ### Context Integration
 
-Feed gathered context into the interview in five ways:
-
-1. **Enhanced Skip Heuristic** — agent findings may satisfy the Step 1 skip criteria (objective + components + acceptance criteria + scope boundaries).
-2. **Informed Category Preambles** — fold research findings into the Context-Sharing Protocol preambles ("Based on my research, [component X] uses [pattern Y]…").
-3. **Targeted Question Generation** — replace generic dimension questions with specifics discovered during research (e.g. cite the actual p99 latency instead of asking "any latency budget?").
-4. **Domain Auto-Detection** — if domains match the procedure in `shared-references/domain-agent-registry.md`, auto-activate the corresponding question dimensions in Step 4.
-5. **Contradiction Reconciliation** — during Step 4, surface conflicts between user claims and Context Sprint findings ("the code shows X but you said Y — which is right?"). Skip if Context Sprint did not spawn agents; frame findings as observations to guard against stale-index false positives.
+Use findings to update Step 1's skip check (objective, components, acceptance
+criteria, scope boundaries), ground category preambles and questions in specifics
+(e.g. observed p99 latency), and activate Step 4's domain dimensions via
+`shared-references/domain-agent-registry.md`. In Step 4, surface conflicts with
+user claims as observations, not proof from potentially stale indexes. Skip
+reconciliation if no agents ran.
 
 ### What NOT to Do
 
@@ -122,8 +125,11 @@ Ask one question using AskUserQuestion with options. Lead with your recommendati
 **Second — Scope mode**: Ask the user to choose their scope posture.
 Options: A) MVP — minimum that ships value B) Complete — full scope, make it bulletproof
 C) Ambitious — go beyond the ask if it creates a better outcome.
+Do not treat supplied scope boundaries as a choice of scope posture; ask unless the
+owner already chose one.
 
-_Non-interactive: skip this step. Default to MVP scope mode. Document as assumption._
+_Non-interactive: skip this step. Default to provisional MVP scope mode with
+`scope_mode_confirmed: false`; document it as an assumption, not an owner choice._
 
 ## Step 4: Clarifying Questions
 
@@ -142,33 +148,25 @@ deployment strategy, historical context. These refine the baseline with operatio
 from both the task description AND Context Sprint findings (Step 2). Only ask dimensions
 relevant to detected domains.
 
-Between waves, run a synthesis checkpoint using the Context-Sharing Protocol's category
-wrap-up format. Summarize what was learned, present your updated understanding, then
-proceed to the next wave.
-
-Interview relentlessly within each wave. Walk down each branch of the design tree,
-resolving dependencies one-by-one. When an answer reveals conditions or complexity
-("it depends", "unless", "except when"), explore each condition before moving on.
-Continue until all discovered branches are resolved AND all applicable dimensions in the
-current wave have been covered before moving to the next wave.
-
-Follow the Context-Sharing Protocol. Apply category preambles and wrap-ups when pivoting
-to a new dimension or major branch of the design tree. When a dimension is fully resolved,
-summarize what you learned before moving on.
-
-Use AskUserQuestion with structured options when pre-defined options exist. Fall back to
-free-form conversation for genuinely open-ended questions where options would be artificial.
+Between waves, recap what was learned and your updated understanding using the
+Context-Sharing Protocol. Walk every branch within a wave, resolving dependencies
+and exploring conditions ("it depends", "unless", "except when") before moving on.
+Cover all applicable dimensions before advancing. Use category preambles and
+wrap-ups at each new dimension or major branch; recap each resolved dimension.
+Use AskUserQuestion for structured options, or free-form conversation when
+options would be artificial.
 
 - Apply the Recommended-answer principle (see Context-Sharing Protocol) to every question.
   Skip the recommendation only for questions where you have no grounding evidence.
+- Apply `../shared-references/elicit-shared-patterns.md` (`## Outcomes and Decision Authority`):
+  ask why a named technique matters before making it a constraint, and ask the owner about
+  consequential decisions even when the effect is invisible to users.
 - **Research on demand** — when the user signals uncertainty on a research-answerable
   question, when a recommendation has no grounding, or when an answer opens a new branch an
   agent could resolve, spawn research per `../shared-references/elicit-shared-patterns.md`
   (`## Mid-Interview Research Triggers`) rather than immediately recording an ASSUMPTION.
   Findings expand the design tree; do not end the wave until newly-revealed branches are
   explored.
-- If Context Sprint produced findings, reconcile user statements against them as they
-  come up (see Step 2, Contradiction Reconciliation mode).
 - **Terminology sharpening** — When a term is ambiguous, pause to disambiguate. Apply the
   trigger rule: "Am I confused about which of two things the user means, or am I just
   unfamiliar with the word?" Only the former triggers a pause. Example: "You said 'account'
@@ -190,21 +188,19 @@ you believe you have enough context to write a complete requirements document wi
 Even then, you MUST proceed to Step 5 (Mutual Understanding Confirmation) — only the user's
 explicit confirmation ends the interview.
 
-_Non-interactive: skip this step. For each missing dimension, write an ASSUMPTION marker._
+_Non-interactive: skip this step. Mark unresolved consequential choices as unconfirmed
+assumptions; do not turn every missing interview dimension into an assumed requirement._
 
 ## Step 5: Mutual Understanding Confirmation
 
-Before writing the requirements document, confirm that you and the user have reached shared
-understanding. This is the ONLY way the interview ends — the user must explicitly confirm.
+The interview ends only when the user explicitly confirms shared understanding.
 
-1. **Present your understanding** — Summarize the problem, scope, acceptance criteria, key
-   decisions, and any domain-specific requirements in a concise format.
-2. **Ask for confirmation** via AskUserQuestion: "Does this capture your intent accurately?
-   Are there any gaps or misunderstandings?"
-3. **If the user confirms** — proceed to Step 6.
-4. **If the user identifies gaps** — ask targeted follow-up questions to close those gaps,
-   then present your updated understanding and re-confirm. Repeat until the user explicitly
-   confirms that the understanding is sufficient.
+1. Summarize the outcome, scope, observable success, consequential decisions (including
+   invisible ones), and unresolved assumptions in plain language. Distinguish owner
+   answers from researched facts and reversible agent choices.
+2. Ask via AskUserQuestion: "Does this capture your intent accurately? Are there any
+   gaps or misunderstandings?" If they identify gaps, ask targeted follow-ups and
+   re-confirm the updated understanding. Proceed to Step 6 only on explicit confirmation.
 
 _Non-interactive: skip this step._
 
@@ -218,7 +214,10 @@ _Non-interactive: skip this step._
    section. If unfamiliar jargon was noted as `UNKNOWN_TERM`, include the optional
    `## Unknown Terms` section (and mirror the markers in the Assumptions section for
    non-interactive mode).
-5. Populate sections from interview answers (or assumptions in non-interactive mode).
+5. Populate sections from interview answers and sourced findings; set
+   `scope_mode_confirmed` to match whether the owner chose the scope. In non-interactive
+   mode, mark unanswered consequential choices as unconfirmed assumptions, not owner
+   decisions.
 
 ## Step 7: Suggest Next Step
 

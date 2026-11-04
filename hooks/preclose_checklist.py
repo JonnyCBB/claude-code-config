@@ -150,7 +150,12 @@ def _nothing_to_rescue(row: Dict[str, Any], env: Dict[str, str], probe=None) -> 
 
 
 def _run_checklist(
-    ref: str, env: Dict[str, str], run=None, out=sys.stdout, err=sys.stderr
+    ref: str,
+    env: Dict[str, str],
+    run=None,
+    out=sys.stdout,
+    err=sys.stderr,
+    settle: float = 1.5,
 ) -> int:
     db_path = lib.state_db_path(env)
     try:
@@ -173,13 +178,11 @@ def _run_checklist(
     session_id = row["id"]
     receipt_path = lib.receipt_path(session_id, env)
     dump_path = lib.dump_path(session_id, env)
-    probe = lib.probe_session_output(session_id, run, 20.0, row["tool"])
     generated_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
     def write(
         status: str, reason: Optional[str], dump_bytes: int = 0, output_sha: str = ""
     ) -> None:
-        """Closes over `worktree`, which is the same object at every call site."""
         receipt_mod.atomic_write_json(
             receipt_path,
             receipt_mod.build_receipt(
@@ -193,11 +196,40 @@ def _run_checklist(
                 dump_bytes=dump_bytes,
                 output_sha256=output_sha,
                 worktree=worktree,
+                liveness={
+                    "state": liveness.state,
+                    "reason": liveness.reason,
+                    "activity": activity,
+                },
             ),
         )
 
     worktree = worktree_state(row.get("worktree_path") or "")
+    liveness = lib.session_liveness(row, run, settle)
+    activity = liveness.stamp
 
+    if liveness.state != "quiet":
+        write(
+            "failed", "the session is not known to have stopped: %s" % liveness.reason
+        )
+        err.write(
+            "FAILED: %s (%s) is not known to have stopped.\n  %s\n"
+            "Whatever it would say now is what happens to be on screen, not its "
+            "final word, so nothing was captured.\n  %s\n"
+            "Wrote a FAILED receipt at %s. The removal stays blocked.\n"
+            % (
+                session_id,
+                row["title"],
+                liveness.reason,
+                "Wait for it to finish, or stop it, then run this again."
+                if liveness.state == "running"
+                else "Fix tmux or the registry entry, then run this again.",
+                receipt_path,
+            )
+        )
+        return 1
+
+    probe = lib.probe_session_output(session_id, run, 20.0, row["tool"])
     nothing_to_rescue = _nothing_to_rescue(row, env, probe)
 
     if (
@@ -267,12 +299,14 @@ def _run_checklist(
     write("passed", None, dump_bytes, output_sha)
     out.write(
         "PASSED: pre-close checklist complete for %s (%s)\n"
+        "  stopped:  %s\n"
         "  output:   %d bytes -> %s\n"
         "  worktree: %s\n"
         "  receipt:  %s\n"
         % (
             session_id,
             row["title"],
+            liveness.reason,
             dump_bytes,
             dump_path,
             worktree.get("reason", "n/a"),
@@ -405,6 +439,7 @@ def selftest(env: Dict[str, str], out=sys.stdout, err=sys.stderr) -> int:
                 dump_bytes=dump.stat().st_size,
                 output_sha256=receipt_mod.sha256_text(""),
                 worktree={"applicable": False, "reason": "selftest"},
+                liveness={"state": "quiet", "reason": "selftest", "activity": ""},
             ),
         )
         allowed = drive()
@@ -460,7 +495,9 @@ def main(argv: Sequence[str], env: Dict[str, str], run=None) -> int:
     return run_checklist(args.session, env, run)
 
 
-def run_checklist(ref, env, run=None, out=sys.stdout, err=sys.stderr) -> int:
+def run_checklist(
+    ref, env, run=None, out=sys.stdout, err=sys.stderr, settle=1.5
+) -> int:
     """Wrapper that turns an unwritable evidence tree into a clean failure.
 
     Without it a PermissionError on ~/evidence escapes as a traceback, which
@@ -469,7 +506,7 @@ def run_checklist(ref, env, run=None, out=sys.stdout, err=sys.stderr) -> int:
     mid-task deserves a sentence rather than a stack.
     """
     try:
-        return _run_checklist(ref, env, run, out, err)
+        return _run_checklist(ref, env, run, out, err, settle)
     except OSError as exc:
         err.write(
             "FAILED: could not write evidence for %r: %s\n"
