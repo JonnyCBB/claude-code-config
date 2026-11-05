@@ -8,14 +8,14 @@ Appended to every `[HEARTBEAT]` message by `scripts/conductor-heartbeat.sh`. Kee
 
 ```bash
 printf '%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-  >> ~/.local/share/agent-deck/conductor/hq/heartbeat-received.log
+  >> ./heartbeat-received.log   # your cwd is the conductor directory
 ```
 
 The sender sends with `-q` and logs only failures, so this log is the only measure of arrival. Read the real interval from the plist, never from `meta.json` (its `heartbeat_interval: 0` is wrong):
 
 ```bash
 awk '/StartInterval/{getline; gsub(/[^0-9]/,""); print $0" seconds"; exit}' \
-  ~/Library/LaunchAgents/com.agentdeck.conductor-heartbeat.hq.plist
+  ~/Library/LaunchAgents/com.agentdeck.conductor-heartbeat.$(basename "$PWD").plist
 ```
 
 Materially fewer receipts than the interval predicts means delivery is dropping (`hq-8ytz2`). A gap alone is not a fault: the sender skips while you are `running`.
@@ -76,7 +76,7 @@ Use the built-in `/code-review` at a named effort level instead of the crit pair
 
 ## 6. Every heartbeat: write `status.json`
 
-You are the only producer of `~/.local/share/agent-deck/conductor/hq/status.json`; switchboard shows "I cannot see into the conductor" while it is absent. Full instructions: the conductor's own `hq/CLAUDE.md` (not this repo's), section "Write `status.json` - you are its only producer". Validate from `~/src/switchboard`:
+You are the only producer of `./status.json` (in the conductor directory); switchboard shows "I cannot see into the conductor" while it is absent. Full instructions: the conductor directory's own `CLAUDE.md` (not this repo's), section "Write `status.json` - you are its only producer". Validate from `~/src/switchboard`:
 
 ```bash
 npm run status-contract:check -- /tmp/status-draft.json   # exit 0 = switchboard can read it

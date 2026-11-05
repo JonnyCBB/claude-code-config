@@ -29,7 +29,13 @@
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if [ -z "${CONDUCTOR_HQ_DIR:-}" ]; then
+    for d in "$HOME/.local/share/agent-deck/conductor/hq" "$HOME/.local/share/agent-deck/conductor/conductor-hq"; do
+        [ -d "$d" ] && CONDUCTOR_HQ_DIR="$d" && break
+    done
+fi
 HQ_DIR="${CONDUCTOR_HQ_DIR:-$HOME/.local/share/agent-deck/conductor/hq}"
+HQ_NAME="$(basename "$HQ_DIR")"
 
 SRC_RULES="$REPO_ROOT/docs/conductor-heartbeat-rules.md"
 DST_RULES="$HQ_DIR/HEARTBEAT_RULES.md"
@@ -64,8 +70,8 @@ cp "$SRC_RULES" "$DST_RULES" && ok "installed HEARTBEAT_RULES.md" \
 # wrong, and no interval at all on the host this is most often run from.
 INTERVAL=""
 SCHEDULER=""
-PLIST="$HOME/Library/LaunchAgents/com.agentdeck.conductor-heartbeat.hq.plist"
-TIMER="$HOME/.config/systemd/user/conductor-heartbeat-hq.timer"
+PLIST="$HOME/Library/LaunchAgents/com.agentdeck.conductor-heartbeat.$HQ_NAME.plist"
+TIMER="$HOME/.config/systemd/user/conductor-heartbeat-$HQ_NAME.timer"
 if [ -f "$PLIST" ]; then
     SCHEDULER="the launchd plist"
     INTERVAL=$(awk '/StartInterval/{getline; gsub(/[^0-9]/,""); print; exit}' "$PLIST")
