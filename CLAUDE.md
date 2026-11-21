@@ -27,7 +27,7 @@ Never ground an absence claim in an index, cache, or capped listing. Code-search
 
 ### Unattended work: recorded is not delivered
 
-A scheduled job, hook or background agent has no reader, so a failure written to its own log, `/tmp` or launchd's exit code is silent. Before shipping anything unattended, name where a failure surfaces and who opens that place; if you cannot, escalate somewhere that is read (a bead, the conductor, a report someone opens). A **definite** failure (target does not exist, config will not parse) escalates on first occurrence; an **ambiguous** one (a send returned non-zero but may have arrived) must not, or the escalation becomes unread noise. Read the whole status column of any registry you consult and report a failure that is not yours ([conductor operations](docs/conductor-operations.md) section 8).
+A scheduled job, hook or background agent has no reader, so a failure written to its own log, `/tmp` or launchd's exit code is silent. Before shipping anything unattended, name where a failure surfaces and who opens that place; if you cannot, escalate somewhere that is read (a bead, the conductor, a report someone opens). A **definite** failure (target does not exist, config will not parse) escalates on first occurrence; an **ambiguous** one (a send returned non-zero but may have arrived) must not, or the escalation becomes unread noise. Read the whole status column of any registry you consult and report a failure that is not yours ([work contract](docs/conductor-work-contract.md) section 9).
 
 ### Prove it works
 
@@ -143,8 +143,7 @@ Load `/jiffy-toolkit:context-and-skills-standards` before authoring, amending, a
 - [Subagent fan-out](docs/subagent-fanout.md): splitting a large input across subagents.
 - [Skill authoring traps](docs/skill-authoring-traps.md): writing or amending a skill.
 - [Conductor heartbeat rules](docs/conductor-heartbeat-rules.md): **at conductor startup.** Injected every heartbeat by `scripts/conductor-heartbeat.sh`; the live `HEARTBEAT_RULES.md` is a copy installed by `scripts/install-conductor-heartbeat.sh`, so editing the doc changes nothing until re-installed.
-- [The work contract](docs/conductor-work-contract.md): **at conductor startup and before any triage, dispatch, merge or close decision.** Outranks both `POLICY.md` files.
-- [The communication contract](docs/conductor-communication-contract.md): **at conductor startup and before writing ANY message to Jonny.** Enforced by the `Stop` hook `hooks/comms-contract-check.py` ([notes](docs/conductor-communication-check.md)).
-- [Conductor operations](docs/conductor-operations.md): before `agent-deck conductor setup` (it symlinks), forking a session, or reconnecting beads to sessions.
-- [Conductor repo gates](docs/conductor-repo-gates.md): before dispatching into a repo with its own gates, or putting any PR on Jonny's list.
+- [The work contract](docs/conductor-work-contract.md): **at conductor startup and before any triage, dispatch, merge or close decision.** Section 3 is the dispatch-brief checklist; section 6 holds the merge and PR-readiness gates. Outranks both `POLICY.md` files.
+- [The communication contract](docs/conductor-communication-contract.md): **at conductor startup and before writing ANY message to Jonny.** Enforced by the `Stop` hook `hooks/comms-contract-check.py` (section 9).
+- [Conductor operations](docs/conductor-operations.md): before `agent-deck conductor setup` (it symlinks), forking a session, reconnecting beads to sessions, or touching claim leases.
 - [Worktree reclamation](docs/reclamation.md) and [conductor signals](docs/conductor-signals.md): operating `scripts/reclaim-worktrees.sh` and `scripts/conductor-signals.sh`.
