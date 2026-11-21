@@ -28,6 +28,8 @@ bd ready --exclude-type=epic
 
 If there is ready work and capacity, dispatch it now. Do not suggest it or defer it. Report after dispatching, not instead.
 
+A worker's DONE or BLOCKED report (it arrives by `agent-deck session send`, per the report-back clause in the work contract) is itself a dispatch trigger: verify the deliverable, then measure and dispatch immediately, not at the next heartbeat.
+
 ## 2. Nothing waiting on Jonny ever stops the queue
 
 A blocked item is set aside; the run continues to the next ready bead until the ready set is empty or every remaining item is genuinely blocked. This covers:

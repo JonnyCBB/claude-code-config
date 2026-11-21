@@ -2,7 +2,7 @@
 name: doc-review-deduplicator
 description: "Deduplicates document review findings across multiple specialist agents. Handles same-section, cross-section, adjacent-paragraph, and cross-category consolidation. Removes non-actionable noise. Use as part of the /review-document post-processing pipeline."
 tools: Read
-model: claude-sonnet-5
+model: claude-sonnet-5-5
 color: cyan
 ---
 

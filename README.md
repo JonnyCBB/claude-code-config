@@ -254,7 +254,7 @@ The `/submit-pr` skill generates reviewer-visible descriptions, discovers repo P
 
 #### 3.3.2. Example usage - PR reviewing
 
-PR reviews are very common and we typically look at similar aspects for each PR. The [/code-review skill](plugins/jbb-feature-dev/skills/code-review/) (which superseded `/pr-review` in jbb-feature-dev) runs two fresh read-only assessors, one general and one for bugs, against the PR and its objective. This can be invoked using:
+PR reviews are very common and we typically look at similar aspects for each PR. The [/code-review skill](plugins/jbb-feature-dev/skills/code-review/) (which superseded `/pr-review` in jbb-feature-dev) runs three fresh read-only assessors (general, bug and contract) plus a concern verifier against the PR and its objective. This can be invoked using:
 
 ```
 /code-review [PR_BRANCH_OR_NUMBER]

@@ -408,7 +408,7 @@ answers** — a start command that returns is not evidence of a listener. Check 
 `ss -ltnp` (never `pgrep`, which matches your own shell's command line) *and* for an HTTP status; no
 listener line is the failure.
 
-Then the conductor session: `agent-deck add <conductor-dir> -c claude --model 'claude-opus-5[1m]'
+Then the conductor session: `agent-deck add <conductor-dir> -c claude --model 'claude-opus-5-5[1m]'
 -t conductor-hq -g conductor`, then `agent-deck session start conductor-hq`. **Two prompts land on
 first run** — trust the conductor directory (phase 8 pre-empts this) and bypass-permissions mode.
 Both need a human at the terminal once.

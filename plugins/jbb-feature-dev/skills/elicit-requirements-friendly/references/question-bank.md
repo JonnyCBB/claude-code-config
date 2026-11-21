@@ -1,12 +1,6 @@
 # Question Bank
 
-Source material for the friendly interview. The skill draws from three sections:
-
-1. **Story Prompts (Top 10)** — verbatim, story-based questions used during Step 4. Each prompt has a "use when" annotation so the agent can pick the right one for the moment.
-2. **NFR Probes** — non-functional concerns asked in user-language (no jargon), used inline in Step 4 whenever a story surfaces a hint about performance, scale, reliability, accessibility, or privacy.
-3. **Jargon Translation Table** — paired columns for translating internal/agent vocabulary into user-friendly phrasing. The skill must show the user-friendly phrase first and may add the technical term in parentheses for record-keeping.
-
-These prompts are tested across PM/UX literature (Mom Test, JTBD switch interview, Continuous Discovery) and stay safe for non-technical users. Use them verbatim where possible — paraphrasing tends to leak jargon back in.
+Use the story prompts verbatim where possible — paraphrasing tends to leak jargon back in.
 
 ---
 
@@ -74,5 +68,6 @@ When the user asks "what does that mean?" — or before the agent introduces a t
 | stakeholder                      | someone who cares about this getting done                      |
 | invariant                        | a rule that should always be true                              |
 | regression                       | something that used to work but now doesn't                    |
+| requirement                      | a must-have: without it, the problem is not solved             |
 
 The skill should default to user-friendly phrasing in conversation and parenthesize the technical term once when the term is genuinely useful for downstream consumers of the document.

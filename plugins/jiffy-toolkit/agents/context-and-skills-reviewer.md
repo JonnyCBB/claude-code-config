@@ -7,7 +7,7 @@ description: >
   asking for the review is the one that wrote it.
 skills: [context-and-skills-standards]
 tools: Read, Grep, Glob, Bash
-model: claude-sonnet-5
+model: claude-sonnet-5-5
 color: teal
 ---
 

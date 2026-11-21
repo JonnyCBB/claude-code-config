@@ -1,7 +1,6 @@
-# Plan Templates for Step 2: Analyze and Decompose
+# Plan Templates (Step 2)
 
-These templates are used when decomposing a research question in Step 2 of the research-problem skill.
-Read this file when Step 2 instructs you to `Read references/plan-templates.md`.
+Give every question and success criterion a stable ID (Q1, SC1) and keep it through the run.
 
 ## Research Questions
 
@@ -10,48 +9,34 @@ Read this file when Step 2 instructs you to `Read references/plan-templates.md`.
 
 To answer "[user's question]", I need to investigate:
 
-1. Q1: [Question 1] → Will use [subagent-type]
-2. Q2: [Question 2] → Will use [subagent-type]
-3. Q3: [Question 3] → Will use [subagent-type]
-...
+1. Q1: [Question] -> Will use [jbb-feature-dev:agent-type]
+2. Q2: [Question] -> Will use [jbb-feature-dev:agent-type]
 ```
-
-For each question, determine the information needed, assigned role, and areas to investigate.
-Assign stable IDs to questions and success criteria; preserve them in assignments, evidence,
-evaluator flags, reviewer gaps, candidates, and follow-ons. Link newly found items to their
-originating IDs. Delivered assignment evidence, not equal agent counts, establishes coverage.
 
 ## Assumptions
 
 ```
 ## Assumptions
 
-In approaching "[user's question]", I am making the following assumptions:
+**Explicit** (stated or strongly implied by the query):
+1. [e.g. "Research is limited to this repository"]
 
-**Explicit assumptions** (directly stated or strongly implied by the query):
-1. [Assumption about scope, e.g., "Research is limited to this repository"]
-2. [Assumption about intent, e.g., "You want documentation, not recommendations"]
+**Implicit** (inferred from context):
+1. [e.g. "Current code is the source of truth over old docs"]
 
-**Implicit assumptions** (inferred from context):
-1. [Assumption about domain, e.g., "The system uses the repository's standard infrastructure"]
-2. [Assumption about methodology, e.g., "Current codebase is source of truth over old docs"]
-
-**Constraints assumed:**
-1. [Time/scope constraints, e.g., "Research should complete in one session"]
-2. [Access constraints, e.g., "All relevant code is in this repository"]
+**Constraints:**
+1. [e.g. "All relevant code is in this repository"]
 ```
 
-Evaluate each assumption: Was it explicitly stated? Inferred? Could it be wrong, and would that change the approach?
+Step 5 marks each assumption CONFIRMED, INVALIDATED or UNCERTAIN.
 
 ## Success Criteria
 
 ```
 ## Success Criteria
 
-This research will be considered complete when:
-- [ ] SC1: [Specific deliverable, e.g., "All authentication entry points are identified with file paths"]
-- [ ] SC2: [Level of detail required, e.g., "Each component's role in the flow is documented"]
-- [ ] SC3: [Scope of coverage, e.g., "Both happy path and error handling are covered"]
+- [ ] SC1: [Specific deliverable, e.g. "All authentication entry points identified with file paths"]
+- [ ] SC2: [Level of detail or coverage]
 ```
 
 ## Scope
@@ -59,238 +44,121 @@ This research will be considered complete when:
 ```
 ## Scope
 
-**In scope:**
-- [What will be investigated]
-- [Systems/components to cover]
-
-**Explicitly out of scope:**
-- [What will NOT be investigated, e.g., "Historical implementations before 2023"]
-- [Systems to exclude, e.g., "Shared libraries outside this repository"]
-- [Depth limits, e.g., "Will not deep-dive into database schemas"]
+**In scope:** [what will be investigated]
+**Explicitly out of scope:** [what will not, and depth limits]
 ```
-
-## Complexity Classification
-
-After defining scope, classify the research complexity to determine the review phase scope
-in Step 7. See `references/review-personas.md` for the authoritative complexity signal table
-and reviewer selection criteria.
-
-Based on the research plan, this research is classified as: **[Simple/Medium/Complex]**
-
-**Review phase roster**: [2 personas (Simple) / 3 (Medium) / 5 (Complex)] — the phase
-itself always runs.
 
 ## Research Context
 
 ```
 ## Research Context
 
-**Known starting points** (extracted from your question):
-- [File/component mentioned, e.g., "`AuthService.java` - mentioned in question"]
-- [Or: "None explicitly mentioned - will discover through research"]
-
-**Prior knowledge assumed** (what you appear to already understand):
-- [Inferred knowledge, e.g., "Familiar with OAuth flow based on question framing"]
-
-**Previous research** (if any):
-- [Link to existing research docs if found in ~/.claude/thoughts/shared/research/]
-- [Or: "No prior research found on this topic"]
+**Known starting points:** [files/components named in the question, or "none"]
+**Prior knowledge assumed:** [what the user appears to know]
+**Previous research:** [links in ~/.claude/thoughts/shared/research/, or "none found"]
 ```
 
 ## Research Execution Plan
 
-**Dependency types to consider:** scope narrowing, vocabulary/terminology, architecture understanding, existence validation.
-
 ```
 ## Research Execution Plan
-
-**Dependency Analysis:**
 
 | Question | Type | Depends On | Rationale |
 |----------|------|------------|-----------|
 | Q1 | Parallel | None | Independent starting point |
-| Q2 | Sequential | Q1 | Q1's answer about [X] will narrow the scope of Q2's search |
-| Q3 | Parallel | None | Independent - different system/domain |
-| Q4 | Sequential | Q2, Q3 | Needs synthesis of both findings to form focused query |
-| Q5 | Direct | None | Single deterministic lookup, no agent needed |
+| Q2 | Sequential | Q1 | Q1's answer about [X] narrows Q2's search |
+| Q3 | Direct | None | Single deterministic lookup |
 
-**Question types:**
-- **Parallel**: Truly independent — no information dependency on other questions
-- **Sequential**: Answer from a prior question narrows scope, provides vocabulary, or changes the search strategy
-- **Direct**: one grep, glob or file read answers it outright, in the main context. Direct is
-  a property of **the question's shape** — a single deterministic lookup whose answer is a
-  name, a version, a path, a field list, or a yes/no. It is never a property of what you
-  happen to have read already.
+Batch 1 (parallel): Q1
+   | (wait, extract context)
+Batch 2: Q2 (informed by Q1)
 
-  **"I read the files in Step 1 and I think I know the answer" does not make a question
-  Direct.** That is a self-assessment of your own coverage, and it is exactly what Steps 6,
-  7 and 8 exist to check. A question asking how something works, why it behaves as it does,
-  what order things run in, or what happens in some case is **never** Direct, however
-  confident Step 1 left you — those need an agent that goes looking for what you did not
-  think to read.
-
-  Measured on a real run: an executor classified all four of the user's research questions as
-  Direct on the grounds that Step 1 had already answered them, spawned **zero** agents, and
-  Step 4's checklist then confirmed "0 agent types listed, 0 spawned -> match". The research
-  phase disappeared and every downstream check passed.
-
-**Direct question examples and resolution**:
-
-| Question | Tool | Command |
-|----------|------|---------|
-| "Does `AuthService.java` exist?" | Glob | `**/*AuthService.java` |
-| "What interface does `NotificationHandler` implement?" | Grep | `class NotificationHandler.*(implements\|extends)` |
-| "What version of guava is in the build file?" | Grep | `guava` in `**/pom.xml` or `**/build.gradle` |
-| "Is there a `conftest.py` in the test directory?" | Glob | `**/conftest.py` |
-| "What fields does the `UserEvent` proto have?" | Read | Read the `.proto` file directly |
-
-**Direct question rules**:
-- **At least one question must be Parallel or Sequential.** If your classification leaves
-  every question Direct, the classification is wrong, not the research: re-read the questions
-  as a stranger would and find the one that needs someone to go looking.
-- Resolve Direct questions BEFORE spawning Batch 1 agents
-- If a Direct lookup is inconclusive (e.g., multiple matches, ambiguous result), escalate to a sub-agent in the next batch
-- Direct questions do not appear in the Pre-Spawn Verification Table (they don't use agents)
-- Document Direct question answers in the synthesis alongside agent findings
-
-**Execution Batches:**
-
-Batch 1 (parallel): Q1, Q3
-   ↓ (wait for completion, extract key context)
-Batch 2 (parallel): Q2 (informed by Q1 findings)
-   ↓ (wait for completion)
-Batch 3: Q4 (informed by Q2 + Q3 findings)
-
-**Context to pass between batches:**
-- After Batch 1: [What specific information from Q1/Q3 will inform later questions]
-- After Batch 2: [What specific information from Q2 will inform later questions]
+Context to pass after Batch 1: [what from Q1 informs Q2]
 ```
 
-**Decomposition default rule:** Classify each question as Parallel, Sequential, or Direct. Default to Parallel when the dependency is unclear. Only classify as Sequential when there's a clear benefit to waiting (scope narrowing, vocabulary discovery). Use Direct for simple lookups that don't benefit from decomposition.
+- **Parallel**: no information dependency. The default when unsure.
+- **Sequential**: a prior answer narrows scope, supplies vocabulary, or changes the search.
+- **Direct**: one grep, glob or file read answers it outright in the main context. Direct is a
+  property of the question's shape (the answer is a name, version, path, field list or
+  yes/no), never of what you have already read. A question about how something works, why it
+  behaves as it does, what order things run in, or what happens in some case is never Direct.
 
-## Research Plan File Specification (NON_INTERACTIVE mode only)
+  On a real run an executor classified all four questions Direct because Step 1 had "already
+  answered them", spawned zero agents, and Step 4 then confirmed "0 agent types listed, 0
+  spawned -> match". The research phase disappeared and every later check passed.
 
-In NON_INTERACTIVE mode only, save the plan to disk so pipeline consumers can read it.
-In **interactive mode, do NOT write the plan to a file** -- render it in full in the
-Claude Code UI instead (see "Interactive Confirmation Gate" below).
-
-- Directory: `~/.claude/thoughts/shared/research_plans/` (create if needed)
-- Filename: `YYYY-MM-DD-description-plan.md`
-- YAML frontmatter:
-  ```yaml
-  ---
-  date: YYYY-MM-DD
-  type: research-plan
-  topic: "[research topic]"
-  status: approved # non-interactive only; interactive mode does not write this file
-  related_research_doc: "~/.claude/thoughts/shared/research/YYYY-MM-DD-description.md"
-  ---
-  ```
-- Plan captures intent (WHAT and WHY); research doc captures findings (WHAT we found).
-
-## Interactive Confirmation Gate
-
-In interactive mode, the plan lives in the Claude Code UI, not on disk. After printing
-the full plan to the UI, call the **`AskUserQuestion`** tool to gate Step 3. Example:
-
-```
-AskUserQuestion(
-  question: "Proceed with this research plan?",
-  options: [
-    "Proceed with this plan as-is",
-    "Request changes (I'll tell you what to adjust)",
-    "Cancel the research",
-  ]
-)
-```
-
-Never emit a plain-text "Do these look correct?" prompt instead — the tool call is what
-gives the user a structured choice in the UI. This gate does not apply in NON_INTERACTIVE
-mode, which writes the plan to disk instead.
+At least one question is Parallel or Sequential. Resolve Direct questions before Batch 1; if a
+Direct lookup is ambiguous, send it to an agent in the next batch.
 
 ## Domain Expert Check
 
-**MANDATORY**: Before finalizing agent assignments, cross-reference every research question
-against the Domain Expert Table in `references/agent-guide.md`. This must happen in Step 2
-(not Step 3) because agent types are committed here and approved by the user.
+Cross-reference every question against the Domain Expert Table in
+`references/agent-guide.md` here, in Step 2, because agent types are committed and approved
+here.
 
 ```
 ## Domain Expert Check
 
-Cross-referencing research questions against the Domain Expert Table:
-
-| Research Question | Domain Keywords | Matching Expert | Use as Researcher? | Use as Verifier (Step 7)? | Justification |
+| Research Question | Domain Keywords | Matching Expert | Researcher? | Verifier (Step 7)? | Justification |
 |---|---|---|---|---|---|
-| Q1: [question] | [keywords found] | [expert or "None"] | Yes/No | Yes/No | [reason] |
-| Q2: [question] | [keywords found] | [expert or "None"] | Yes/No | Yes/No | [reason] |
-
-Domain expert matches found: [N]
+| Q1: [question] | [keywords] | [expert or "None"] | Yes/No | Yes/No | [reason] |
 ```
 
-**Decision rules:**
-
-- If a question's core topic matches a domain pattern → use the domain expert as
-  **primary researcher** for that question (prefer over codebase-explorer for domain questions)
-- If the domain expert matches the overall research topic but not a specific question →
-  flag it for **verification in Step 7**
-- If you choose NOT to use a matching domain expert as primary researcher, you MUST explain
-  why (e.g., "question is about locating files, not domain-specific knowledge")
-- A domain expert can serve as both primary researcher (Step 3) AND verifier (Step 7) —
-  these roles are complementary, not redundant
+If a matching expert is not used as the primary researcher, say why (for example "the question
+is about locating files").
 
 ## Agent Type Verification
-
-At the end of Step 2, create an accountability list:
 
 ```
 ## Agent Type Verification
 
-Based on the questions above, I will spawn the following agent types:
-- jbb-feature-dev:codebase-explorer (questions 1, 3, 4)
-- jbb-feature-dev:web-search-researcher (question 2)
+- jbb-feature-dev:codebase-explorer (Q1, Q3)
+- jbb-feature-dev:web-search-researcher (Q2)
 
-Total unique agent types: 2
-
-Domain expert verification in Step 7: [expert-name] (if applicable)
+Domain expert verification in Step 7: [expert, or none]
 ```
 
-This list is your contract: match each question-to-role assignment to delivered evidence
-before synthesis. Equal type counts do not prove coverage; missing mandatory delivery keeps
-the checkpoint incomplete. Simple research still requires Gap Analyst and Devil's Advocate.
+## Complexity Classification
 
-## Example: Automerge Decomposition
+Use the highest level any signal implies:
 
-User question: "How do we handle automerge for dependency bot PRs?"
+| Signal              | Simple | Medium | Complex       |
+| ------------------- | ------ | ------ | ------------- |
+| Research questions  | 1-2    | 3-5    | 6+            |
+| Domains/systems     | Single | 2-3    | Cross-cutting |
+| Agent types spawned | 1-2    | 2-3    | 4+            |
+| Execution batches   | 1      | 1-2    | 3+            |
 
-**Questions:**
+## Plan file (NON_INTERACTIVE only)
 
-1. What dependency bots does this organisation run? -> **codebase-explorer**
-2. How does automerge work for those bots? -> **web-search-researcher**
-3. What automerge configurations exist in this repository? -> **codebase-explorer**
-4. What automerge patterns do similar repos use? -> **codebase-explorer**
-5. What external tools (Renovate, Dependabot) support automerge? -> **web-search-researcher**
+In interactive mode the plan lives in the response, not on disk.
 
-**Dependency Analysis:**
-
-| Question | Type       | Depends On | Rationale                                                              |
-| -------- | ---------- | ---------- | ---------------------------------------------------------------------- |
-| Q1       | Parallel   | None       | Need to know what bots exist before understanding their configs        |
-| Q2       | Parallel   | None       | General bot documentation, independent                                 |
-| Q3       | Sequential | Q1         | Knowing which bots exist (Q1) tells us what config files to look for   |
-| Q4       | Sequential | Q1, Q3     | Need to know our bot (Q1) and our config (Q3) to find similar patterns |
-| Q5       | Sequential | Q1         | Knowing which bot we use (Q1) focuses external research                |
-
-**Execution Batches:**
-
-```
-Batch 1 (parallel): Q1, Q2
-   ↓ Q1 reveals: "We use Renovate"
-Batch 2 (parallel): Q3 (search for renovate.json), Q5 (research Renovate automerge)
-   ↓ Q3 reveals: "Config at .github/renovate.json5 with automerge disabled"
-Batch 3: Q4 (find repos using Renovate with automerge enabled)
+```yaml
+---
+date: YYYY-MM-DD
+type: research-plan
+topic: "[research topic]"
+status: approved
+related_research_doc: "~/.claude/thoughts/shared/research/YYYY-MM-DD-description.md"
+---
 ```
 
-**Context passed:**
+Path: `~/.claude/thoughts/shared/research_plans/YYYY-MM-DD-description-plan.md`.
 
-- Batch 1 -> Batch 2: "We use Renovate bot, search for renovate config files"
-- Batch 2 -> Batch 3: "Our config is at .github/renovate.json5, look for similar repos with automerge: true"
+## Example: automerge decomposition
+
+Question: "How do we handle automerge for dependency bot PRs?"
+
+| Question | Agent | Type | Depends On |
+| -------- | ----- | ---- | ---------- |
+| Q1 Which dependency bots does this repo use? | codebase-explorer | Parallel | None |
+| Q2 How does automerge work for those bots? | web-search-researcher | Parallel | None |
+| Q3 What automerge config exists in this repo? | codebase-explorer | Sequential | Q1 |
+| Q4 What patterns do similar repos use? | codebase-explorer | Sequential | Q1, Q3 |
+| Q5 What do Renovate/Dependabot support? | web-search-researcher | Sequential | Q1 |
+
+```
+Batch 1: Q1, Q2      -> Q1 reveals "We use Renovate"
+Batch 2: Q3, Q5      -> Q3 reveals ".github/renovate.json5 with automerge disabled"
+Batch 3: Q4          -> search for repos with Renovate and automerge: true
+```

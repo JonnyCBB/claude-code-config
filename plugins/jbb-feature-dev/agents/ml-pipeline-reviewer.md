@@ -2,7 +2,7 @@
 name: ml-pipeline-reviewer
 description: Reviews ML pipeline code for best practices, performance issues, and common pitfalls. Use when reviewing training pipelines, feature engineering, or model code. Examples: <example>Context: User has written a new training pipeline. user: 'Can you review my PyTorch training code for any issues?' assistant: 'I'll use the ml-pipeline-reviewer agent to analyze your training code.' <commentary>Use this agent for ML code review.</commentary></example>
 tools: Read, Grep, Glob, LS, WebFetch, TodoWrite
-model: claude-sonnet-5
+model: claude-sonnet-5-5
 color: orange
 ---
 

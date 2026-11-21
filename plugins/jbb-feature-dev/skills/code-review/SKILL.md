@@ -1,106 +1,115 @@
 ---
 name: code-review
-description: Single-pass personal code review of a branch, working tree or PR against its objective, covering correctness, scope, tests, reuse, performance, minimal code, readability, naming and comments. Fixes findings on Jonny's own work; on a colleague's PR it stays read-only, recommends approve or request changes, and drafts comments. Leaves security and repo conventions to a dedicated review bot or reviewer. Use when asked to review code, review a PR, or for /code-review.
+description: >
+  Read-only code review of a branch, working tree or PR against its objective, by three fresh
+  assessors (general, bug, contract) plus a concern verifier that probes every concrete concern.
+  Covers correctness, claims and keys, scope, tests, reuse, performance, minimal code, readability,
+  naming and comments. Leaves security and repo conventions to a dedicated review bot or reviewer. Use
+  when the user asks to "review my code", "review this PR", "code review", or says "/code-review".
+argument-hint: "[pr-number-or-branch] [--non-interactive]"
 ---
 
 # Code review
 
-## 1. Mode
+Read-only on the reviewed repository, including for the caller's own work: never edit, commit, switch branches, or post to GitHub.
+Return findings; the caller applies accepted ones within its own edit authorization. A session that wrote
+or simplified the change may coordinate the review but must not assess or grade its own work.
 
-- An explicit read-only request overrides author-based mode selection. Never edit or commit in read-only mode.
-- PR number given: compare `gh pr view <N> --json author --jq .author.login` with `gh api user --jq .login`.
-  Different author is **colleague mode**; same author is **fix mode**. No PR number is fix mode.
-- Colleague mode is read-only: never edit files, switch branches, commit, or post to GitHub.
+## 1. Scope
 
-## 2. Scope
-
-- Colleague PR: `gh pr diff <N>` and `gh pr view <N> --json title,body,baseRefName,baseRefOid,headRefName,headRefOid,comments,reviews`, plus
-  `gh api repos/{owner}/{repo}/pulls/<N>/comments` for inline comments. Do not check out.
-- Fix mode on Jonny's PR: if the current branch is not the PR's `headRefName`, or the tree has unrelated
-  uncommitted changes, `git worktree add <repo>/.worktrees/review-<N> <headRefName>` and work there.
-  Keep worktrees outside `/tmp` and `/private/tmp`; cleanup can destroy uncommitted work. Never touch the current checkout.
-- Fix mode: use the supplied base commit. Otherwise resolve the task's actual target branch and record its
-  merge base with HEAD. Ask when the target is unclear; do not guess a default branch or replace a supplied base.
-  Inspect the diff from that recorded commit through the working tree, including staged and unstaged changes.
-  List relevant untracked files with `git ls-files --others --exclude-standard` and read them separately.
-  Limit fixes to the supplied task scope; record unrelated changes without editing them.
-- Nothing changed: say so and stop. Never report a clean review of an empty diff.
+- First argument: a bare PR number or branch name. Never a PR URL; this skill does not clone.
+  Missing: ask, or with `--non-interactive` resolve from the current branch and record how.
+- PR: `gh pr diff <N>` and `gh pr view <N> --json title,body,baseRefName,baseRefOid,headRefName,headRefOid,comments,reviews`,
+  plus `gh api repos/{owner}/{repo}/pulls/<N>/comments` for inline comments. If on-disk files do not match
+  the PR head, read source at the head through repository tools. Never check out, pull or stash.
+- Local: use the supplied base commit, or record the merge base with the task's actual target branch.
+  Never guess `master` or `main`. Diff from that commit through the working tree, including staged and
+  unstaged changes. List relevant untracked files with `git ls-files --others --exclude-standard` and read them.
+- Drop files matching `exclude_files` in `.code-review.yaml`, and say which.
+- Nothing in scope: say so and stop. Never report a clean review of an empty diff.
 - Over ~1,500 changed lines or 40 files: review hunks only, skip generated, vendored and lock files, and say so.
 
-## 3. Objective
+Record root, branch, base and head SHAs, file list and diff as the shared snapshot every assessor uses.
 
-State in 1-3 lines what the change is meant to do, from the PR body, bead, Jira, plan file or this conversation.
-Colleague mode: follow links in the PR body (issue tracker, chat threads, docs) once each with tools already
-connected; skip any that need setup, and list the sources used. If no objective exists, ask; if nobody can
-answer, write "objective unknown" and skip the alignment verdict.
+## 2. Objective
 
-## 4. Review
+State in 1-3 lines what the change is meant to do, from the PR body, bead, issue tracker, plan file or this
+conversation. Follow links once each with tools already connected; list the sources used. If no objective
+exists, ask; with `--non-interactive`, write "objective unknown" and skip the alignment verdict.
 
-Dispatch two fresh `general-purpose` agents with the Agent tool, in one message so they run concurrently, against the same snapshot, even if this session made no edits.
-Do not use a named or specialist agent type. Invoke them directly, without a wrapper or third reviewer.
-Both assessors are read-only, including in parent fix mode: no source edits, commits, posting, or child delegation.
+## 3. Review
 
-Give both the mode, objective, acceptance criteria, repository root, worktree, branch, fixed base and head,
-full tracked working-tree diff, relevant untracked contents, scope exclusions, and the full section 5 output format.
-For a colleague PR, supply its base/head, diff, file contents, and existing comments instead of the local checkout's state.
-Include resolved skill/checklist paths, the shared read-only, file-reading and reporting rules, and the role-specific instructions below.
-Do not pass dispatch/wait/apply instructions or section 7 to the children; this prevents recursive dispatch.
-Each assessor confirms its root and branch and reports the assessed state, instructions actually read, evidence, and coverage limits.
-Read full changed files unless section 2's large-diff limit applies; retain that limit and report reduced coverage.
+Dispatch three fresh `general-purpose` subagents concurrently in one message. Do not use named review agents.
+Pass each the Agent tool's `effort`, chosen from the actual diff, not an intake label: `low` for a few locally
+verifiable lines, `medium` for ordinary module work, `high` for production writes, weakened checks, or behaviour
+that cannot be verified locally. Use the same effort for the concern verifier.
+Give each the objective, acceptance criteria, scope exclusions, the shared snapshot, existing PR comments,
+the section 4 output format, the severities below, and its role with the resolved paths of the files it must read.
 
-- **General assessor:** Read every non-Correctness section of `checklist.md` in this skill's directory, including Do not report.
-  Own objective/scope, tests, reuse/performance, minimal code, readability, naming, and comments/contracts.
-  For java, python and typescript in the diff, read `<lang>.md` here and report idioms only where it states a rule.
-  Other languages: checklist only, and say so. Use source inspection only, not test or probe execution.
-  Treat readability as an implementation concern, not a final cleanup pass. Expose decisions through meaningful
-  names and focused helpers; do not use line counts as a substitute for judging clarity. Search existing code
-  and the new diff for reusable logic. Incidental correctness findings are allowed, but do not replace the bug assessment.
-- **Bug assessor:** Read [bug-review](../bug-review/SKILL.md) and the Correctness and Do not report sections of `checklist.md`.
-  Own correctness analysis. Safe, isolated local probes are allowed; do not run shared baseline checks.
-  Return not applicable only when the diff changes neither executable behavior nor a behavioral contract.
-  State the evidence and reason; not applicable is not a clean bug review.
+Severities: **critical** production failure or data corruption; **high** likely failure under realistic input or
+state; **medium** failure on an uncommon accepted input, or a name or comment that misleads; **low** anything else
+worth reporting.
 
-Wait for both results before validating findings or applying fixes. A missing independent pass blocks completion; do not substitute inline review.
-Compare the current head, tracked diff, and relevant untracked contents with the shared snapshot before using results.
-If the input changes, refresh affected independent assessments against that state or report the review incomplete.
-Deduplicate by root cause, retaining evidence from both assessors. Validate each finding's evidence, applicability, and task scope.
-Reject only with evidence that disproves its premise or applicability. Return disputed conclusions to the responsible assessor.
-Keep required unresolved uncertainty blocked, outside admitted findings, with the evidence needed, owner, and next action.
-In fix mode, the parent runs shared baseline checks under section 7 after both assessors return, not concurrently with their inspection.
+Each is read-only, dispatches nothing, confirms root and head first, reads full changed files plus callers
+and siblings, and reports instructions actually read, evidence, coverage limits, and unresolved concerns
+separately from findings.
 
-Colleague mode: drop findings an existing comment (including a review bot's) already raises.
-Note in one line any existing comment that looks wrong or unresolved and matters for approval.
+- **General assessor:** Read every non-Correctness section of `checklist.md` in this skill's directory,
+  including Do not report. Own objective/scope, tests, reuse/performance, minimal code, readability, naming,
+  and comments/contracts. For each language in the diff, read `${CLAUDE_PLUGIN_ROOT}/skills/<lang>-code-style/SKILL.md`
+  if it exists and report idioms only where it states a rule. Source inspection only. Search existing code
+  and the new diff for reusable logic. Incidental correctness findings are allowed.
+- **Bug assessor:** Read [bug-review](../bug-review/SKILL.md) and the Correctness and Do not report
+  sections of `checklist.md`. Own correctness. Safe, isolated local probes are allowed; no shared builds.
+  Run bug-review's probe for each medium or higher candidate when the repository has a runnable test harness.
+  Return not applicable only when the diff changes neither executable behaviour nor a behavioural contract.
+- **Contract assessor:** Read the Correctness section of `checklist.md`. Own only the two tables below; leave
+  other bugs to the bug assessor. Fill every row before writing anything else, and probe each row with the
+  repository's test harness when it has one. Return both tables even when they are empty:
+  - **Claims:** one row per acceptance criterion and per "every", "only" or "never" statement in the PR body, commit
+    messages, changed comments and changed docs (README, help text), and one row per code location or set member it
+    covers. Mark each row holds or broken under the checklist's universal-claims item.
+  - **Keys and shared state:** one row per map key, merge key, identity or flag the diff builds for stored, compared
+    or shared state, with the result of the checklist's two-entry and per-item cases.
+  A broken row is a finding. A row whose own analysis describes a wrong observable behaviour is broken, however
+  small. "Harmless", "low impact", "acceptable" and "same as the old system" set the severity, not the verdict.
+  For the checklist's unbounded-wait item, a timeout counts only if you find it in code or configuration; a library
+  default you did not confirm is not a timeout.
 
-## 5. Output
+Wait for all three. Then collect every unresolved concern that names a concrete input or state and dispatch
+one more fresh `general-purpose` **concern verifier** with only those concerns, the snapshot and bug-review's
+probe rules. It probes each one and returns confirmed (a finding, with output), refuted (with output), or
+blocked (with the reason). Refute only when the stated mechanism does not happen; a mechanism that happens but
+looks harmless or unreachable is confirmed at low severity. A concern never stays parked because an assessor did not run it.
 
-1. **Objective:** aligned / partially / not aligned, one sentence why.
-2. **Findings**, ordered: correctness, objective and scope, tests, reuse and performance, minimal code,
-   readability, naming and comments. Each: `file:line`, rule, consequence, quoted line, suggested fix.
-   Report what matters; do not pad.
-3. **Looks good:** only if worth saying.
-4. Security and repo conventions belong to a dedicated review bot or reviewer.
-   If none has reviewed, say that this review does not cover those checks. Use only a bot invocation verified
-   in current repo instructions or PR evidence; otherwise ask for it rather than guessing.
+Also give the verifier every medium or high finding that claims wrong runtime behaviour, to verify live: run
+the changed code through a real entry point (a local service, CLI or the repository's integration harness) with
+the finding's input, and show the wrong observable result. If nothing runs live, use a test through the public
+entry point a real caller uses, with that caller's input; fake only what is outside the repository. A unit probe shows the mechanism, not that a caller
+reaches it. A finding the run does not reach is confirmed at low severity, as above. One that neither can run
+goes under Unresolved with the command that would settle it, not into Findings. Each finding states its evidence
+(live or public entry point) and any unverified precondition on real traffic.
 
-## 6. Colleague mode: verdict and comments
+Wait for the verifier too; write section 4 only after every subagent has returned. A missing assessor blocks completion; do not substitute your own review. Re-read the head and diff; if they
+changed, re-run affected assessors or report the review incomplete. Deduplicate by root cause, keeping every
+assessor's evidence. Reject a finding only with evidence that disproves its premise; missing context is a
+limit, not disproof. Drop findings an existing PR comment (including a review bot's) already raises.
 
-- Tag each finding **must fix before merge** (correctness, objective misalignment, low-value tests,
-  tests that pass while broken, or a severe consequence) or **nice to have**.
-- Verdict: Approve / Approve with comments / Request changes, with a one-line reason.
-- Ask which findings to send back. For the chosen ones, draft ready-to-paste `file:line` comments and rewrite
-  them with the `sound-like-me` skill's GitHub-comment voice. Post nothing.
+## 4. Output
 
-## 7. Fix mode: apply
+Write `~/.claude/thoughts/shared/reviews/review_<PR-or-branch>_<DATE>.md` and return it:
 
-1. After both assessors return, find test and lint commands: the repo's AGENTS.md or CLAUDE.md first,
-   then package.json scripts, pom, sbt, pyproject or Makefile. Run them for a baseline.
-2. Apply every validated, safe, in-scope finding except those needing a design decision. Low priority or minor impact is not an exemption.
-   List design decisions and any remaining required work that cannot be applied safely as **needs you**, with an owner and next action.
-   Write clear code first. Add comments only when clearer code cannot express necessary context or contracts.
-3. Re-run. A previously passing test now failing: one repair attempt, else revert that fix and list it under
-   **needs you**. Baseline failures are reported, not fixed.
-4. Return the verified edits. Commit only when the user or parent explicitly authorizes a commit.
-   If authorized and checks pass, create one new commit with the required co-author trailer. Never amend or push.
-   If no test or lint command exists, say verification was unavailable and do not commit.
-5. Report: what was fixed, needs you, test results, any authorized commit SHA, and the worktree path if used.
-   Do not repeat the findings list.
+1. **Scope:** snapshot, sources, exclusions, effort passed and model, and which assessors ran.
+2. **Objective:** aligned / partially / not aligned, one sentence why.
+3. **Findings**, ordered: correctness, objective and scope, tests, reuse and performance, minimal code,
+   readability, naming and comments. Each: `file:line`, severity, rule, consequence, quoted line, suggested fix.
+4. **Unresolved:** blocked concerns and coverage limits, with what would settle each. List these before any
+   clean verdict.
+5. **Contract tables** from the contract assessor.
+6. **Looks good:** only if worth saying.
+7. Security and repo conventions belong to a dedicated review bot or reviewer. If none has reviewed, say this
+   review does not cover them.
+
+For a colleague's PR, tag each finding **must fix before merge** or **nice to have**, give Approve / Approve
+with comments / Request changes with a one-line reason, and draft `file:line` comments without posting them.
+`/crit-pr-review` can post them.

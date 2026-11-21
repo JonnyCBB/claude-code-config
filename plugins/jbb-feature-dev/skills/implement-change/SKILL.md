@@ -6,7 +6,7 @@ description: >
   clean review to completion. Use when asked to implement a feature, fix, or approved
   task, or to run /implement-change. Not for research-only work, read-only review,
   deployment, or merging.
-argument-hint: "<task description or objective/criteria file>"
+argument-hint: "<task description or objective/criteria file> [--ask-design]"
 ---
 
 # Implement change
@@ -36,8 +36,12 @@ argument-hint: "<task description or objective/criteria file>"
 ## Implement minimally
 
 - Use red-green-refactor for runtime behavior: run a small failing test, make the least change that passes,
-  then refactor. Keep verbatim failing and passing output. Do not test documentation wording.
+  then refactor. Keep verbatim failing and passing output. Do not test documentation wording or log text.
+  Assert each fact in one test; a test at another layer asserts only what that layer adds.
 - Reuse existing operations. Implement only the objective; record unrelated findings separately.
+  Default to the smallest edit. Take a larger one within the objective when it clearly reads better: it keeps
+  the signatures and call sites that existed before this change unchanged, keeps new logic out of an already
+  large class, or puts related constants in one place. This applies to review fixes too.
   With Beads, label agent-proposed follow-ups `agent-proposed` and keep them `deferred` until triage.
   Make decisions clear through names and structure, not dense expressions or needless helpers.
 - Default to no comments. Keep one only for a necessary fact that clearer code cannot express.
@@ -55,7 +59,7 @@ If a skill falls back to implementer self-assessment, obtain a fresh assessor or
 | Order | Skill | Assessment and result |
 | --- | --- | --- |
 | 1 | Claude's built-in `/simplify` | Invoke directly with its internal review agents; inspect behavior-preserving edits and check output. Do not substitute `/polish-code` or a plugin package. |
-| 2 | [code-review](../code-review/SKILL.md) | Invoke `/jbb-feature-dev:code-review` directly; it dispatches two fresh read-only assessors (general and bug) against one snapshot. Review the simplified diff and apply confirmed findings. |
+| 2 | [code-review](../code-review/SKILL.md) | Invoke `/jbb-feature-dev:code-review` directly; its self-review guard uses independent fresh assessors. Review the simplified diff and apply confirmed findings. |
 | 3 | [verify-implementation](../verify-implementation/SKILL.md) | Use a fresh verification agent, not the implementer, fixer, or an earlier assessor. Produce objective-linked local scenarios and observed evidence. |
 
 Give each pass and its internal agents the objective, acceptance criteria, repository/worktree path,
@@ -63,10 +67,28 @@ expected branch, target branch, fixed base, current head, skill path, and actual
 Include staged, unstaged, and relevant untracked files with their contents; a committed range alone is insufficient.
 Each assessor confirms its own root and branch and reports the reviewed revision/file set,
 commands, output excerpts, changed files, and limits. Read its actual artifacts and inspect its edits before continuing.
+Do not add the implementer's list of suspect areas, its "already checked" conclusions, or an instruction that
+overrides a skill's own assessors. A suspect list sets what the assessor looks for and what it skips.
+Code-review and verification assessors report findings and do not edit source; `/simplify` keeps its own edits.
+Treat every side effect, limit or "safe but" remark in an assessor's report as a candidate finding.
+If it contradicts an acceptance criterion, it is a defect to fix; otherwise list it for the user in the handoff.
+
+Keep one findings ledger in the task record for every pass, fix-round review and the final reviewer pass:
+source agent, `file:line`, proposal, decision (applied or declined) and reason. Decline a correctness finding
+only with evidence that disproves it. Each declined structure, reuse or readability finding goes to a fresh
+adjudicator agent (`model: haiku`). Give it the finding, the current code, and the options: every fix any assessor
+proposed for it, plus keeping the current code, each with its concrete cost (files, signatures and call sites
+changed). State facts only; argue for no option. It picks one option or returns unsure; on unsure a fresh
+`model: sonnet` agent decides. The choice binds you. With `--ask-design`, put these findings to the user with AskUserQuestion instead;
+otherwise never ask about design. A ledger row without a decision blocks completion.
 Always supply this same scope to built-in `/simplify`; do not rely on its default diff selection or override its instructions.
 An empty scope or missing independent pass is blocked, not clean. If built-in `/simplify` cannot run, report that blocker.
 
-After simplification, run code-review on the simplified diff. Do not replace its two assessors with one reviewer.
+After simplification, select review effort from the actual diff and risk using the canonical
+effort rule in [code-review section 3](../code-review/SKILL.md#3-review).
+Record the diff-based reason, requested effort, effective supported setting or limitation, and model separately.
+Do not invent an Agent-tool effort parameter, use prompt wording as a runtime setting, or replace specialists with one reviewer.
+Preserve security, repository-rules, holistic, language-style, and language-test coverage.
 For a local code review, supply the branch name, pinned base, and explicit output path in the brief;
 use `--non-interactive` only when no user can answer scope questions. Never switch branches or stash work to review it.
 
@@ -89,6 +111,11 @@ Record precise setup, inputs, action, expected output, observed output, and expl
 Confirm a claimed environmental blocker from the actual error and configuration; ask for missing user action.
 A fix for a failed live scenario needs the same setup and action rechecked locally, not only a passing unit test.
 After later fixes, independently refresh affected review conclusions and verification scenarios, not the entire pass chain.
+A fix that adds a type, a method, a parameter, a constant, a new state rule, or changes a signature's call sites
+is new code: before the push, a fresh bug-catcher reviews the whole change so far with the round-1 brief (objective,
+acceptance criteria, base to current tree), not a brief written around the fix, and a fresh code-review general
+assessor reviews it for readability, reuse and naming against the full files it touches, looking for one shape
+that also fits the earlier code. Their findings join the ledger. A bot or external PR review does not count as either assessor.
 After the last edit, rerun relevant checks, including existing formatter/lint checks, and refresh affected evidence.
 
 ## Submit with evidence, only when authorized
@@ -100,14 +127,32 @@ Honor submit-pr's clear-prose rules and optional `jiffy-toolkit:sound-like-me --
 Without that skill or persona, follow its [PR prose fallback](../submit-pr/references/pr-prose-rules.md).
 The PR body must stand alone: objective, precise scenario inputs, expected and actual outputs,
 reproduction steps, verbatim evidence, and remaining limits, not author-only report pointers or test counts alone.
-Run available branch CI before submission; local checks never replace remote CI.
+Before each push, inspect the CI configuration (`.ci/pre-merge.sh`, `buildconf/`, or the equivalent)
+and run the applicable, locally runnable gates on the final state. Reuse passing results only when the
+relevant source, configuration, dependencies, and environment remain unchanged; do not invent absent
+gates or rerun what current results already cover. A formatter gate that runs with `--write` and then
+fails on `git diff --exit-code` turns formatting drift into a red build, so the local run must cover it.
+Capture each gate's exit code directly (`gate >log 2>&1; echo $?`); a pipeline such as `gate | tail -1`
+returns the pipe's status and hides a failure. Report CI-only checks and local limits; remote CI remains
+required.
 
 Follow [submit-pr's build and review monitoring policy](../submit-pr/references/build-monitoring.md)
-as the sole convergence procedure, including watcher startup, all-priority findings, focused fixes, evidence refresh,
-and stop rules. Do not start a competing monitor. Completion requires green CI and an explicit clean
-automated-review result for the unchanged latest remote head, with no outstanding findings.
+as the sole convergence procedure, including watcher startup, findings collection from every review
+surface, latest-head checks, authorized base updates, focused fixes, evidence refresh, reporting, and
+stop rules. Do not start a competing monitor.
+Completion requires green CI and an explicit clean automated-review result for the unchanged latest
+remote head, with no outstanding findings.
 PR creation, silence, stale approvals, resolved threads, or a timeout never establish completion.
 A focused review correction does not restart the three passes unless it adds materially new scope.
+
+## Final reviewer pass
+
+Once, after completion holds, give a fresh agent the final remote head, base, full changed files and PR body,
+with no earlier findings, decline reasons or verdicts. Ask what a colleague who owns this code would ask to
+change before approving, however small, including a different structure for the change and what it removes.
+Decide its findings through the ledger. If any are applied, rerun verification for affected scenarios, then
+the convergence procedure on the new head. End the PR body with the declined and adjudicated ledger rows,
+one line each, inside a collapsed `<details><summary>Design decisions</summary>` block.
 
 ## Handoff
 

@@ -2,7 +2,7 @@
 name: structure-reviewer
 description: "Specialist document structure reviewer. Evaluates section ordering, heading hierarchy, logical flow, missing sections, and information front-loading. Emits findings in finding-schema format. Use as part of the /review-document pipeline."
 tools: Read
-model: claude-sonnet-5
+model: claude-sonnet-5-5
 color: blue
 ---
 

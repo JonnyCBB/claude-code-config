@@ -22,13 +22,19 @@ argument. A review that proposes only corrections has not done this job.
 If you cannot name the mistake, delete it. "It's useful context", "it's good practice" and "it
 might help" all fail. So does "it's true" — truth is not the bar, behaviour change is.
 
+A generic style rule ("be concise", "write naturally") mostly swaps one default for another.
+Rewrite it to name the specific patterns to avoid, or delete it
+([Prompting Opus 5.5](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-opus-5-5)).
+
 ## The removal ladder
 
 Work top down and stop at the first rung that holds. A cut at a higher rung makes every lower rung
 moot, and reviewing sentences inside a file you should be deleting is how this review wastes itself.
 
 1. **Delete the whole skill.** The model already does this correctly, or another skill does, or it
-   is one instance dressed up as a class of task. Run the task with it off before keeping it.
+   is one instance dressed up as a class of task. Run the task with it off before keeping it, and
+   again after a model change: a line tuned for the last model might no longer be needed
+   ([Opus 5.5 migration guide](https://platform.claude.com/docs/en/models/opus-5-5/migration-guide)).
 2. **Delete the whole file.** Nothing links to it; or it records how the skill came to be rather
    than how to use it (design history, rejected approaches, archives, legacy notes); or it is the
    skill's own evidence and citations, which an agent does not need in order to obey a rule.

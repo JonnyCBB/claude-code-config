@@ -15,11 +15,18 @@ Do not guess a bot login, trigger command, or universal clean-result phrase.
 1. Record the remote PR head commit after submission or each authorized push.
    Read all pages of review comments, threads, review summaries, and CI results for this PR.
    Include human findings, file-level findings, and review-level findings, not only inline threads.
+   The reviewer publishes findings in more than threads: read each round's review body (sections such as
+   "Needs your decision" and "Coverage gaps"), the reviewer's check run on the head commit
+   (`gh api repos/{owner}/{repo}/commits/{head}/check-runs`; its `output.title` holds the severity
+   tally, for example `Found 3 issues (High: 1, Low: 2)`), and `/check-runs/{id}/annotations`.
+   Include resolved threads in the collection; resolved state alone does not establish the tally.
    Incomplete pagination or inaccessible results block readiness.
 2. Wait for CI and the automated reviewer to complete for that exact head.
    Inspect the expected checks against repository requirements and the actual provider.
    Require observed green CI and an explicit clean review for that head.
    Absent, pending, failed, skipped, cancelled, stale, or unobservable checks and reviews do not satisfy this condition.
+   A review round can arrive minutes after a push, so a fresh head needs a recheck, not an immediate
+   clean verdict; only the round attached to the current head counts.
    Zero comments, resolved threads, a successful transport check, or an old approval alone do not prove a clean review.
 3. Apply every valid, safe, in-scope review finding, including LOW, Minor, Enhancement, and documentation-only findings,
    or retain it as a required blocker. Priority is not permission to skip.
@@ -36,11 +43,21 @@ Do not guess a bot login, trigger command, or universal clean-result phrase.
    Inspect and reconcile unexpected remote changes before pushing.
    Each push invalidates earlier clean verdicts and check results. Return to step 1 for the new head.
    Independently refresh affected candidate conclusions and verification scenarios, including structural outcomes and rejected/skipped decisions.
-   Refresh affected evidence in the PR body. Read that body with the final reviewer-visible diff under submit-pr's post-generation audit,
+   Refresh affected evidence in the PR body, and re-read the title and description against the full diff to the
+   target: correct any statement the push made false and name any omitted change to behaviour, contracts or
+   configuration. Read that body with the final reviewer-visible diff under submit-pr's post-generation audit,
    then wait for new CI and review results.
    Use only a documented, authorized review trigger if review does not start automatically.
 5. Finish only when the remote head is unchanged, CI is green, and the automated reviewer explicitly reports no issues for that head.
    Require no outstanding human or bot findings, no conflicts, and compliance with repository base-update requirements.
+   A check run titled "no issues" is not clean while the Assessment `**Quality:**` line in its `output.text`
+   reports slop or names a quality trait; treat each named trait as a finding, or dispute it with evidence.
+   Check mergeability each cycle; recheck an unknown mergeability result. Update a branch only for
+   conflicts or a repository base-update requirement, using the authorized method. When a stack base
+   changes, identify the affected descendants and confirm authority before updating any branch, then
+   refresh their CI and review evidence; do not invalidate unaffected ancestors or sibling branches, and
+   do not infer remote-history rewrite authority from monitoring authority.
+   Report the verified head's CI state and severity tally in the completion report.
    Re-read head, checks, and all review pages immediately before reporting success.
 
 Example: review A finds an unreadable condition. Fixing it creates head B.

@@ -149,20 +149,15 @@ Multi-architect design exploration before planning. Spawns competing architect a
 
 ### /code-review
 
-Single-pass review of a branch, working tree or PR against its objective: correctness, scope, tests, reuse, performance, minimal code, readability, naming and comments.
+Read-only review against the change's objective by three fresh assessors (general, bug, contract) plus a concern verifier that probes every concrete concern. Security and repo conventions are left to a dedicated review bot or reviewer.
 
-**Key features**:
-
-- Two fresh read-only `general-purpose` assessors run concurrently on one snapshot: a general assessor (`checklist.md` plus `java.md`, `python.md` or `typescript.md`) and a bug assessor (`bug-review`)
-- Fix mode on your own work: applies validated findings, runs the repo's tests and lint, and commits only when authorized
-- Colleague mode on someone else's PR: read-only, gives an Approve / Request changes verdict and drafts comments; posts nothing
-- Security and repo conventions are left to a dedicated review bot or reviewer
+**Output**: `~/.claude/thoughts/shared/reviews/review_<PR>_<DATE>.md`, with `file:line` findings that `/crit-pr-review` can post.
 
 **Examples**:
 
 ```bash
-/code-review                          # Review the current branch (fix mode)
-/code-review 123                      # Review PR #123 (colleague mode if you are not the author)
+/code-review 123                      # Review PR #123
+/code-review my-feature-branch        # Review a branch
 ```
 
 ### /polish-code
@@ -409,9 +404,9 @@ The unit suite and the description-triggering eval set are deliberately not carr
 this marketplace ships markdown and shell, not a test tree. They live in the maintainer's own
 working repository, so this figure is not reproducible from a plugin install.
 
-## Agents (14)
+## Agents (8)
 
-Includes 4 research/discovery agents (codebase-explorer, thoughts-explorer, web-search-researcher, visual-aid-recommender), 8 code review agents (bug-catcher, security-reviewer, repo-rules-reviewer, general-code-reviewer, ml-pipeline-reviewer, quality-checker, review-calibrator, review-deduplicator; `/code-review` itself no longer dispatches them), and 2 mode-aware language experts (python-expert, typescript-expert).
+Includes 4 research/discovery agents (codebase-explorer, thoughts-explorer, web-search-researcher, visual-aid-recommender), 2 review agents (general-code-reviewer, ml-pipeline-reviewer; `/code-review` itself does not dispatch them), and 2 mode-aware language experts (python-expert, typescript-expert).
 
 ## Agent-Loaded Skills
 

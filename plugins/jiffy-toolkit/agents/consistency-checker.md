@@ -2,7 +2,7 @@
 name: consistency-checker
 description: "Specialist consistency checker. Evaluates terminology uniformity, formatting consistency, cross-reference accuracy, and style guide adherence across the entire document. Emits findings in finding-schema format. Use as part of the /review-document pipeline."
 tools: Read
-model: claude-sonnet-5
+model: claude-sonnet-5-5
 color: teal
 ---
 

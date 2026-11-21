@@ -2,7 +2,7 @@
 name: doc-review-calibrator
 description: "Verifies, calibrates, and filters document review findings. Combines adversarial verification (checking findings against actual document text) with calibration (categorizing, filtering false positives, normalizing severity, assigning confidence, classifying edit safety). Use as part of the /review-document post-processing pipeline."
 tools: Read, Grep, Glob
-model: claude-opus-5
+model: claude-opus-5-5
 color: purple
 ---
 

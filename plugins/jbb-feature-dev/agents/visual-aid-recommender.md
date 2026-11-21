@@ -3,7 +3,7 @@ name: visual-aid-recommender
 description: Expert technical documentation visual aid analyst. Analyzes documents (RFCs, PRDs, tutorials, etc.) to identify concepts that would benefit from visualization, recommends appropriate diagram types and tools, and generates diagram code with accessibility-compliant captions. Use when reviewing technical documentation or when users ask "what diagrams should I add?" or "how can I visualize this concept?" Does NOT modify original document text - only provides recommendations.
 skills: [diagram-standards]
 tools: Read, Grep, Glob, WebFetch
-model: claude-sonnet-5
+model: claude-sonnet-5-5
 color: blue
 ---
 

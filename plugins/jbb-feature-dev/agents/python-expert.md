@@ -2,7 +2,7 @@
 name: python-expert
 description: "Expert assistant for Python code across plan, implement, test-review, code-style-review, and deep-analysis modes. Helps with idiomatic modern Python (3.10-3.14), pytest patterns, comprehensions and generators, async patterns, and model serving. Use when reviewing or implementing Python code in /polish-code. <example>Context. User wants to review test coverage on a Python diff. user: 'Review the test coverage on these Python changes' assistant: 'I will use the python-expert agent in test-review mode to identify missing tests and quality issues.' <commentary>Use this agent for Python test-review and code-style-review.</commentary></example>"
 tools: Bash, Edit, Glob, Grep, LS, ListMcpResourcesTool, MultiEdit, NotebookEdit, Read, ReadMcpResourceTool, TodoWrite, WebFetch, Write
-model: claude-sonnet-5
+model: claude-sonnet-5-5
 skills:
   [
     code-review-modes,

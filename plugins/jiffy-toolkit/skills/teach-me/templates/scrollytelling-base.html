@@ -302,7 +302,25 @@
     }
     .pb-btn:disabled { opacity: 0.3; cursor: default; }
 
-    .pb-speed { display: flex; gap: 2px; margin-left: auto; }
+    .pb-speed { display: flex; flex-wrap: wrap; gap: 2px; margin-left: auto; }
+    .pb-speed-label, .pb-speed-unit {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--color-text-secondary);
+    }
+    .pb-speed-range {
+      flex: 0 1 160px; height: 4px;
+      accent-color: var(--color-primary);
+      cursor: pointer;
+    }
+    .pb-speed-input {
+      width: 4.5em; padding: 2px 4px; border-radius: 4px; font-size: 0.75rem;
+      border: 1px solid var(--color-border);
+      background: var(--color-surface);
+      color: var(--color-text);
+      font-family: var(--font-mono);
+    }
+    .pb-speed-input:focus-visible, .pb-speed-range:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
     .pb-speed-btn {
       padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;
       border: 1px solid var(--color-border);
@@ -379,11 +397,21 @@
           <button class="pb-btn" id="pb-step-back" aria-label="Step back" disabled>&#9664;&#9664;</button>
           <button class="pb-btn" id="pb-step-fwd" aria-label="Step forward" disabled>&#9654;&#9654;</button>
           <button class="pb-btn" id="pb-replay" aria-label="Replay">&#8634;</button>
-          <div class="pb-speed">
+          <div class="pb-speed" role="group" aria-label="Playback speed presets">
+            <button class="pb-speed-btn" data-speed="0.25">0.25x</button>
             <button class="pb-speed-btn" data-speed="0.5">0.5x</button>
+            <button class="pb-speed-btn" data-speed="0.75">0.75x</button>
             <button class="pb-speed-btn is-active" data-speed="1">1x</button>
+            <button class="pb-speed-btn" data-speed="1.5">1.5x</button>
             <button class="pb-speed-btn" data-speed="2">2x</button>
+            <button class="pb-speed-btn" data-speed="3">3x</button>
           </div>
+        </div>
+        <div class="playback-row">
+          <label class="pb-speed-label" for="pb-speed-range">Speed</label>
+          <input type="range" class="pb-speed-range" id="pb-speed-range" min="-1" max="0.699" step="0.01" value="0" aria-valuetext="1x">
+          <input type="number" class="pb-speed-input" id="pb-speed-input" min="0.1" max="5" step="0.05" value="1" aria-label="Playback speed, from 0.1 to 5 times">
+          <span class="pb-speed-unit" aria-hidden="true">x</span>
         </div>
         <div class="playback-row">
           <input type="range" class="pb-scrubber" id="pb-scrubber" min="0" max="1" step="0.001" value="0">
@@ -468,6 +496,10 @@
       var scrubber = document.getElementById("pb-scrubber");
       var statusEl = document.getElementById("pb-status");
       var speedBtns = document.querySelectorAll(".pb-speed-btn");
+      var speedRange = document.getElementById("pb-speed-range");
+      var speedInput = document.getElementById("pb-speed-input");
+      var MIN_SPEED = 0.1, MAX_SPEED = 5;
+      var currentSpeed = 1;
 
       var STEP_DELTA = 0.02;
 
@@ -475,6 +507,7 @@
         if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
         if (currentTl) { currentTl.pause(); }
         currentTl = tl;
+        currentTl.timeScale(currentSpeed);
         currentLabels = labels || [];
         isPlaying = false;
         scrubber.value = 0;
@@ -511,11 +544,20 @@
       }
 
       function setSpeed(speed) {
-        if (!currentTl) return;
-        currentTl.timeScale(speed);
+        speed = parseFloat(speed);
+        if (!isFinite(speed) || speed <= 0) { syncSpeedUI(); return; }
+        currentSpeed = Math.round(Math.min(MAX_SPEED, Math.max(MIN_SPEED, speed)) * 100) / 100;
+        if (currentTl) { currentTl.timeScale(currentSpeed); }
+        syncSpeedUI();
+      }
+
+      function syncSpeedUI() {
         speedBtns.forEach(function(btn) {
-          btn.classList.toggle("is-active", parseFloat(btn.dataset.speed) === speed);
+          btn.classList.toggle("is-active", Math.abs(parseFloat(btn.dataset.speed) - currentSpeed) < 0.001);
         });
+        speedRange.value = Math.log10(currentSpeed);
+        speedRange.setAttribute("aria-valuetext", currentSpeed + "x");
+        speedInput.value = currentSpeed;
       }
 
       function scrub(progress) {
@@ -581,8 +623,14 @@
       scrubber.addEventListener("input", function() { scrub(this.value); });
       speedBtns.forEach(function(btn) {
         btn.addEventListener("click", function() {
-          setSpeed(parseFloat(this.dataset.speed));
+          setSpeed(this.dataset.speed);
         });
+      });
+      speedRange.addEventListener("input", function() {
+        setSpeed(Math.pow(10, parseFloat(this.value)));
+      });
+      speedInput.addEventListener("change", function() {
+        setSpeed(this.value);
       });
 
       return { setTimeline: setTimeline, play: play, pause: pause };

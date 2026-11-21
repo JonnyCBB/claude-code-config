@@ -117,6 +117,12 @@ Read references/jira-integration.md for ticket transitions.
      If it differs from the resolved target, obtain explicit confirmation before retargeting and recheck scope/evidence.
      Without confirmation, report blocked in non-interactive mode rather than prompting or changing the base.
      Otherwise update its body and metadata without silently changing its base.
+   - Visual media (screenshots, demo GIFs) attaches natively and is never committed to the repository:
+     `gh pr create/edit --attach '<path>#<concise alt text>'` (GitHub.com or GitHub Enterprise Cloud with a
+     recent gh). The upload publishes a hosted URL in the PR body. Only on GitHub
+     Enterprise Server or a gh without `--attach`, fall back to the installed ship plugin's
+     `upload-pr-image` skill, never a code repo. Verify after attaching: the image renders from the
+     description and the file is absent from the PR's changed files.
    - Add `--draft` flag on creation if `--draft` was specified
    - Capture PR URL and number from output
    - Confirm the actual base and head with `gh pr view <pr-number> --json baseRefName,headRefName`.
