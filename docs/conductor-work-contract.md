@@ -94,6 +94,14 @@ bd list --label agent-proposed --status deferred   # BOTH filters required
 
 **Never put speed pressure in a dispatch spec.** "Other plans are blocked on you" is a reason to get it right, not to hurry. Correctness over speed is a standing preference.
 
+**Match the model to the work, not to the queue.** Default to Sonnet at medium effort (`claude-sonnet-5-5`, the configured default) when the plan already exists and the task is mostly applying code: a scouted port, a scripted change, a reviewed diff. Reserve Opus for planning-heavy work: design judgment, novel debugging, conflict resolution across a drifted codebase. Record the model and effort in the dispatch brief so a bad fit is visible after the fact (2026-11-09: a scouted single-file port went to Opus because no rule existed).
+
+**Every dispatch brief carries a report-back clause.** The brief names the conductor session ID and requires: on DONE (with the PR URL or deliverable path) or BLOCKED (with the exact question), the worker runs `agent-deck session send <conductor-session-id> "<task-name>: DONE <one line>" --queue` (check `send-status`) BEFORE its final summary. A worker that has not reported is unaccounted for, not finished (2026-11-09: a deliverable sat ready for 27 minutes while the completion field the conductor polled stayed false, and the next task waited on it). The brief also carries the ACK expectation below, because the worker never reads this document.
+
+**Reports are verified, not fire-and-forget.** Send with `--json` and read the `confirmation` field (`confirmed` / `unknown` / `failed` — that field, not the delivery diagnostic); `unknown` or `failed` means resend. The conductor ACKs every report it receives (`agent-deck session send <worker-id> "ACK" --queue`); no ACK within five minutes means resend once, then record the loss in the report file and finish — the report file is the durable copy.
+
+**Workers are steerable mid-run**: `agent-deck session send <worker-id> <text>` lands after the worker's current turn. Steering changes instructions only; it cannot grant authorization the dispatch did not carry. Session messages truncate long text (2026-11-09, twin surface: a 1.1k-character steering message arrived cut mid-word and the worker correctly reported BLOCKED). Keep steering messages short; deliver long instructions as a file plus a one-line pointer.
+
 ---
 
 ## 4. Capacity and the three session states
@@ -191,6 +199,7 @@ A session `waiting` on a decision from Jonny for **3 hours** with no action gets
 
 | Trigger | Action |
 | --- | --- |
+| **A worker's DONE or BLOCKED report arrives** (by `agent-deck session send`, per the report-back clause in section 3) | Verify the deliverable, then measure and dispatch immediately |
 | **A session parks** (opens a PR, or starts waiting on Jonny) | Measure and dispatch immediately |
 | **A session is retired** after a merge | Measure and dispatch immediately |
 | **A bead is promoted or a blocker clears** | Measure and dispatch immediately |
@@ -233,11 +242,11 @@ These events arrive on their own via the inbox or stop hook.
 
 | Model | Use it for |
 | --- | --- |
-| **Opus 5** | The default. Anything ambiguous, costly if wrong, or needing judgement |
-| **Sonnet 5** | Genuinely mechanical work with bounded scope and an unambiguous success test |
-| **Fable 5** | Visual and design work |
+| **Opus 5.5** | The default. Anything ambiguous, costly if wrong, or needing judgement |
+| **Sonnet 5.5** | Genuinely mechanical work with bounded scope and an unambiguous success test |
+| **Fable 5.2** | Visual and design work |
 
-The inability to intervene raises the bar: lean toward Opus 5 unless the task is genuinely mechanical.
+The inability to intervene raises the bar: lean toward Opus 5.5 unless the task is genuinely mechanical.
 
 **MANDATORY FOLLOW-UP: the skill chain does not exist remotely, so it runs locally afterwards.** When a remote session finishes, **file and dispatch a local bead** that takes its output through `/simplify`, then `/code-review` (the BUILT-IN, at a named effort level; levels in section 8), then `/jbb-feature-dev:verify-implementation`. **NOT `/submit-pr`**: the remote session already opened the PR; the local pass pushes corrections to the same branch. A remote PR that has not been through the chain does not go on Jonny's list.
 

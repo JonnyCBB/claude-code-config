@@ -6,7 +6,8 @@ description: >
   elicit-requirements with the same output schema so /research-problem and /implement-change
   work unchanged. Aggressively frontloads references (screenshots, links, brand colors),
   spawns context agents to fill technical gaps the user can't, and translates jargon
-  inline. Always thorough — walks every branch of the design tree in friendly tone.
+  inline. Thorough on every branch that bears on the objective, and keeps only the
+  requirements the objective needs.
   Trigger phrases: (1) "elicit requirements" (friendly variant) (2) "interview me"
   (3) "non-technical" (4) "intake" (5) "PRD" (6) "friendly" requirements interview.
   Outputs to ~/.claude/thoughts/shared/requirements/.
@@ -18,13 +19,21 @@ Gather requirements through a one-question-at-a-time, story-based interview. Sha
 standard variant's output schema and decision rules; keep the conversation in the user's
 language.
 
+## Requirements serve the objective
+
+**Hard constraint:** the document carries the minimal set of requirements that meets the
+objective. This is the standard variant's rule: a requirement exists only to prevent an outcome that
+would fail the objective, and the document carries the smallest set that achieves it.
+Read `## Requirements serve the objective` and `### Minimality Pass` (in Step 5) in
+`../elicit-requirements/SKILL.md` now; this variant applies both, in the user's words.
+
 ## Mode Detection
 
 Parse `$ARGUMENTS` for flags and input:
 
 - `--non-interactive`: read supplied references without asking for more (Step 1), run
-  relevant context research (Step 2), then write the document (Step 6).
-  Skip Steps 3-5; mark unanswered consequential decisions as unconfirmed assumptions.
+  relevant context research (Step 2), then run the Minimality Pass (Step 5) and write the document
+  (Step 6). Skip Steps 3-4 and the confirmation; mark unanswered consequential decisions as unconfirmed assumptions.
 - File path argument: read the file as the initial task description (alongside any pasted
   links, screenshots, or other artifacts).
 - No flags: proceed to Step 1.
@@ -40,7 +49,7 @@ In interactive mode, first ask for the references the user has:
 
 Use `ToolSearch` to discover the right MCP tool for each link type (Slack MCP for Slack,
 Atlassian MCP for Jira, Google Workspace MCP for Google Docs, WebFetch for web URLs). Read every
-artifact **fully** before proceeding — fetch the full content, not just the title or
+artifact in full before proceeding — fetch the full content, not just the title or
 preview.
 
 If the user has nothing to share, continue to Step 2. In non-interactive mode, read
@@ -80,9 +89,6 @@ Skip Step 3 if the supplied evidence already answers it (for example, a ticket w
 reproduction steps and a stakeholder request). Cite the evidence in `## Context` rather
 than treating it as a silent decision.
 
-The friendly variant deliberately avoids confrontational premise phrasing. This is a Soft
-Premise Check, not a "your problem might not be worth solving" challenge.
-
 ## Step 4: Friendly Interview
 
 This is the heart of the skill. Mechanics:
@@ -114,9 +120,12 @@ This is the heart of the skill. Mechanics:
   back up" — read the spec back, ask the user to describe what they're picturing, and
   restart the dimension with a fresh story prompt. See `references/escalation-and-authority.md`
   for the full pivot routine.
-- **Always thorough.** No depth flag, no early exit. Walk every branch of the design tree
-  ("it depends" / "unless" / "except when") in friendly tone. Friendly thoroughness is
-  the whole point — give the user every chance to nail it down.
+- **Thorough on what matters.** No depth flag. Walk every branch that bears on the
+  objective ("it depends" / "unless" / "except when") in friendly tone. Thorough means
+  no gap that could fail the objective, not one requirement per topic discussed.
+- **Removal test, as you go.** When an answer would become a requirement, ask in plain
+  words: "If we left this out, would it still solve your problem?" If yes, record it as
+  scope, background, or an idea for the builder, and tell the user that is where it went.
 - **Research on demand.** When the user signals uncertainty on a research-answerable
   question, when a recommendation has no grounding, or when an answer opens a new branch
   an agent could resolve, spawn research per `../shared-references/elicit-shared-patterns.md`
@@ -126,15 +135,17 @@ This is the heart of the skill. Mechanics:
 In interactive mode, continue until you can describe the outcome without consequential
 gaps, then proceed to Step 5. Only explicit owner confirmation ends the interview.
 
-## Step 5: Mutual Understanding Confirmation
+## Step 5: Minimality Pass and Confirmation
 
-In interactive mode, confirm shared understanding before writing. Do not claim
+Run the standard variant's Minimality Pass first, in non-interactive mode too. Then, in
+interactive mode, confirm shared understanding before writing. Do not claim
 confirmation in non-interactive mode.
 
 1. Present your understanding of the outcome, scope, observable success, consequential
    decisions (including invisible ones), unresolved assumptions, and any domain-specific
    requirements in the user's plain language, not GIVEN/WHEN/THEN. Distinguish their
-   choices from researched facts and reversible agent choices.
+   choices from researched facts and reversible agent choices. Say which ideas you moved
+   out of the must-haves and where they went, so the user can move one back.
 2. Ask explicit confirmation via `AskUserQuestion`: "Does this capture your intent
    accurately? Are there any gaps or misunderstandings?"
 3. If the user confirms, proceed to Step 6.
@@ -146,7 +157,7 @@ Ask targeted questions about consequential choices before seeking summary confir
 
 ## Step 6: Write Requirements Document
 
-1. Read `references/output-template.md` for the document structure.
+1. Read `../elicit-requirements/references/output-template.md` and use that schema.
 2. Create `~/.claude/thoughts/shared/requirements/` if it does not exist.
 3. Generate filename: `YYYY-MM-DD-<kebab-case-description>-requirements.md`
 4. Synthesize the conversational outcomes into observable acceptance scenarios; the user
@@ -163,15 +174,3 @@ Ask targeted questions about consequential choices before seeking summary confir
 
 See `../shared-references/elicit-shared-patterns.md` (`## Suggest Next Step`).
 
-## Reference Files
-
-- **`references/question-bank.md`** — Top 10 verbatim story prompts, NFR probes in
-  user-language, and the jargon translation table. Read in Step 4 when picking which
-  question to ask.
-- **`references/exemplars.md`** — Good-vs-vague answer pairs, one per question dimension.
-  Surface inline in Step 4 whenever asking an open-ended question, so the user sees what
-  depth lands.
-- **`references/escalation-and-authority.md`** — Concrete authority and vague-answer
-  pivot examples. Read in Step 4.
-- **`references/output-template.md`** — Pointer to the shared document schema. Read in
-  Step 6.

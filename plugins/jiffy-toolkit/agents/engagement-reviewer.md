@@ -2,7 +2,7 @@
 name: engagement-reviewer
 description: "Specialist engagement reviewer. Evaluates reader interest, narrative flow, examples, callouts, and format-aware interactive elements. Recommends collapsible sections, callout boxes, and other engagement patterns appropriate to the document format. Emits findings in finding-schema format. Use as part of the /review-document pipeline."
 tools: Read
-model: claude-opus-5
+model: claude-opus-5-5
 color: yellow
 ---
 

@@ -2,7 +2,7 @@
 name: accessibility-reviewer
 description: "Specialist accessibility reviewer. Evaluates alt text, heading hierarchy for screen readers, color contrast, link text quality, unexplained terminology, and inclusive language. Emits findings in finding-schema format. Use as part of the /review-document pipeline."
 tools: Read
-model: claude-sonnet-5
+model: claude-sonnet-5-5
 color: purple
 ---
 

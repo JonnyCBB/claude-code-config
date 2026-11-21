@@ -1,41 +1,10 @@
 # Interview Question Dimensions
 
 This file provides guidance dimensions and example question patterns for the elicit-requirements
-skill. These are NOT fixed questions — the agent generates contextually appropriate questions
+skill. These are not fixed questions — the agent generates contextually appropriate questions
 based on the specific feature being discussed. Use these dimensions to ensure important topics
-are covered, and adapt the wording to the situation.
-
-## Cross-cutting: every question leads with a recommended answer
-
-Every dimension below must apply the Recommended-answer principle from SKILL.md. Use the
-`Options pattern:` examples as the starting recommendation. When a dimension has no
-`Options pattern:`, construct a recommendation from the ticket / Context Sprint findings
-before asking. Only skip the recommendation when there is no grounding evidence at all.
-
-## Recommended Asking Order
-
-Questions are organized into three waves of increasing depth. Work through waves
-sequentially, running a synthesis checkpoint between each wave.
-
-### Wave 1 — Foundational
-
-Establish core understanding of the problem, scope, and success criteria.
-
-1. Premise challenge (is this the right problem?)
-2. Scope mode (MVP / Complete / Ambitious)
-3. Motivation & Business Context
-4. Acceptance Criteria
-5. Success Metrics
-6. Scope Classification
-
-### Wave 2 — Nuances
-
-Refine the baseline with operational detail and edge cases. 7. Edge Cases & Error Handling 8. Non-Functional Requirements 9. Deployment & Rollout 10. Historical Context & Temporal
-
-### Wave 3 — Deep/Domain
-
-Domain-specific questions, activated based on detected domain signals.
-11-19. Domain-specific dimensions (as detected)
+are considered, and adapt the wording to the situation. Considering a dimension does not
+mean producing a requirement for it: most interviews leave several dimensions with none.
 
 ## Domain Detection
 
@@ -61,22 +30,14 @@ When multiple domains apply, ask questions from all relevant domains.
 **Options pattern**: A) Real pain point — [describe impact] B) Preventive — avoids future problem C) Opportunistic — nice to have but not urgent
 **Skip if**: The task is a bug fix with clear reproduction steps, or a well-defined ticket with stakeholder sign-off already documented.
 
-### 2. Scope Mode
-
-**Wave**: 1
-**Why research can't answer**: Scope posture is a human judgment call about ambition vs. speed.
-**Example**: "What's your scope posture for this work?"
-**Options pattern**: A) MVP — minimum that ships value, cut everything else B) Complete — full scope as described, make it bulletproof C) Ambitious — go beyond the ask if it creates a better outcome
-**Skip if**: The ticket explicitly states scope (e.g., "quick fix", "full feature", "spike").
-
-### 3. Motivation & Business Context
+### 2. Motivation & Business Context
 
 **Wave**: 1
 **Why research can't answer**: Business drivers live in stakeholder heads, not in code.
 **Example**: "What problem does this solve, and why now? What business outcome does it drive?"
 **Skip if**: A ticket or research doc already contains a clear problem statement with business context.
 
-### 4. Acceptance Criteria
+### 3. Acceptance Criteria
 
 **Wave**: 1
 **Why research can't answer**: Code shows current behavior, not desired future behavior.
@@ -84,14 +45,14 @@ When multiple domains apply, ask questions from all relevant domains.
 **Options pattern**: Offer to draft acceptance criteria from the description for the user to confirm/edit.
 **Skip if**: The input already contains 2+ explicit acceptance criteria or GIVEN/WHEN/THEN scenarios.
 
-### 5. Success Metrics
+### 4. Success Metrics
 
 **Wave**: 1
 **Why research can't answer**: Not in code unless previously instrumented.
 **Example**: "How will you know this succeeded? What metric moves, or what user behavior changes?"
 **Skip if**: The input already specifies measurable success criteria.
 
-### 6. Scope Classification
+### 5. Scope Classification
 
 **Wave**: 1
 **Why research can't answer**: Prioritization requires human judgment on what matters most.
@@ -103,7 +64,7 @@ When multiple domains apply, ask questions from all relevant domains.
 
 ## Situational Dimensions (ask when relevant)
 
-### 7. Edge Cases & Error Handling
+### 6. Edge Cases & Error Handling
 
 **Wave**: 2
 **Why research can't answer**: Research finds tested cases; humans know which untested cases matter.
@@ -111,7 +72,7 @@ When multiple domains apply, ask questions from all relevant domains.
 **Stress-test scenarios** (apply when the user's answer is vague): invent concrete
 stress-test scenarios and ask the user to adjudicate. Seed from Context Sprint findings when possible.
 Each scenario carries a recommended resolution per the Recommended-answer principle.
-Use judgment on how many to invent — enough to resolve the vagueness, not so many that you create contrived scope creep.
+Invent only enough to resolve the vagueness. A scenario whose answer does not change whether the objective is met produces no requirement.
 Examples:
 
 - "When the upstream service returns a 503 during a paginated fetch — do we retry only the
@@ -122,14 +83,14 @@ Examples:
   status.)"
   **Skip if**: Task is a pure refactoring with no behavior change, or acceptance criteria already cover edge cases.
 
-### 8. Non-Functional Requirements
+### 7. Non-Functional Requirements
 
 **Wave**: 2
 **Why research can't answer**: research can read current metrics; humans know the TARGET for new features.
 **Example**: "Any specific latency budget, throughput target, or availability requirement for this feature?"
 **Skip if**: Task is internal tooling with no SLO, or operational context doc already specifies targets.
 
-### 9. Deployment & Rollout
+### 8. Deployment & Rollout
 
 **Wave**: 2
 **Why research can't answer**: Rollout strategy is often undocumented team convention.
@@ -137,7 +98,7 @@ Examples:
 **Options pattern**: A) Feature flag with gradual ramp B) Staged rollout (canary → percentage → full) C) Direct deploy (low risk, easily reversible) D) Other
 **Skip if**: Task is a config change or documentation update with no deployment implications.
 
-### 10. Historical Context & Temporal
+### 9. Historical Context & Temporal
 
 **Wave**: 2
 **Why research can't answer**: Past failed attempts and future implementation pitfalls live in human memory.
@@ -146,70 +107,11 @@ Examples:
 
 ---
 
-## Domain-Specific Dimensions (worked examples — extend for any domain)
+## Domain-Specific Dimensions (Wave 3)
 
-The domains below are worked examples showing HOW to generate domain-specific questions.
-They are not a closed list. For any domain not listed here, identify the domain from the
-task description and generate domain-appropriate questions using the same pattern.
-
-### Generating questions for unlisted domains
-
-For a domain not covered below, ask yourself:
+For each detected domain, generate 2-4 questions from what is unique to it:
 
 - What are the domain's **unique quality attributes**? (e.g., for CLIs: ergonomics, shell completion, exit codes; for SDKs: API surface, version support)
 - What are the domain's **unique failure modes**? (e.g., for infrastructure: blast radius, rollback; for event systems: ordering, deduplication, backpressure)
 - What are the domain's **unique compatibility concerns**? (e.g., for SDKs: backwards compat, deprecation policy; for migrations: data format versioning)
 - What are the domain's **unique operational concerns**? (e.g., for monitoring: alert fatigue, dashboard design; for batch jobs: retry strategy, idempotency)
-
-Generate 2-4 questions from the most relevant dimensions above, adapting wording to the specific feature.
-
-### Backend/APIs (ask when backend signals detected)
-
-**11. API Contract & Compatibility**
-**Wave**: 3
-"Should this be backwards-compatible with existing clients? Any API versioning concerns?"
-**Skip if**: Internal-only endpoint with no external consumers.
-
-**12. Timeout & Latency Budget**
-**Wave**: 3
-"What's the latency budget for this new codepath? How does it fit within the upstream timeout?"
-**Skip if**: an operational context document already specifies latency constraints.
-
-**13. Error Response Design**
-**Wave**: 3
-"How should errors surface to callers? Specific error codes, retry guidance, or degraded responses?"
-**Skip if**: Existing error handling patterns in the service cover this case.
-
-### Data Pipelines (ask when data signals detected)
-
-**14. Data Freshness & SLO**
-**Wave**: 3
-"What's the acceptable data freshness for this output? What SLO should it have?"
-**Skip if**: Endpoint already has documented SLO, or this is a one-off backfill.
-
-**15. Schema Evolution & Backwards Compatibility**
-**Wave**: 3
-"Will this change the output schema? How should downstream consumers handle the transition?"
-**Skip if**: No schema change, or schema is append-only (new fields only).
-
-**16. Data Quality & Validation**
-**Wave**: 3
-"What data quality checks should fail the pipeline? Any known data quality issues in upstream sources?"
-**Skip if**: Pure infrastructure/config change with no data transformation.
-
-### ML Models (ask when ML signals detected)
-
-**17. Evaluation Metrics & Thresholds**
-**Wave**: 3
-"What evaluation metric matters most? What's the minimum acceptable threshold before deployment?"
-**Skip if**: Metrics are already defined in an experiment spec or model card.
-
-**18. Training Data & Freshness**
-**Wave**: 3
-"Where does training data come from? How fresh does it need to be? Any known biases or gaps?"
-**Skip if**: Training pipeline is already established and data source is unchanged.
-
-**19. Serving & Latency Requirements**
-**Wave**: 3
-"What's the serving latency requirement? Online vs batch inference? Model versioning strategy?"
-**Skip if**: Serving infrastructure is already established (e.g., existing the serving layer slot).

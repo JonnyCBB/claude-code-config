@@ -1,13 +1,5 @@
 # Manim Patterns
 
-## Table of Contents
-- Scene Template
-- Common Animations
-- ManimML Plugin Patterns
-- Rendering Commands
-- Output Directory Conventions
-- File Embedding Patterns
-
 ## Scene Template
 
 ```python
@@ -43,58 +35,6 @@ class StyledScene(Scene):
         self.camera.background_color = BG
         text = Text("Hello", color=TEXT_COLOR, font_size=48)
         self.play(Write(text))
-```
-
-## Common Animations
-
-**Create (draw stroke then fill):**
-```python
-circle = Circle(radius=1, color=PRIMARY)
-self.play(Create(circle))
-```
-
-**Transform (morph one shape to another):**
-```python
-square = Square(side_length=2, color=PRIMARY)
-circle = Circle(radius=1, color=ACCENT)
-self.play(Transform(square, circle))
-```
-
-**FadeIn with direction:**
-```python
-box = Rectangle(width=3, height=1, color=PRIMARY)
-self.play(FadeIn(box, shift=UP))
-```
-
-**Write (for text and LaTeX):**
-```python
-equation = MathTex(r"\nabla f(x) = \frac{\partial f}{\partial x}")
-self.play(Write(equation))
-```
-
-**Indicate (pulse highlight):**
-```python
-self.play(Indicate(important_element, color=ACCENT))
-```
-
-**Succession (chain multiple animations):**
-```python
-self.play(
-    Succession(
-        Create(arrow1),
-        Create(arrow2),
-        Create(arrow3),
-        lag_ratio=0.3
-    )
-)
-```
-
-**NumberLine with moving dot:**
-```python
-line = NumberLine(x_range=[-3, 3, 1], length=8)
-dot = Dot(line.n2p(0), color=ACCENT)
-self.play(Create(line), Create(dot))
-self.play(dot.animate.move_to(line.n2p(2)), run_time=2)
 ```
 
 ## ManimML Plugin Patterns
@@ -133,50 +73,15 @@ class CNNScene(Scene):
         self.play(cnn.make_forward_pass_animation(), run_time=5)
 ```
 
-## Rendering Commands
+## Output
 
-```bash
-# Medium quality GIF (recommended for teach-me)
-manim -qm --format gif scene_file.py SceneClassName
-
-# Medium quality WebM (smaller file, modern browsers)
-manim -qm --format webm scene_file.py SceneClassName
-
-# Low quality for quick preview
-manim -ql --format gif scene_file.py SceneClassName
-
-# High quality for final render
-manim -qh --format gif scene_file.py SceneClassName
-```
-
-Quality flags:
-- `-ql` — 480p, 15fps (fast preview)
-- `-qm` — 720p, 30fps (good balance)
-- `-qh` — 1080p, 60fps (high quality)
-- `-qk` — 4K, 60fps (overkill for web)
-
-Output location: `media/videos/<scene_file>/<quality>/SceneClassName.gif`
-
-## Output Directory Conventions
-
-The render_manim.py script handles output placement. Default Manim output structure:
-
-```
-media/
-└── videos/
-    └── scene_file/
-        └── 720p30/
-            └── SceneClassName.gif
-```
-
-The script copies the final output to the target directory:
+`scripts/render_manim.py` renders at 720p30 by default (`--quality low|medium|high`) and copies the result from Manim's `media/videos/<scene_file>/<quality>/<SceneClass>.<ext>` into `--output-dir`, giving:
 
 ```
 ~/.claude/teach-me/<slug>/
 ├── index.html
 └── media/
-    ├── gradient_descent.gif
-    └── loss_landscape.gif
+    └── gradient_descent.gif
 ```
 
 ## File Embedding Patterns
@@ -200,7 +105,3 @@ The script copies the final output to the target directory:
 <img src="data:image/gif;base64,R0lGODlh..." alt="Small animation">
 ```
 
-Use the embed_media.py script to automatically convert small file references to base64:
-```bash
-python3 scripts/embed_media.py index.html --max-size 500000
-```

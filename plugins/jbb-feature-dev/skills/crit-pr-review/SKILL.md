@@ -18,11 +18,11 @@ Post code review findings to a GitHub PR using crit for interactive review and s
 
 ## Review Compatibility Blocker
 
-The available [personal code-review workflow](../code-review/SKILL.md)
-does not produce this adapter's comprehensive review document or severity,
-source-agent, and comment-format contract. Its fix mode edits and commits;
-colleague mode drafts only the findings the user selects and delegates security
-and repository conventions to a review bot.
+The [code-review workflow](../code-review/SKILL.md) writes a review document,
+but not this adapter's contract: it labels findings critical/high/medium/low
+rather than Critical/Major/Minor/Enhancement, records no source agent, and the
+comment-format reference this adapter reads is not shipped. Security and
+repository conventions are left to a dedicated review bot or reviewer.
 
 Stop before fresh review generation, branch checkout, daemon launch, comment
 injection, or posting. Report that a compatible adapter design needs user

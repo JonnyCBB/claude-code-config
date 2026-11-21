@@ -158,9 +158,7 @@ this order:
    "review" appears in the same prompt.
 
 4. **Default mode when no cues match: code-style-review.** That is, the
-   default mode is code-style-review. This preserves today's pipeline
-   behavior — `/code-review` spawns the language expert in code style
-   framing by default.
+   default mode is code-style-review.
 
 ## CHANGE_SCOPE
 
@@ -249,5 +247,5 @@ Two known Claude Code plugin issues affect skill-driven invocation:
 - **GitHub issue #7406** — parallel-spawn flakiness: `/polish-code` spawns
   the language expert twice in parallel (test-review + code-style-review).
   Under flake conditions, one of the two parallel spawns may not register
-  its output. Fallback: a single sequential invocation emitting both schemas
-  in one response. Use it when parallel spawn drops findings.
+  its output. Fall back to a single sequential invocation emitting both
+  schemas in one response.

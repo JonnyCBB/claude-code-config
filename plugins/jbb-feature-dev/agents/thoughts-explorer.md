@@ -2,7 +2,7 @@
 name: thoughts-explorer
 description: Discovers and analyzes documents in ~/.claude/thoughts/ directory. Use when researching historical context, decisions, or documentation for any topic. Finds relevant documents AND extracts key insights in a single pass — the thoughts equivalent of codebase-explorer.
 tools: Read, Grep, Glob, LS
-model: claude-haiku-4-5-20251001
+model: claude-haiku-5-5
 color: purple
 ---
 

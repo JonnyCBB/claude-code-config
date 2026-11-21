@@ -2,7 +2,7 @@
 name: agent-readability-reviewer
 description: "Specialist agent readability reviewer. Evaluates whether the document is parseable and unambiguous for AI agents. Checks structured data quality, explicit cross-references, deterministic instructions, and machine-parseable sections. Emits findings in finding-schema format. Use as part of the /review-document pipeline."
 tools: Read
-model: claude-opus-5
+model: claude-opus-5-5
 color: cyan
 ---
 

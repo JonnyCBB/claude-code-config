@@ -2,7 +2,7 @@
 name: prose-quality-reviewer
 description: "Specialist prose quality reviewer. Evaluates grammar, spelling, clarity, conciseness, word choice, tone, and enforces acronym definitions. Emits findings in finding-schema format. Use as part of the /review-document pipeline."
 tools: Read
-model: claude-opus-5
+model: claude-opus-5-5
 color: green
 ---
 

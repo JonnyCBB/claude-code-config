@@ -2,7 +2,7 @@
 name: codebase-explorer
 description: Explore codebases and find implementation details. Use for (1) finding WHERE code lives (file paths, directory structure), (2) finding HOW code works (data flow, architecture, entry points), or (3) finding WHAT patterns exist (code examples and implementations to model after). Works on local files (fastest), remote GitHub reads via the gh CLI, or a gh repo clone fallback. Adapts depth based on what is asked — specify "where", "how", or "show me examples" in your prompt.
 tools: Grep, Glob, LS, Read, Bash
-model: claude-sonnet-5
+model: claude-sonnet-5-5
 color: green
 ---
 

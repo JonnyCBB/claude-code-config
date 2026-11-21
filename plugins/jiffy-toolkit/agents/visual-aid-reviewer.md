@@ -2,7 +2,7 @@
 name: visual-aid-reviewer
 description: "Specialist visual aid reviewer. Identifies diagram opportunities, generates diagram code, rewrites cluttered diagrams, and selects appropriate visualization tools. Emits findings in finding-schema format. Use as part of the /review-document pipeline."
 tools: Read, WebFetch
-model: claude-opus-5
+model: claude-opus-5-5
 color: orange
 ---
 

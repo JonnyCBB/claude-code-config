@@ -3,7 +3,7 @@ name: general-code-reviewer
 description: Holistic code review agent focusing on objective alignment, design, error handling, API compatibility, dependencies, and documentation. Bugs and security are out of scope. Use as the unsupported-language fallback in /polish-code or standalone for general review.
 tools: Glob, Grep, LS, Read, WebFetch, TodoWrite, Bash, ListMcpResourcesTool, ReadMcpResourceTool
 skills: [decision-principles]
-model: claude-sonnet-5
+model: claude-sonnet-5-5
 color: pink
 ---
 

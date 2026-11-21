@@ -55,7 +55,7 @@ Everything above is per-worktree, so it recurs. The full checklist for launching
    `worktree_branch` and `worktree_path` as returned, never what you asked for.
 3. **Unset the upstream** on the new worktree's branch. Every one comes up tracking `origin/master`,
    so a bare `git push` pushes feature commits straight to master.
-4. **Pass the full model id, never the `opus` alias** — e.g. `--model 'claude-opus-5[1m]'`. Verify
+4. **Pass the full model id, never the `opus` alias** — e.g. `--model 'claude-opus-5-5[1m]'`. Verify
    it in the launch JSON afterwards.
 5. **Check `parent_id` in the launch JSON.** If it is not the conductor's session id, completion
    events never route home.

@@ -1,12 +1,5 @@
 # Prerequisite Reasoning
 
-## Table of Contents
-- DAG Generation Prompt Template
-- Audience Assessment Heuristics
-- Topological Sort (Kahn's Algorithm)
-- Scaffolded Content Generation
-- Example: ADAM Optimizer for a PM
-
 ## DAG Generation Prompt Template
 
 Use this prompt to generate the prerequisite DAG:
@@ -50,40 +43,9 @@ Map stated role/background to assumed knowledge:
 | "knows basic programming" | Variables, loops, functions, arrays | Algorithm/system concepts |
 | No audience specified | General adult knowledge | Ask user to clarify |
 
-## Topological Sort (Kahn's Algorithm)
+## Teaching Order
 
-```python
-def topological_sort(graph):
-    """
-    graph: dict mapping concept -> list of prerequisites
-    Returns: list of concepts in teaching order (foundations first)
-    """
-    # Count incoming edges (how many things depend on this)
-    in_degree = {node: 0 for node in graph}
-    for node, prereqs in graph.items():
-        for prereq in prereqs:
-            if prereq in in_degree:
-                in_degree[node] += 1
-
-    # Start with nodes that have no prerequisites
-    queue = [n for n in in_degree if in_degree[n] == 0]
-    result = []
-
-    while queue:
-        # Pick the node with no unmet prerequisites
-        node = queue.pop(0)
-        result.append(node)
-        # "Teach" this concept — reduce in_degree for dependents
-        for dependent, prereqs in graph.items():
-            if node in prereqs:
-                in_degree[dependent] -= 1
-                if in_degree[dependent] == 0:
-                    queue.append(dependent)
-
-    return result
-```
-
-This naturally produces a teaching order: concepts with no prerequisites come first, building up to the target concept.
+Topologically sort the unknown concepts so every concept comes after its prerequisites, ending at the target.
 
 ## Scaffolded Content Generation
 

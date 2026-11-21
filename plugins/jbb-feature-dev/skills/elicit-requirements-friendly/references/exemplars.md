@@ -1,7 +1,5 @@
 # Exemplar Answers
 
-Good-vs-vague answer pairs, one per question dimension. The skill surfaces the matching pair inline whenever it asks an open-ended question — this teaches the user what kind of depth lands without lecturing them about "specificity".
-
 A good answer is concrete, behavioral, and grounded in a real moment. A vague answer is abstract, opinion-shaped, or fluffy. Length is not the signal: the agent must call out cases where the vague answer is **long but shallow** so the user understands depth ≠ word count.
 
 ---

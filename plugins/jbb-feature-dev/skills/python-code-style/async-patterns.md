@@ -122,7 +122,7 @@ from anthropic import Anthropic
 
 client = Anthropic()
 message = client.messages.create(
-    model="claude-sonnet-4-6-20250620",
+    model="claude-sonnet-5-5",
     max_tokens=1024,
     messages=[{"role": "user", "content": prompt}]
 )
@@ -136,7 +136,7 @@ client = AsyncAnthropic()
 
 async def get_completion(prompt: str) -> str:
     message = await client.messages.create(
-        model="claude-sonnet-4-6-20250620",
+        model="claude-sonnet-5-5",
         max_tokens=1024,
         messages=[{"role": "user", "content": prompt}]
     )
@@ -152,7 +152,7 @@ client = AsyncAnthropic()
 
 async def stream_completion(prompt: str) -> AsyncIterator[str]:
     async with client.messages.stream(
-        model="claude-sonnet-4-6-20250620",
+        model="claude-sonnet-5-5",
         max_tokens=1024,
         messages=[{"role": "user", "content": prompt}]
     ) as stream:

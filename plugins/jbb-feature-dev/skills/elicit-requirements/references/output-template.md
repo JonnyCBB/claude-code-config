@@ -64,7 +64,7 @@ THEN [what someone can observe or do, not a restatement of the precondition]
 [Include meaningful exclusions and failure behavior. For a time window, leave its
 reference event and boundary unresolved when not supplied. Do not invent the
 interaction shape, output contents, or clock start.
-Repeat for each distinct scenario. Do not add AC-N labels by default.]
+Repeat for each distinct scenario. Do not add AC-N labels.]
 
 ## Success Criteria \*
 

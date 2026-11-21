@@ -4,8 +4,8 @@ description: >
   Gather requirements through structured questioning before research or planning.
   Asks human-only questions that automated research cannot answer (business motivation,
   acceptance criteria, scope tradeoffs, success metrics). Spawns context-gathering agents
-  when artifacts are provided. Uses wave-based depth progression and relentless tree-walking
-  until shared understanding is reached.
+  when artifacts are provided. Uses wave-based depth progression, and keeps only the
+  requirements the objective needs.
   Use when starting a new feature, before /research-problem or /implement-change.
   Trigger phrases: (1) "elicit requirements" (2) "gather requirements" (3) "requirements interview"
   (4) "what are we building" (5) "deep dive requirements" (6) "grill me"
@@ -14,6 +14,17 @@ description: >
 ---
 
 # Requirements Elicitation
+
+## Requirements serve the objective
+
+**Hard constraint:** the document carries the minimal set of requirements that meets the
+objective. Adding a requirement the objective does not need is a defect, not extra care.
+
+A requirement exists only to prevent an outcome that would fail the objective. Anything
+else is scope (where the work applies), context, or design freedom left to the implementer.
+Each extra requirement narrows the designs the implementer may choose, so the document
+carries the smallest set that achieves the objective. Acceptance criteria verify objective
+outcomes, not solution internals.
 
 Gather human-only context through structured questioning, supported by targeted automated
 research when uncertainty surfaces during the interview. The primary job is to ask questions
@@ -33,7 +44,7 @@ Parse `$ARGUMENTS` for flags and input:
 
 ## Step 1: Assess Input & Maybe Skip
 
-1. Read any provided file (ticket, research doc, goal description) FULLY.
+1. Read any provided file (ticket, research doc, goal description) in full.
 2. If the user provides links (Slack, Google Docs, Jira), use ToolSearch to discover
    relevant MCP tools and fetch that context.
 3. **Skip heuristic**: If the input has a clear objective, relevant context, at least two
@@ -125,6 +136,8 @@ Ask one question using AskUserQuestion with options. Lead with your recommendati
 **Second — Scope mode**: Ask the user to choose their scope posture.
 Options: A) MVP — minimum that ships value B) Complete — full scope, make it bulletproof
 C) Ambitious — go beyond the ask if it creates a better outcome.
+Scope posture sets how much work is in scope. It does not lower the bar for adding a
+requirement: Complete still carries only the requirements the objective needs.
 Do not treat supplied scope boundaries as a choice of scope posture; ask unless the
 owner already chose one.
 
@@ -149,15 +162,21 @@ from both the task description AND Context Sprint findings (Step 2). Only ask di
 relevant to detected domains.
 
 Between waves, recap what was learned and your updated understanding using the
-Context-Sharing Protocol. Walk every branch within a wave, resolving dependencies
-and exploring conditions ("it depends", "unless", "except when") before moving on.
-Cover all applicable dimensions before advancing. Use category preambles and
-wrap-ups at each new dimension or major branch; recap each resolved dimension.
+Context-Sharing Protocol. Walk the branches that bear on the objective, resolving
+dependencies and conditions ("it depends", "unless", "except when"). A dimension is a
+question to consider, not a section to fill: an answer of "this does not affect the
+objective" ends it with no requirement. Use category preambles and wrap-ups at each new
+dimension or major branch.
 Use AskUserQuestion for structured options, or free-form conversation when
 options would be artificial.
 
 - Apply the Recommended-answer principle (see Context-Sharing Protocol) to every question.
   Skip the recommendation only for questions where you have no grounding evidence.
+- **Removal test, as you go.** When an answer would become a requirement, ask what fails
+  in the objective if it is left out. If nothing fails, record it as scope, context, or a
+  possible approach, and say so to the user in the same turn. Test each candidate against
+  the objective, not against the other requirements: "the other requirements assume it" is
+  not a reason to keep it.
 - Apply `../shared-references/elicit-shared-patterns.md` (`## Outcomes and Decision Authority`):
   ask why a named technique matters before making it a constraint, and ask the owner about
   consequential decisions even when the effect is invisible to users.
@@ -172,37 +191,60 @@ options would be artificial.
   unfamiliar with the word?" Only the former triggers a pause. Example: "You said 'account'
   — do you mean the Customer account or the User account? Those are different."
   - Record resolved forks in the output doc's optional `## Terminology` section.
-  - For jargon you don't recognise but aren't confused about: do NOT pause. Note it as
+  - For jargon you don't recognise but aren't confused about: do not pause. Note it as
     `UNKNOWN_TERM: <term>` in the output doc's optional `## Unknown Terms` section (and
     in the Assumptions section for non-interactive mode). `/research-problem` will resolve
     these downstream.
-- **Stress-test scenarios** — When a Wave 2 edge-case answer is vague ("handle failures
-  gracefully", "usually works"), invent concrete scenarios and ask the user to adjudicate.
-  Seed scenarios from Context Sprint findings when possible (real states, not
-  hypotheticals). Each scenario carries a recommended resolution per the Recommended-answer
-  principle. Use judgment on how many to invent — enough to resolve the vagueness, not so
-  many that you create contrived scope creep.
+- **Stress-test scenarios** — for a vague edge-case answer, see `references/question-categories.md` (Edge Cases & Error Handling).
 
-**Exit condition**: Do NOT end the interview on your own. Continue asking questions until
-you believe you have enough context to write a complete requirements document with no gaps.
-Even then, you MUST proceed to Step 5 (Mutual Understanding Confirmation) — only the user's
-explicit confirmation ends the interview.
+**Exit condition**: continue until no open question would change whether the objective is
+met, then go to Step 5. Only the user's explicit confirmation ends the
+interview.
 
 _Non-interactive: skip this step. Mark unresolved consequential choices as unconfirmed
 assumptions; do not turn every missing interview dimension into an assumed requirement._
 
-## Step 5: Mutual Understanding Confirmation
+## Step 5: Minimality Pass and Confirmation
+
+### Minimality Pass
+
+Before you summarize, list every candidate requirement (acceptance scenario, constraint,
+non-functional and domain requirement). For each one, ask: if this is removed, is the
+objective still achieved?
+
+- Still achieved: drop it, or move it. A boundary on where the work applies goes to
+  `## Scope`. A fact goes to `## Context`. A way to build it goes to `## Context` as a
+  possible approach. A worry for the design review goes to `## Historical Context` or
+  `## Context`.
+- Not achieved: keep it, and reword it as the outcome it protects, not a mechanism.
+
+Keep at least one acceptance scenario, because `/map-feature-to-plans` traces work to
+`## Acceptance Criteria` and `## Scope`. Keep an owner-stated constraint unless the owner
+agrees to move it.
+
+Worked example, from a real roadmap review. The objective was "release config changes
+safely". An agent drafted eight requirements; the owner kept four: limit how many
+users a bad change reaches, detect harm fast with a signal that names the config, recover
+fast and automatically to a known-good config, and record what changed, when and where.
+"Cover every serving path" became the Scope paragraph. "Do not block normal work" and
+"work for services we do not own" were concerns for the design review. "Tell a failed
+fetch from wrong content" was a design detail.
+
+_Non-interactive: run this pass too, and list what you moved under `## Assumptions`._
+
+### Confirmation
 
 The interview ends only when the user explicitly confirms shared understanding.
 
 1. Summarize the outcome, scope, observable success, consequential decisions (including
    invisible ones), and unresolved assumptions in plain language. Distinguish owner
-   answers from researched facts and reversible agent choices.
+   answers from researched facts and reversible agent choices. List what the pass moved
+   out of the requirements and where it went, so the owner can move one back.
 2. Ask via AskUserQuestion: "Does this capture your intent accurately? Are there any
    gaps or misunderstandings?" If they identify gaps, ask targeted follow-ups and
    re-confirm the updated understanding. Proceed to Step 6 only on explicit confirmation.
 
-_Non-interactive: skip this step._
+_Non-interactive: skip the confirmation._
 
 ## Step 6: Write Requirements Document
 
@@ -222,14 +264,3 @@ _Non-interactive: skip this step._
 ## Step 7: Suggest Next Step
 
 See `../shared-references/elicit-shared-patterns.md` (`## Suggest Next Step`).
-
-## Reference Files
-
-- **`references/question-categories.md`** — Read in Steps 3 and 4. Contains question
-  dimensions with wave assignments, example patterns, domain detection signals, and skip
-  conditions. These are guidance dimensions, not fixed questions — adapt wording to the
-  specific feature. Domain examples (Backend/Data/ML) can be extended to any domain using
-  the generation pattern.
-- **`references/output-template.md`** — Read in Step 6. Contains the requirements document
-  template with YAML frontmatter and section structure. Compatible with the
-  claude-agent-orchestrator interview.py output format.
