@@ -77,4 +77,4 @@ Master `d74df146`, 2026-09-08, plant step confirmed first: 62 candidates in 36 f
 | absolute install paths | 4 | `design-approach`, `create-my-mode-skill` |
 | `~/.claude/docs/` | 0 | - |
 
-The zero is deliberate; the alternative stays in the pattern as a regression guard. Draining: `hq-7bw5q` (bead IDs), `hq-6s0zd` (paths). Whether the check becomes an enforced gate is `hq-flt0o`; a gate failing on all 46 today would be switched off, as `scripts/verify-plugin-setup.sh` already is while red (`hq-g8wea`).
+The zero is deliberate; the alternative stays in the pattern as a regression guard. Draining: `hq-7bw5q` (bead IDs), `hq-6s0zd` (paths). Whether the check becomes an enforced gate is `hq-flt0o`; a gate failing on all 46 today would be switched off.
