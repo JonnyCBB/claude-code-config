@@ -2,7 +2,6 @@
 """Enforce the conductor communication contract on outgoing messages.
 
 Contract: ~/.claude/docs/conductor-communication-contract.md
-Notes:    ~/.claude/docs/conductor-communication-check.md
 Bead:     hq-5r44
 
 WHAT THIS IS FOR

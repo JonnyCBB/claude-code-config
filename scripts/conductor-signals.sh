@@ -636,7 +636,7 @@ if [ "$S1" -gt 0 ]; then
   while IFS=$'\t' read -r bead why pr merged title; do
     deps=$(grep -m1 -F "$bead"$'\t' "$TMP/deps.tsv" | cut -f2)
     # id and title on ONE line. A line lifted out of this report and pasted into
-    # a message to Jonny must not be a bare id (work contract section 3).
+    # a message to Jonny must not be a bare id (communication contract section 1).
     printf '     %s - %s\n' "$bead" "$title"
     printf '       %s  %s merged %s   %s dependents blocked\n' \
       "[$why]" "$pr" "$merged" "${deps:-?}"
